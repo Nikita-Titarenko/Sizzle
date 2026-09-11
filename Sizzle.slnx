@@ -1,3 +1,6 @@
 <Solution>
-  <Project Path="Sizzle/Sizzle.csproj" />
+  <Project Path="Sizzle.Application/Sizzle.Application.csproj" />
+  <Project Path="Sizzle.Domain/Sizzle.Domain.csproj" />
+  <Project Path="Sizzle.Infrastructure/Sizzle.Infrastructure.csproj" />
+  <Project Path="Sizzle/Sizzle.WebApi.csproj" />
 </Solution>
