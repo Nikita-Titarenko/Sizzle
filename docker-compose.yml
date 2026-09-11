@@ -1,0 +1,43 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: sizzle-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: sizzle
+      MYSQL_USER: sizzle
+      MYSQL_PASSWORD: sizzlepass
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-prootpass"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  sizzle-webapi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sizzle-webapi
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      ConnectionStrings__DefaultConnection: server=mysql;port=3306;database=sizzle;user=sizzle;password=sizzlepass;
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/src
+      - nuget_cache:/root/.nuget/packages
+    working_dir: /src/Sizzle.WebApi
+    command: dotnet watch run --project Sizzle.WebApi.csproj --urls http://0.0.0.0:8080
+
+volumes:
+  mysql_data:
+  nuget_cache:

@@ -13,7 +13,19 @@ public static class InfrastructureServiceExtensions
 {
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfigurationManager configuration)
     {
-        services.AddDbContext<ApplicationDbContext>(options => options.UseInMemoryDatabase("SizzleDb"));
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        services.AddDbContext<ApplicationDbContext>(options =>
+        {
+            if (!string.IsNullOrWhiteSpace(connectionString))
+            {
+                options.UseMySQL(connectionString);
+            }
+            else
+            {
+                options.UseInMemoryDatabase("SizzleDb");
+            }
+        });
 
         services
             .AddIdentityCore<ApplicationUser>(options =>
@@ -21,6 +33,7 @@ public static class InfrastructureServiceExtensions
                 options.SignIn.RequireConfirmedAccount = true;
                 options.Password.RequireNonAlphanumeric = false;
             })
+            .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
