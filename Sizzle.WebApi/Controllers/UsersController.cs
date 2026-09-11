@@ -78,38 +78,6 @@ public class UsersController(IUserService userService) : BaseController
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
-    [HttpGet]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(IEnumerable<UserAdminListItemDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<UserAdminListItemDto>>> GetAllUsers()
-    {
-        var result = await userService.GetAllUsersAsync();
-        return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
-    }
-
-    [HttpPost("{userId:guid}/ban")]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<ActionResult> BanUser(Guid userId, BanUserRequestModel request)
-    {
-        var result = await userService.BanUserAsync(userId, new BanUserDto
-        {
-            Days = request.Days,
-            Reason = request.Reason
-        });
-
-        return !result.IsSuccess ? HandleErrors(result) : NoContent();
-    }
-
-    [HttpPost("{userId:guid}/unban")]
-    [Authorize(Roles = "Admin")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
-    public async Task<ActionResult> UnbanUser(Guid userId)
-    {
-        var result = await userService.UnbanUserAsync(userId);
-        return !result.IsSuccess ? HandleErrors(result) : NoContent();
-    }
-
     [HttpPut]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

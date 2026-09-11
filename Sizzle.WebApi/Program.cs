@@ -48,7 +48,6 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.EnsureCreated();
-    await DbInitializer.InitializeAsync(scope.ServiceProvider);
 }
 
 app.UseHttpsRedirection();

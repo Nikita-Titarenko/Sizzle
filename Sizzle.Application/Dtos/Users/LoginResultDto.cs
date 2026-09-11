@@ -4,8 +4,6 @@ public class LoginResultDto
 {
     public Guid UserId { get; init; }
 
-    public required string Role { get; init; }
-
     public bool EmailConfirmed { get; init; }
 
     public bool IsNewUser { get; init; }

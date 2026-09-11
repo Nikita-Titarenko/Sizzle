@@ -17,13 +17,5 @@ public interface IUserService
 
     Task<Result<UserDto>> GetUserDtoAsync(Guid userId);
 
-    Task<Result<IEnumerable<UserAdminListItemDto>>> GetAllUsersAsync();
-
-    Task<Result> BanUserAsync(Guid userId, BanUserDto dto);
-
-    Task<Result> UnbanUserAsync(Guid userId);
-
     Task<Result> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto);
-
-    Task<Result> IsUserBannedAsync(string userId);
 }

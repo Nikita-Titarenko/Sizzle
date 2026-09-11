@@ -21,7 +21,6 @@ public static class InfrastructureServiceExtensions
                 options.SignIn.RequireConfirmedAccount = true;
                 options.Password.RequireNonAlphanumeric = false;
             })
-            .AddRoles<IdentityRole<Guid>>()
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();

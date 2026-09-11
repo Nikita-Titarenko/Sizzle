@@ -45,7 +45,6 @@ public class UserService(
             };
         }
 
-        _ = await userManager.AddToRoleAsync(user, DefaultRoles.UserRole.Name!);
         await SendRegistrationEmailAsync(user.Email!, code);
 
         return new Result<RegisterResultDto>
@@ -131,49 +130,13 @@ public class UserService(
         user.EmailConfirmed = true;
         _ = await userManager.UpdateAsync(user);
 
-        var role = (await userManager.GetRolesAsync(user)).First();
         return new Result<ConfirmEmailResultDto>
         {
             Value = new ConfirmEmailResultDto
             {
-                Role = role,
-                JwtToken = jwtTokenService.GenerateToken(user.Id, role)
+                JwtToken = jwtTokenService.GenerateToken(user.Id)
             }
         };
-    }
-
-    public async Task<Result> IsUserBannedAsync(string userId)
-    {
-        var user = await userManager.FindByIdAsync(userId);
-        if (user == null)
-        {
-            return new Result
-            {
-                Errors = [new Error { Key = ErrorKey.NotFound, Message = "Your account doesn't exist." }]
-            };
-        }
-
-        if (user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow)
-        {
-            return new Result
-            {
-                Errors =
-                [
-                    new Error
-                    {
-                        Key = ErrorKey.Banned,
-                        Message = "You are banned.",
-                        Parameters =
-                        {
-                            { "BannedUntil", user.LockoutEnd.Value.ToString("O") },
-                            { "Reason", user.BanReason ?? string.Empty }
-                        }
-                    }
-                ]
-            };
-        }
-
-        return new Result();
     }
 
     public async Task<Result<LoginResultDto>> LoginAsync(LoginUserDto dto)
@@ -212,15 +175,13 @@ public class UserService(
             emailConfirmed = false;
         }
 
-        var role = (await userManager.GetRolesAsync(user)).First();
         return new Result<LoginResultDto>
         {
             Value = new LoginResultDto
             {
                 UserId = user.Id,
                 EmailConfirmed = emailConfirmed,
-                Role = role,
-                JwtToken = emailConfirmed ? jwtTokenService.GenerateToken(user.Id, role) : null
+                JwtToken = emailConfirmed ? jwtTokenService.GenerateToken(user.Id) : null
             }
         };
     }
@@ -266,21 +227,18 @@ public class UserService(
                 };
 
                 _ = await userManager.CreateAsync(user);
-                _ = await userManager.AddToRoleAsync(user, DefaultRoles.UserRole.Name!);
             }
 
             var info = new UserLoginInfo("Google", payload.Subject, "Google");
             _ = await userManager.AddLoginAsync(user, info);
         }
 
-        var role = (await userManager.GetRolesAsync(user)).First();
         return new Result<LoginResultDto>
         {
             Value = new LoginResultDto
             {
                 UserId = user.Id,
-                Role = role,
-                JwtToken = jwtTokenService.GenerateToken(user.Id, role),
+                JwtToken = jwtTokenService.GenerateToken(user.Id),
                 EmailConfirmed = user.EmailConfirmed,
                 IsNewUser = isNewUser
             }
@@ -305,80 +263,9 @@ public class UserService(
                 Id = user.Id,
                 Name = user.Name,
                 Email = user.Email ?? string.Empty,
-                TotalGames = user.TotalGames,
-                TotalWins = user.TotalWins,
                 ImageUrl = fileService.GetFileUrl(Path.Combine(IconFolderName, user.Id.ToString()))
             }
         };
-    }
-
-    public async Task<Result<IEnumerable<UserAdminListItemDto>>> GetAllUsersAsync()
-    {
-        var users = await userManager.Users.ToListAsync();
-        var result = new List<UserAdminListItemDto>();
-
-        foreach (var user in users)
-        {
-            var roles = await userManager.GetRolesAsync(user);
-            result.Add(new UserAdminListItemDto
-            {
-                Id = user.Id,
-                Name = user.Name,
-                Email = user.Email ?? string.Empty,
-                Role = roles.FirstOrDefault() ?? string.Empty,
-                ImageUrl = fileService.GetFileUrl(Path.Combine(IconFolderName, user.Id.ToString())),
-                IsBanned = user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.UtcNow,
-                BannedUntil = user.LockoutEnd?.UtcDateTime
-            });
-        }
-
-        return new Result<IEnumerable<UserAdminListItemDto>> { Value = result };
-    }
-
-    public async Task<Result> BanUserAsync(Guid userId, BanUserDto dto)
-    {
-        var getUserResult = await GetUserAsync(userId);
-        if (!getUserResult.IsSuccess)
-        {
-            return getUserResult;
-        }
-
-        var user = getUserResult.Value!;
-        var lockoutEndDate = DateTimeOffset.UtcNow.AddDays(dto.Days);
-        var result = await userManager.SetLockoutEndDateAsync(user, lockoutEndDate);
-        if (!result.Succeeded)
-        {
-            return new Result
-            {
-                Errors = [new Error { Message = "Failed to ban user", Key = ErrorKey.UnexpectedError }]
-            };
-        }
-
-        user.BanReason = dto.Reason;
-        _ = await userManager.UpdateAsync(user);
-
-        return new Result();
-    }
-
-    public async Task<Result> UnbanUserAsync(Guid userId)
-    {
-        var getUserResult = await GetUserAsync(userId);
-        if (!getUserResult.IsSuccess)
-        {
-            return getUserResult;
-        }
-
-        var user = getUserResult.Value!;
-        var result = await userManager.SetLockoutEndDateAsync(user, null);
-        if (!result.Succeeded)
-        {
-            return new Result
-            {
-                Errors = [new Error { Message = "Failed to unban user", Key = ErrorKey.UnexpectedError }]
-            };
-        }
-
-        return new Result();
     }
 
     public async Task<Result> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto)

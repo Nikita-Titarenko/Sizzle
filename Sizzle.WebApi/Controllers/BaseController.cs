@@ -19,7 +19,6 @@ public abstract class BaseController : ControllerBase
         {
             ErrorKey.NotFound => NotFound(result.Errors),
             ErrorKey.AlreadyExists => Conflict(result.Errors),
-            ErrorKey.Banned => StatusCode(StatusCodes.Status403Forbidden, result.Errors),
             _ => BadRequest(result.Errors)
         };
     }

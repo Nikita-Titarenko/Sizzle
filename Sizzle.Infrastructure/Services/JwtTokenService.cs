@@ -12,14 +12,13 @@ public class JwtTokenService(IOptions<JwtTokenOptions> jwtBearerOptions) : IJwtT
 {
     private readonly JwtTokenOptions _jwtTokenOptions = jwtBearerOptions.Value;
 
-    public string GenerateToken(Guid userId, string role)
+    public string GenerateToken(Guid userId)
     {
         var descriptor = new SecurityTokenDescriptor
         {
             Subject = new ClaimsIdentity(
             [
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Role, role)
+                new Claim(ClaimTypes.NameIdentifier, userId.ToString())
             ]),
             Issuer = _jwtTokenOptions.Issuer,
             Audience = _jwtTokenOptions.Audience,

@@ -9,8 +9,4 @@ public class UserDto
     public required string Email { get; init; }
 
     public string? ImageUrl { get; set; }
-
-    public int TotalGames { get; init; }
-
-    public int TotalWins { get; init; }
 }

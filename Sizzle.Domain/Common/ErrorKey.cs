@@ -8,6 +8,5 @@ public enum ErrorKey
     Incorrect,
     AlreadyConfirmed,
     IncorrectLoginOrPassword,
-    BadRequest,
-    Banned
+    BadRequest
 }
