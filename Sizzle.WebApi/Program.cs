@@ -47,7 +47,8 @@ if (app.Environment.IsDevelopment())
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    dbContext.Database.EnsureCreated();
+    dbContext.Database.Migrate();
+    await DbInitializer.InitializeAsync(dbContext);
 }
 
 app.UseStaticFiles();

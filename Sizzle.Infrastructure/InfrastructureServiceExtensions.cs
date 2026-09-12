@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Options;
+using Sizzle.Infrastructure.Repositories;
 using Sizzle.Infrastructure.Services;
 
 namespace Sizzle.Infrastructure;
@@ -41,6 +43,10 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddScoped<IFileService, FileService>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
+
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+        services.AddScoped<IIngredientRepository, IngredientRepository>();
 
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));
