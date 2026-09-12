@@ -148,7 +148,6 @@ public class UserService(
         }
 
         var isPasswordCorrect = await userManager.CheckPasswordAsync(user, dto.Password);
-        var emailConfirmed = true;
 
         if (!isPasswordCorrect)
         {
@@ -172,7 +171,6 @@ public class UserService(
             user.VerificationCode = code;
             _ = await userManager.UpdateAsync(user);
             await SendRegistrationEmailAsync(dto.Email, code);
-            emailConfirmed = false;
         }
 
         return new Result<LoginResultDto>
@@ -180,8 +178,8 @@ public class UserService(
             Value = new LoginResultDto
             {
                 UserId = user.Id,
-                EmailConfirmed = emailConfirmed,
-                JwtToken = emailConfirmed ? jwtTokenService.GenerateToken(user.Id) : null
+                EmailConfirmed = user.EmailConfirmed,
+                JwtToken = user.EmailConfirmed ? jwtTokenService.GenerateToken(user.Id) : null
             }
         };
     }

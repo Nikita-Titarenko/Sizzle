@@ -6,5 +6,5 @@ public interface IFileService
 
     Task SaveFile(Stream fileStream, string path);
 
-    string GetFileUrl(string path);
+    string? GetFileUrl(string path);
 }
