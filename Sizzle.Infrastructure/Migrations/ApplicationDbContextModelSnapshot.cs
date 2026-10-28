@@ -217,15 +217,65 @@ namespace Sizzle.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("Sizzle.Domain.Entities.Ingredient", b =>
+            modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUserRecipe", b =>
+                {
+                    b.Property<Guid>("ApplicationUserId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("RecipeId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsLiked")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("ViewUpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("ApplicationUserId", "RecipeId");
+
+                    b.HasIndex("RecipeId");
+
+                    b.ToTable("ApplicationUserRecipes");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.Comment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("longtext");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("RecipeId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RecipeId", "CreatedAt");
+
+                    b.ToTable("Comments");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.Ingredient", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
 
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("char(36)");
@@ -237,10 +287,30 @@ namespace Sizzle.Infrastructure.Migrations
                     b.ToTable("Ingredients");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.IngredientTranslation", b =>
+                {
+                    b.Property<Guid>("IngredientId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("LanguageCode")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("IngredientId", "LanguageCode");
+
+                    b.ToTable("IngredientTranslations");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.Recipe", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("ApplicationUserId")
                         .HasColumnType("char(36)");
 
                     b.Property<DateTime>("CreationDate")
@@ -250,11 +320,19 @@ namespace Sizzle.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("FilePath")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("ViewCount")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("ApplicationUserId");
 
                     b.ToTable("Recipes");
                 });
@@ -288,6 +366,9 @@ namespace Sizzle.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
+
                     b.Property<Guid>("RecipeId")
                         .HasColumnType("char(36)");
 
@@ -296,6 +377,26 @@ namespace Sizzle.Infrastructure.Migrations
                     b.HasIndex("RecipeId");
 
                     b.ToTable("RecipeSteps");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.RecipeStepFile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("FilePath")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid>("RecipeStepId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipeStepId");
+
+                    b.ToTable("RecipeStepFiles");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
@@ -349,6 +450,51 @@ namespace Sizzle.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUserRecipe", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "ApplicationUser")
+                        .WithMany("ApplicationUserRecipes")
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sizzle.Domain.Entities.Recipe", "Recipe")
+                        .WithMany("ApplicationUserRecipes")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
+
+                    b.Navigation("Recipe");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.Comment", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.Comment", "Parent")
+                        .WithMany("Replies")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Sizzle.Domain.Entities.Recipe", "Recipe")
+                        .WithMany("Comments")
+                        .HasForeignKey("RecipeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("Comments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Parent");
+
+                    b.Navigation("Recipe");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.Ingredient", b =>
                 {
                     b.HasOne("Sizzle.Domain.Entities.Ingredient", "Parent")
@@ -357,6 +503,28 @@ namespace Sizzle.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Parent");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.IngredientTranslation", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.Ingredient", "Ingredient")
+                        .WithMany("Translations")
+                        .HasForeignKey("IngredientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Ingredient");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.Recipe", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "ApplicationUser")
+                        .WithMany("Recipes")
+                        .HasForeignKey("ApplicationUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ApplicationUser");
                 });
 
             modelBuilder.Entity("Sizzle.Domain.Entities.RecipeIngredient", b =>
@@ -389,18 +557,54 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("Recipe");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.RecipeStepFile", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.RecipeStep", "RecipeStep")
+                        .WithMany("Files")
+                        .HasForeignKey("RecipeStepId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RecipeStep");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUser", b =>
+                {
+                    b.Navigation("ApplicationUserRecipes");
+
+                    b.Navigation("Comments");
+
+                    b.Navigation("Recipes");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.Comment", b =>
+                {
+                    b.Navigation("Replies");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.Ingredient", b =>
                 {
                     b.Navigation("Children");
 
                     b.Navigation("RecipeIngredients");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("Sizzle.Domain.Entities.Recipe", b =>
                 {
+                    b.Navigation("ApplicationUserRecipes");
+
+                    b.Navigation("Comments");
+
                     b.Navigation("RecipeIngredients");
 
                     b.Navigation("RecipeSteps");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.RecipeStep", b =>
+                {
+                    b.Navigation("Files");
                 });
 #pragma warning restore 612, 618
         }

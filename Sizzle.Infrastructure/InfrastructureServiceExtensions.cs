@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Domain.Entities;
@@ -13,7 +14,7 @@ namespace Sizzle.Infrastructure;
 
 public static class InfrastructureServiceExtensions
 {
-    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfigurationManager configuration)
+    public static IServiceCollection AddInfrastructureServices(this IServiceCollection services, IConfigurationManager configuration, IHostEnvironment environment)
     {
         services.AddHttpContextAccessor();
 
@@ -21,6 +22,11 @@ public static class InfrastructureServiceExtensions
 
         services.AddDbContext<ApplicationDbContext>(options =>
         {
+            if (environment.IsDevelopment())
+            {
+                options.EnableSensitiveDataLogging();
+            }
+
             if (!string.IsNullOrWhiteSpace(connectionString))
             {
                 options.UseMySQL(connectionString);
@@ -47,6 +53,16 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IIngredientRepository, IngredientRepository>();
+        services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IRecipeRepository, RecipeRepository>();
+
+        services.AddScoped<IRecipeRepository, RecipeRepository>();
+
+        services.AddScoped<IRecipeRepository, RecipeRepository>();
+
+        services.AddScoped<IRecipeRepository, RecipeRepository>();
+
+        services.AddScoped<IRecipeRepository, RecipeRepository>();
 
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));

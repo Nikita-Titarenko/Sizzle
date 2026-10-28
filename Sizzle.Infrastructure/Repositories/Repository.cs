@@ -5,6 +5,8 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class Repository<T>(ApplicationDbContext dbContext) : IRepository<T> where T : class
 {
+    protected ApplicationDbContext DbContext { get; } = dbContext;
+
     protected DbSet<T> DbSet { get; set; } = dbContext.Set<T>();
 
     public void Add(T entity)

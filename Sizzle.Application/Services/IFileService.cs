@@ -7,4 +7,8 @@ public interface IFileService
     Task SaveFile(Stream fileStream, string path);
 
     string? GetFileUrl(string path);
+
+    bool IsValidMedia(string fileName, long length);
+
+    void DeleteFile(string path);
 }

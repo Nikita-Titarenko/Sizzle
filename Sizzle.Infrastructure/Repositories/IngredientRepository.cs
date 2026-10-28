@@ -6,17 +6,33 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class IngredientRepository(ApplicationDbContext dbContext) : Repository<Ingredient>(dbContext), IIngredientRepository
 {
-    public async Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize)
+    public Task<List<Ingredient>> GetByIdsAsync(Guid[] ids)
+    {
+        return DbSet.Where(i => ids.Contains(i.Id)).ToListAsync();
+    }
+
+    public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames)
+    {
+        return DbSet.Include(i => i.Translations)
+            .Where(i => i.Translations.Any(t => normalizedNames.Contains(t.Name.ToLower())))
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize, string languageCode)
     {
         var query = DbSet.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))
         {
             var normalizedSearch = search.Trim();
-            query = query.Where(i => i.Name.Contains(normalizedSearch));
+            query = query.Where(i =>
+                (i.Translations.Where(t => t.LanguageCode == languageCode).Select(t => t.Name).FirstOrDefault()
+                    ?? i.Translations.Where(t => t.LanguageCode == "en").Select(t => t.Name).FirstOrDefault()!)
+                .Contains(normalizedSearch));
         }
 
-        query = query.OrderBy(i => i.Name);
+        query = query.OrderBy(i => i.Translations.Where(t => t.LanguageCode == languageCode).Select(t => t.Name).FirstOrDefault()
+            ?? i.Translations.Where(t => t.LanguageCode == "en").Select(t => t.Name).FirstOrDefault());
 
         if (pageIndex.HasValue && pageSize.HasValue && pageIndex.Value >= 0 && pageSize.Value > 0)
         {
@@ -25,6 +41,6 @@ public class IngredientRepository(ApplicationDbContext dbContext) : Repository<I
                 .Take(pageSize.Value);
         }
 
-        return await query.ToListAsync();
+        return await query.Include(i => i.Translations).ToListAsync();
     }
 }

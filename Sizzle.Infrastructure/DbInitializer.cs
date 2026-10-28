@@ -14,32 +14,90 @@ public static class DbInitializer
 
     private static async Task InitializeDefaultIngredientsAsync(ApplicationDbContext context)
     {
-        if (await context.Ingredients.AnyAsync())
+        var assembly = Assembly.GetExecutingAssembly();
+        const string resourcePrefix = "Sizzle.Infrastructure.InitialData.ingredients";
+        var resources = assembly.GetManifestResourceNames()
+            .Where(name => name.StartsWith(resourcePrefix, StringComparison.Ordinal) && name.EndsWith(".json", StringComparison.Ordinal))
+            .ToArray();
+
+        var baseResource = $"{resourcePrefix}.json";
+        if (!resources.Contains(baseResource))
         {
-            return;
+            throw new InvalidOperationException($"Resource '{baseResource}' not found.");
         }
 
-        const string resourceName = "Sizzle.Infrastructure.InitialData.default-ingredients.json";
-        var json = await GetResourceAsync(resourceName);
-        var ingredients = JsonSerializer.Deserialize<List<Ingredient>>(json);
-
-        if (ingredients == null || ingredients.Count == 0)
+        var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        await using var baseStream = assembly.GetManifestResourceStream(baseResource)!;
+        var ingredients = await JsonSerializer.DeserializeAsync<List<IngredientSeed>>(baseStream, options)
+            ?? throw new InvalidOperationException($"Resource '{baseResource}' is empty.");
+        var seedIds = ingredients.Select(i => i.Id).ToHashSet();
+        if (seedIds.Count != ingredients.Count)
         {
-            return;
+            throw new InvalidOperationException($"Resource '{baseResource}' contains duplicate ingredient ids.");
         }
 
-        await context.Ingredients.AddRangeAsync(ingredients);
+        var existingIds = await context.Ingredients.Select(i => i.Id).ToHashSetAsync();
+        var newIngredients = ingredients
+            .Where(i => !existingIds.Contains(i.Id))
+            .Select(i => new Ingredient { Id = i.Id, ParentId = i.ParentId });
+        await context.Ingredients.AddRangeAsync(newIngredients);
+
+        var existingTranslations = (await context.IngredientTranslations
+            .Select(t => new { t.IngredientId, t.LanguageCode })
+            .ToListAsync())
+            .Select(t => (t.IngredientId, t.LanguageCode))
+            .ToHashSet();
+
+        foreach (var resource in resources.Where(name => name != baseResource))
+        {
+            var languageCode = resource[(resourcePrefix.Length + 1)..^".json".Length];
+            if (string.IsNullOrWhiteSpace(languageCode) || languageCode.Contains('.'))
+            {
+                continue;
+            }
+
+            await using var stream = assembly.GetManifestResourceStream(resource)!;
+            var translations = await JsonSerializer.DeserializeAsync<List<TranslationSeed>>(stream, options)
+                ?? throw new InvalidOperationException($"Resource '{resource}' is empty.");
+
+            foreach (var translation in translations)
+            {
+                if (!seedIds.Contains(translation.Id))
+                {
+                    throw new InvalidOperationException($"Unknown ingredient '{translation.Id}' in resource '{resource}'.");
+                }
+
+                if (string.IsNullOrWhiteSpace(translation.Name))
+                {
+                    throw new InvalidOperationException($"Missing ingredient name for '{translation.Id}' in resource '{resource}'.");
+                }
+
+                if (existingTranslations.Add((translation.Id, languageCode)))
+                {
+                    context.IngredientTranslations.Add(new IngredientTranslation
+                    {
+                        IngredientId = translation.Id,
+                        LanguageCode = languageCode,
+                        Name = translation.Name
+                    });
+                }
+            }
+        }
 
         await context.SaveChangesAsync();
     }
 
-    private static async Task<string> GetResourceAsync(string resourceName)
+    private sealed class IngredientSeed
     {
-        var assembly = Assembly.GetExecutingAssembly();
-        await using var stream = assembly.GetManifestResourceStream(resourceName)
-            ?? throw new InvalidOperationException($"Resource '{resourceName}' not found.");
+        public Guid Id { get; set; }
 
-        using var reader = new StreamReader(stream);
-        return await reader.ReadToEndAsync();
+        public Guid? ParentId { get; set; }
+    }
+
+    private sealed class TranslationSeed
+    {
+        public Guid Id { get; set; }
+
+        public string Name { get; set; } = string.Empty;
     }
 }

@@ -15,7 +15,8 @@ public class IngredientsController(IIngredientService ingredientService) : BaseC
         {
             Search = request.Search,
             PageIndex = request.PageIndex,
-            PageSize = request.PageSize
+            PageSize = request.PageSize,
+            LanguageCode = GetLanguageCode()
         });
 
         return Ok(ingredients);

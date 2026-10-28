@@ -12,6 +12,10 @@ public class FileService : IFileService
 
     private static readonly string[] ValidFileExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
 
+    private static readonly string[] ValidVideoExtensions = [".mp4", ".webm", ".mov", ".avi", ".mkv"];
+
+    private const long MaxVideoSize = 100 * 1024 * 1024;
+
     private readonly string _path;
 
     private readonly string _baseUrl;
@@ -83,9 +87,14 @@ public class FileService : IFileService
     {
         string? fileNameWithExtension = null;
 
+        if (Exists(path) && IsSupportedExtension(Path.GetExtension(path)))
+        {
+            fileNameWithExtension = path;
+        }
+
         foreach (var extension in ValidFileExtensions)
         {
-            if (Exists(path + extension))
+            if (fileNameWithExtension == null && Exists(path + extension))
             {
                 fileNameWithExtension = path + extension;
                 break;
@@ -102,13 +111,36 @@ public class FileService : IFileService
             fileNameWithExtension.Replace("\\", "/")).ToString();
     }
 
+    public bool IsValidMedia(string fileName, long length)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        return length > 0 && (ValidFileExtensions.Contains(extension) && length <= MaxFileSize
+            || ValidVideoExtensions.Contains(extension) && length <= MaxVideoSize);
+    }
+
+    public void DeleteFile(string path)
+    {
+        var fullPath = Path.GetFullPath(Path.Combine(_path, path));
+        var root = Path.GetFullPath(_path) + Path.DirectorySeparatorChar;
+        if (!fullPath.StartsWith(root, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Invalid file path.");
+        }
+
+        if (File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
+    }
+
+    private static bool IsSupportedExtension(string extension)
+    {
+        return ValidFileExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)
+            || ValidVideoExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
+    }
+
     private bool Exists(string fileName)
     {
         return File.Exists(Path.Combine(_path, fileName));
-    }
-
-    private void DeleteFile(string fileName)
-    {
-        File.Delete(Path.Combine(_path, fileName));
     }
 }

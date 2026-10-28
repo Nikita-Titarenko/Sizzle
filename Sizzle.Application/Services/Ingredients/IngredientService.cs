@@ -7,14 +7,16 @@ public class IngredientService(IIngredientRepository ingredientRepository) : IIn
 {
     public async Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto)
     {
-        var ingredients = (await ingredientRepository.GetAllOrderedAsync(dto.Search, dto.PageIndex, dto.PageSize)).ToList();
+        var ingredients = (await ingredientRepository.GetAllOrderedAsync(dto.Search, dto.PageIndex, dto.PageSize, dto.LanguageCode)).ToList();
 
         var allItems = ingredients.ToDictionary(
             ingredient => ingredient.Id,
             ingredient => new IngredientListItemDto
             {
                 Id = ingredient.Id,
-                Name = ingredient.Name
+                Name = ingredient.Translations.FirstOrDefault(t => t.LanguageCode == dto.LanguageCode)?.Name
+                    ?? ingredient.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.Name
+                    ?? string.Empty
             });
 
         var roots = new List<IngredientListItemDto>();

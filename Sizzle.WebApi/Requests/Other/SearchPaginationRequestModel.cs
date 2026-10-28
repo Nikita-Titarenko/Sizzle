@@ -4,7 +4,7 @@ public class SearchPaginationRequestModel
 {
     public string? Search { get; init; }
 
-    public int? PageIndex { get; init; }
+    public int PageIndex { get; init; } = 0;
 
-    public int? PageSize { get; init; }
+    public int PageSize { get; init; } = 10;
 }
