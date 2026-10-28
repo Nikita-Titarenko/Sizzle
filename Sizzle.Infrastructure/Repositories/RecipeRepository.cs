@@ -31,6 +31,11 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             query = query.Where(r => r.RecipeIngredients.Any(ingredient => ingredient.IngredientId == id));
         }
 
+        if (dto.CategoryIds.Length > 0)
+        {
+            query = query.Where(r => dto.CategoryIds.Contains(r.CategoryId));
+        }
+
         var totalSize = await query.CountAsync();
         var offset = (long)dto.PageIndex * dto.PageSize;
         if (offset > int.MaxValue)

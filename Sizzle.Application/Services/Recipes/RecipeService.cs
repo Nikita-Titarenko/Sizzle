@@ -9,7 +9,7 @@ using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Recipes;
 
-public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IOptions<BusinessLogicOptions> businessLogicOptions) : IRecipeService
+public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IOptions<BusinessLogicOptions> businessLogicOptions) : IRecipeService
 {
     public async Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto)
     {
@@ -22,6 +22,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Id = recipe.Id,
                 Name = recipe.Name,
                 Description = recipe.Description,
+                CookingTimeMinutes = recipe.CookingTimeMinutes,
+                CategoryId = recipe.CategoryId,
                 FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
                 ViewCount = recipe.ViewCount,
                 CreationDate = recipe.CreationDate,
@@ -35,6 +37,12 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
     public async Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto)
     {
+        var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes);
+        if (detailsError != null)
+        {
+            return new Result<RecipeDto> { Errors = [detailsError] };
+        }
+
         var mediaError = ValidateMedia(dto.File, dto.Steps);
         if (mediaError != null)
         {
@@ -53,6 +61,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             ApplicationUserId = dto.ApplicationUserId,
             Name = dto.Name,
             Description = dto.Description,
+            CookingTimeMinutes = dto.CookingTimeMinutes,
+            CategoryId = dto.CategoryId,
             CreationDate = DateTime.UtcNow,
             ViewCount = 0,
             RecipeSteps = dto.Steps.Select((step, index) => new RecipeStep
@@ -96,6 +106,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Id = recipe.Id,
                 Name = recipe.Name,
                 Description = recipe.Description,
+                CookingTimeMinutes = recipe.CookingTimeMinutes,
+                CategoryId = recipe.CategoryId,
                 FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
                 ViewCount = recipe.ViewCount,
                 CreationDate = recipe.CreationDate
@@ -123,6 +135,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", recipe.ApplicationUserId.ToString())),
                 Name = recipe.Name,
                 Description = recipe.Description,
+                CookingTimeMinutes = recipe.CookingTimeMinutes,
+                CategoryId = recipe.CategoryId,
                 FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
                 ViewCount = recipe.ViewCount,
                 CreationDate = recipe.CreationDate,
@@ -165,6 +179,12 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             };
         }
 
+        var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes);
+        if (detailsError != null)
+        {
+            return new Result<RecipeDto> { Errors = [detailsError] };
+        }
+
         var mediaError = ValidateMedia(dto.File, dto.Steps);
         if (mediaError != null)
         {
@@ -179,6 +199,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
         recipe.Name = dto.Name;
         recipe.Description = dto.Description;
+        recipe.CookingTimeMinutes = dto.CookingTimeMinutes;
+        recipe.CategoryId = dto.CategoryId;
 
         var oldPaths = recipe.RecipeSteps.SelectMany(step => step.Files).Select(file => file.FilePath).ToList();
         recipeRepository.RemoveSteps(recipe.RecipeSteps.ToList());
@@ -245,6 +267,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Id = recipe.Id,
                 Name = recipe.Name,
                 Description = recipe.Description,
+                CookingTimeMinutes = recipe.CookingTimeMinutes,
+                CategoryId = recipe.CategoryId,
                 FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
                 ViewCount = recipe.ViewCount,
                 CreationDate = recipe.CreationDate
@@ -375,11 +399,28 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Id = recipe.Id,
                 Name = recipe.Name,
                 Description = recipe.Description,
+                CookingTimeMinutes = recipe.CookingTimeMinutes,
+                CategoryId = recipe.CategoryId,
                 FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
                 ViewCount = recipe.ViewCount,
                 CreationDate = recipe.CreationDate
             }
         };
+    }
+
+    private async Task<Error?> ValidateRecipeDetailsAsync(Guid categoryId, int cookingTimeMinutes)
+    {
+        if (cookingTimeMinutes <= 0)
+        {
+            return new Error { Message = "Cooking time must be greater than zero", Key = ErrorKey.BadRequest };
+        }
+
+        if (categoryId == Guid.Empty || !await categoryRepository.ExistsAsync(categoryId))
+        {
+            return new Error { Message = "Category not found", Key = ErrorKey.NotFound };
+        }
+
+        return null;
     }
 
     private Error? ValidateMedia(RecipeMediaUploadDto? file, RecipeStepInputDto[] steps)

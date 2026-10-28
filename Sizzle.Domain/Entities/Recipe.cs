@@ -12,6 +12,12 @@ public class Recipe
 
     public string Description { get; set; } = string.Empty;
 
+    public int CookingTimeMinutes { get; set; }
+
+    public Guid CategoryId { get; set; }
+
+    public Category Category { get; set; } = null!;
+
     public string? FilePath { get; set; }
 
     public int ViewCount { get; set; }

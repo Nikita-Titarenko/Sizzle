@@ -8,6 +8,10 @@ public class RecipeDto
 
     public string Description { get; init; } = string.Empty;
 
+    public int CookingTimeMinutes { get; init; }
+
+    public Guid CategoryId { get; init; }
+
     public string? FileUrl { get; init; }
 
     public int ViewCount { get; init; }

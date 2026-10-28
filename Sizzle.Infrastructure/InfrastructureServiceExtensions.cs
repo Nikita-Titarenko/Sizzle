@@ -54,6 +54,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IIngredientRepository, IngredientRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IUserFollowerRepository, UserFollowerRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();

@@ -10,6 +10,10 @@ public class UpdateRecipeDto
 
     public required string Description { get; init; }
 
+    public required int CookingTimeMinutes { get; init; }
+
+    public required Guid CategoryId { get; init; }
+
     public RecipeMediaUploadDto? File { get; init; }
 
     public RecipeStepInputDto[] Steps { get; init; } = [];

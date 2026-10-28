@@ -18,6 +18,7 @@ public class RecipesController(IRecipeService recipeService) : BaseController
         var page = await recipeService.GetRecipesAsync(new GetRecipesDto
         {
             IngredientIds = request.IngredientIds,
+            CategoryIds = request.CategoryIds,
             Search = request.Search,
             PageIndex = request.PageIndex,
             PageSize = request.PageSize,
@@ -36,6 +37,7 @@ public class RecipesController(IRecipeService recipeService) : BaseController
         var page = await recipeService.GetRecipesAsync(new GetRecipesDto
         {
             IngredientIds = request.IngredientIds,
+            CategoryIds = request.CategoryIds,
             Search = request.Search,
             PageIndex = request.PageIndex,
             PageSize = request.PageSize,
@@ -57,6 +59,8 @@ public class RecipesController(IRecipeService recipeService) : BaseController
             ApplicationUserId = GetUserId(),
             Name = request.Name,
             Description = request.Description,
+            CookingTimeMinutes = request.CookingTimeMinutes,
+            CategoryId = request.CategoryId,
             File = ToUpload(request.File),
             Steps = request.Steps.Select(step => new RecipeStepInputDto
             {
@@ -83,6 +87,8 @@ public class RecipesController(IRecipeService recipeService) : BaseController
             ApplicationUserId = GetUserId(),
             Name = request.Name,
             Description = request.Description,
+            CookingTimeMinutes = request.CookingTimeMinutes,
+            CategoryId = request.CategoryId,
             File = ToUpload(request.File),
             Steps = request.Steps.Select(step => new RecipeStepInputDto
             {

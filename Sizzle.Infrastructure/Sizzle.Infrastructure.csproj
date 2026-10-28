@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <EmbeddedResource Include="InitialData\ingredients*.json" WithCulture="false" />
+    <EmbeddedResource Include="InitialData\categories*.json" WithCulture="false" />
   </ItemGroup>
 
   <ItemGroup>

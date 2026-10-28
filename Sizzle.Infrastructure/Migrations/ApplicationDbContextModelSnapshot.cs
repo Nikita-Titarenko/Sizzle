@@ -238,6 +238,34 @@ namespace Sizzle.Infrastructure.Migrations
                     b.ToTable("ApplicationUserRecipes");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Categories");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.CategoryTranslation", b =>
+                {
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("LanguageCode")
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("CategoryId", "LanguageCode");
+
+                    b.ToTable("CategoryTranslations");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.Comment", b =>
                 {
                     b.Property<Guid>("Id")
@@ -313,6 +341,12 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<Guid>("ApplicationUserId")
                         .HasColumnType("char(36)");
 
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("CookingTimeMinutes")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreationDate")
                         .HasColumnType("datetime(6)");
 
@@ -333,6 +367,8 @@ namespace Sizzle.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ApplicationUserId");
+
+                    b.HasIndex("CategoryId");
 
                     b.ToTable("Recipes");
                 });
@@ -487,6 +523,17 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("Recipe");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.CategoryTranslation", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.Category", "Category")
+                        .WithMany("Translations")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.Comment", b =>
                 {
                     b.HasOne("Sizzle.Domain.Entities.Comment", "Parent")
@@ -542,7 +589,15 @@ namespace Sizzle.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Sizzle.Domain.Entities.Category", "Category")
+                        .WithMany("Recipes")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.Navigation("ApplicationUser");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("Sizzle.Domain.Entities.RecipeIngredient", b =>
@@ -616,6 +671,13 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("Following");
 
                     b.Navigation("Recipes");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.Category", b =>
+                {
+                    b.Navigation("Recipes");
+
+                    b.Navigation("Translations");
                 });
 
             modelBuilder.Entity("Sizzle.Domain.Entities.Comment", b =>

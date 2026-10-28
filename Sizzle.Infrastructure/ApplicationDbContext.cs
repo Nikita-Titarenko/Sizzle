@@ -16,6 +16,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<IngredientTranslation> IngredientTranslations { get; set; }
 
+    public DbSet<Category> Categories { get; set; }
+
+    public DbSet<CategoryTranslation> CategoryTranslations { get; set; }
+
     public DbSet<RecipeIngredient> RecipeIngredients { get; set; }
 
     public DbSet<RecipeStep> RecipeSteps { get; set; }
@@ -34,6 +38,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(r => r.ApplicationUser)
             .WithMany(u => u.Recipes)
             .HasForeignKey(r => r.ApplicationUserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Recipe>()
+            .HasOne(r => r.Category)
+            .WithMany(c => c.Recipes)
+            .HasForeignKey(r => r.CategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<CategoryTranslation>()
+            .HasKey(t => new { t.CategoryId, t.LanguageCode });
+
+        builder.Entity<CategoryTranslation>()
+            .HasOne(t => t.Category)
+            .WithMany(c => c.Translations)
+            .HasForeignKey(t => t.CategoryId)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<ApplicationUserRecipe>()
