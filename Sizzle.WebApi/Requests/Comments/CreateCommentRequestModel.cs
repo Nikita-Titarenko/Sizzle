@@ -4,8 +4,6 @@ namespace Sizzle.WebApi.Requests.Comments;
 
 public class CreateCommentRequestModel
 {
-    public required Guid RecipeId { get; init; }
-
     public Guid? ParentId { get; init; }
 
     [Required]

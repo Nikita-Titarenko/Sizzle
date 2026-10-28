@@ -8,7 +8,7 @@ using Sizzle.WebApi.Requests.Recipes;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public class RecipesController(IRecipeService recipeService, IConfiguration configuration) : BaseController
+public class RecipesController(IRecipeService recipeService) : BaseController
 {
     [HttpGet]
     [ProducesResponseType(typeof(PageResponse<RecipeDto>), StatusCodes.Status200OK)]
@@ -140,12 +140,10 @@ public class RecipesController(IRecipeService recipeService, IConfiguration conf
     [ProducesResponseType(typeof(RecipeDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<RecipeDto>> UpdateView(Guid recipeId)
     {
-        var viewUpdateIntervalMinutes = configuration.GetValue<int>("BusinessLogic:RecipeViewUpdateIntervalMinutes");
         var result = await recipeService.UpdateViewAsync(new UpdateRecipeViewDto
         {
             RecipeId = recipeId,
-            ApplicationUserId = GetUserId(),
-            ViewUpdateIntervalMinutes = viewUpdateIntervalMinutes
+            ApplicationUserId = GetUserId()
         });
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);

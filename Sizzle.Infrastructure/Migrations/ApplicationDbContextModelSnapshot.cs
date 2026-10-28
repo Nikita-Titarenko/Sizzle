@@ -399,6 +399,24 @@ namespace Sizzle.Infrastructure.Migrations
                     b.ToTable("RecipeStepFiles");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.UserFollower", b =>
+                {
+                    b.Property<Guid>("FollowerId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("FollowingId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.HasKey("FollowerId", "FollowingId");
+
+                    b.HasIndex("FollowingId");
+
+                    b.ToTable("UserFollowers");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<System.Guid>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole<System.Guid>", null)
@@ -568,11 +586,34 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("RecipeStep");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.UserFollower", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "Follower")
+                        .WithMany("Following")
+                        .HasForeignKey("FollowerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "Following")
+                        .WithMany("Followers")
+                        .HasForeignKey("FollowingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Follower");
+
+                    b.Navigation("Following");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUser", b =>
                 {
                     b.Navigation("ApplicationUserRecipes");
 
                     b.Navigation("Comments");
+
+                    b.Navigation("Followers");
+
+                    b.Navigation("Following");
 
                     b.Navigation("Recipes");
                 });

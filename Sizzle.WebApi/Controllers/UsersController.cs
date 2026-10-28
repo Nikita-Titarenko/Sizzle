@@ -7,8 +7,26 @@ using Sizzle.WebApi.Requests.Users;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public class UsersController(IUserService userService) : BaseController
+public class UsersController(IUserService userService, IUserFollowerService followerService) : BaseController
 {
+    [HttpPost("{userId:guid}/follow")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<ActionResult> Follow(Guid userId)
+    {
+        var result = await followerService.FollowAsync(GetUserId(), userId);
+        return !result.IsSuccess ? HandleErrors(result) : NoContent();
+    }
+
+    [HttpDelete("{userId:guid}/follow")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<ActionResult> Unfollow(Guid userId)
+    {
+        var result = await followerService.UnfollowAsync(GetUserId(), userId);
+        return !result.IsSuccess ? HandleErrors(result) : NoContent();
+    }
+
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterResultDto), StatusCodes.Status202Accepted)]
     public async Task<ActionResult<RegisterResultDto>> RegisterUser(RegisterUserRequestModel request)

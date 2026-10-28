@@ -79,6 +79,7 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
     public Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId)
     {
         var query = DbSet.AsNoTracking()
+            .Include(r => r.ApplicationUser)
             .Include(r => r.RecipeSteps).ThenInclude(step => step.Files)
             .Include(r => r.RecipeIngredients).ThenInclude(link => link.Ingredient)
                 .ThenInclude(ingredient => ingredient.Translations)

@@ -13,4 +13,8 @@ public class ApplicationUser : IdentityUser<Guid>
     public ICollection<ApplicationUserRecipe> ApplicationUserRecipes { get; set; } = [];
 
     public ICollection<Comment> Comments { get; set; } = [];
+
+    public ICollection<UserFollower> Followers { get; set; } = [];
+
+    public ICollection<UserFollower> Following { get; set; } = [];
 }

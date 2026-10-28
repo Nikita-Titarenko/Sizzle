@@ -3,11 +3,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Sizzle.Infrastructure;
+using Sizzle.Application.Services.Recipes;
+using Sizzle.WebApi.Hubs;
+using Sizzle.WebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
+builder.Services.AddSignalR();
+builder.Services.AddScoped<IRecipeNotificationSender, RecipeNotificationSender>();
 
 builder.Services
     .AddInfrastructureServices(builder.Configuration, builder.Environment)
@@ -25,6 +30,20 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                if (context.Request.Path.StartsWithSegments("/hubs/recipes")
+                    && context.Request.Query.TryGetValue("access_token", out var accessToken))
+                {
+                    context.Token = accessToken;
+                }
+
+                return Task.CompletedTask;
+            }
+        };
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuerSigningKey = true,
@@ -58,5 +77,6 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<RecipeNotificationsHub>("/hubs/recipes");
 
 app.Run();

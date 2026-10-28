@@ -1,21 +1,32 @@
+using Sizzle.Application.Dtos;
 using Sizzle.Application.Dtos.Comments;
 using Sizzle.Application.Repositories;
+using Sizzle.Application.Services;
 using Sizzle.Domain.Common;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Comments;
 
-public class CommentService(ICommentRepository commentRepository, IRecipeRepository recipeRepository, IUnitOfWork unitOfWork) : ICommentService
+public class CommentService(ICommentRepository commentRepository, IRecipeRepository recipeRepository, IUnitOfWork unitOfWork, IFileService fileService) : ICommentService
 {
-    public async Task<Result<IReadOnlyList<CommentDto>>> GetByRecipeIdAsync(Guid recipeId)
+    public async Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize)
     {
         if (!await recipeRepository.Exists(recipeId))
         {
-            return new Result<IReadOnlyList<CommentDto>> { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
+            return new Result<PageResponse<CommentDto>> { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
         }
 
-        var comments = await commentRepository.GetByRecipeIdAsync(recipeId);
-        return new Result<IReadOnlyList<CommentDto>> { Value = comments.Select(ToDto).ToList() };
+        var page = await commentRepository.GetByRecipeIdAsync(recipeId, pageIndex, pageSize);
+        return new Result<PageResponse<CommentDto>>
+        {
+            Value = new PageResponse<CommentDto>
+            {
+                Data = page.Data.Select(comment => ToDto(comment)).ToList(),
+                TotalSize = page.TotalSize,
+                PageIndex = page.PageIndex,
+                PageSize = page.PageSize
+            }
+        };
     }
 
     public async Task<Result<CommentDto>> CreateAsync(CreateCommentDto dto)
@@ -57,7 +68,8 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
 
         commentRepository.Add(comment);
         await unitOfWork.CommitAsync();
-        return new Result<CommentDto> { Value = ToDto(comment) };
+        var userName = await commentRepository.GetUserNameAsync(dto.UserId);
+        return new Result<CommentDto> { Value = ToDto(comment, userName) };
     }
 
     public async Task<Result<CommentDto>> UpdateAsync(Guid commentId, Guid userId, string content)
@@ -68,7 +80,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             return new Result<CommentDto> { Errors = [contentError] };
         }
 
-        var comment = await commentRepository.GetAsync(commentId);
+        var comment = await commentRepository.GetWithUserAsync(commentId);
         if (comment == null)
         {
             return new Result<CommentDto> { Errors = [new Error { Message = "Comment not found", Key = ErrorKey.NotFound }] };
@@ -109,7 +121,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             : null;
     }
 
-    private static CommentDto ToDto(Comment comment)
+    private CommentDto ToDto(Comment comment, string? userName = null)
     {
         return new CommentDto
         {
@@ -118,6 +130,8 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             Content = comment.Content,
             CreatedAt = comment.CreatedAt,
             UserId = comment.UserId,
+            UserName = userName ?? comment.User?.Name ?? string.Empty,
+            UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", comment.UserId.ToString())),
             RecipeId = comment.RecipeId
         };
     }

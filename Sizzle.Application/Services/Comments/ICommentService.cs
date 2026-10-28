@@ -1,3 +1,4 @@
+using Sizzle.Application.Dtos;
 using Sizzle.Application.Dtos.Comments;
 using Sizzle.Domain.Common;
 
@@ -5,7 +6,7 @@ namespace Sizzle.Application.Services.Comments;
 
 public interface ICommentService
 {
-    Task<Result<IReadOnlyList<CommentDto>>> GetByRecipeIdAsync(Guid recipeId);
+    Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize);
 
     Task<Result<CommentDto>> CreateAsync(CreateCommentDto dto);
 

@@ -14,6 +14,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IIngredientService, IngredientService>();
         services.AddScoped<IRecipeService, RecipeService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<IUserFollowerService, UserFollowerService>();
         return services;
     }
 }

@@ -5,6 +5,4 @@ public class UpdateRecipeViewDto
     public required Guid RecipeId { get; init; }
 
     public required Guid ApplicationUserId { get; init; }
-
-    public required int ViewUpdateIntervalMinutes { get; init; }
 }

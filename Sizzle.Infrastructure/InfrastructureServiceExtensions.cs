@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Domain.Entities;
@@ -54,6 +55,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IIngredientRepository, IngredientRepository>();
         services.AddScoped<ICommentRepository, CommentRepository>();
+        services.AddScoped<IUserFollowerRepository, UserFollowerRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
 
         services.AddScoped<IRecipeRepository, RecipeRepository>();
@@ -66,6 +68,7 @@ public static class InfrastructureServiceExtensions
 
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));
+        services.Configure<BusinessLogicOptions>(configuration.GetSection("BusinessLogic"));
 
         return services;
     }

@@ -24,6 +24,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<Comment> Comments { get; set; }
 
+    public DbSet<UserFollower> UserFollowers { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -48,6 +50,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(r => r.ApplicationUserRecipes)
             .HasForeignKey(aur => aur.RecipeId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<UserFollower>()
+            .HasKey(follow => new { follow.FollowerId, follow.FollowingId });
+
+        builder.Entity<UserFollower>()
+            .HasOne(follow => follow.Follower)
+            .WithMany(user => user.Following)
+            .HasForeignKey(follow => follow.FollowerId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<UserFollower>()
+            .HasOne(follow => follow.Following)
+            .WithMany(user => user.Followers)
+            .HasForeignKey(follow => follow.FollowingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<UserFollower>()
+            .HasIndex(follow => follow.FollowingId);
 
         builder.Entity<RecipeIngredient>()
             .HasKey(ri => new { ri.RecipeId, ri.IngredientId });

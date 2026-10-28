@@ -1,5 +1,7 @@
+using Microsoft.Extensions.Options;
 using Sizzle.Application.Dtos;
 using Sizzle.Application.Dtos.Recipes;
+using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Domain.Common;
@@ -7,7 +9,7 @@ using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Recipes;
 
-public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, IUnitOfWork unitOfWork, IFileService fileService) : IRecipeService
+public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IOptions<BusinessLogicOptions> businessLogicOptions) : IRecipeService
 {
     public async Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto)
     {
@@ -85,6 +87,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             throw;
         }
 
+        await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
+
         return new Result<RecipeDto>
         {
             Value = new RecipeDto
@@ -115,6 +119,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             Value = new RecipeDetailsDto
             {
                 Id = recipe.Id,
+                UserName = recipe.ApplicationUser?.Name ?? string.Empty,
+                UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", recipe.ApplicationUserId.ToString())),
                 Name = recipe.Name,
                 Description = recipe.Description,
                 FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
@@ -352,7 +358,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         else
         {
             var canUpdateView = !userRecipe.ViewUpdatedAt.HasValue
-                || now >= userRecipe.ViewUpdatedAt.Value.AddMinutes(dto.ViewUpdateIntervalMinutes);
+                || now >= userRecipe.ViewUpdatedAt.Value.AddMinutes(businessLogicOptions.Value.RecipeViewUpdateIntervalMinutes);
 
             if (canUpdateView)
             {
