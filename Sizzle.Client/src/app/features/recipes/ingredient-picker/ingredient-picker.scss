@@ -1,0 +1,18 @@
+.picker input {
+  width: 100%;
+}
+
+.suggestions {
+  max-height: 220px;
+  margin: 4px 0 0;
+  padding: 8px;
+  overflow: auto;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+
+  li {
+    padding: 4px 0;
+  }
+}

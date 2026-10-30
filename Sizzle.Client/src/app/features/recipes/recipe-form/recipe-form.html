@@ -43,27 +43,7 @@
         <button type="button" class="link" (click)="removeIngredient(i.id)">Remove</button>
       </div>
     }
-    <div class="picker">
-      <input
-        type="search"
-        name="ingredientSearch"
-        placeholder="Search ingredients to add…"
-        [ngModel]="ingredientSearch()"
-        (ngModelChange)="searchIngredients($event)"
-      />
-      @if (suggestions().length) {
-        <ul class="suggestions">
-          @for (s of suggestions(); track s.id) {
-            <li>
-              <button type="button" class="link" (click)="addIngredient(s)">
-                {{ s.name }}
-                <span class="muted">({{ s.unit }})</span>
-              </button>
-            </li>
-          }
-        </ul>
-      }
-    </div>
+    <app-ingredient-picker [excludeIds]="ingredientIds()" (picked)="addIngredient($event)" />
 
     <h3>Not in the list? Add a new ingredient</h3>
     @for (n of newIngredients(); track $index; let idx = $index) {

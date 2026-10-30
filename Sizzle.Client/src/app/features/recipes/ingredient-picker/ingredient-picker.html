@@ -1,0 +1,21 @@
+<div class="picker">
+  <input
+    type="search"
+    name="ingredientSearch"
+    placeholder="Search ingredients to add…"
+    [ngModel]="term()"
+    (ngModelChange)="onTermChange($event)"
+  />
+  @if (suggestions().length) {
+    <ul class="suggestions">
+      @for (s of suggestions(); track s.id) {
+        <li>
+          <button type="button" class="link" (click)="pick(s)">
+            {{ s.name }}
+            <span class="muted">({{ s.unit }})</span>
+          </button>
+        </li>
+      }
+    </ul>
+  }
+</div>

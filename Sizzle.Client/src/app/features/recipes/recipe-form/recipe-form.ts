@@ -1,11 +1,10 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { Category, Ingredient, IngredientUnit } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
+import { IngredientPicker } from '../ingredient-picker/ingredient-picker';
 
 interface StepDraft {
   name: string;
@@ -28,14 +27,13 @@ interface NewIngredientDraft {
 
 @Component({
   selector: 'app-recipe-form',
-  imports: [FormsModule],
+  imports: [FormsModule, IngredientPicker],
   templateUrl: './recipe-form.html',
   styleUrl: './recipe-form.scss',
 })
 export class RecipeForm {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
-  private readonly search$ = new Subject<string>();
 
   readonly id = input<string>();
   readonly units: IngredientUnit[] = ['Grams', 'Milliliters', 'Pieces'];
@@ -44,8 +42,6 @@ export class RecipeForm {
   readonly ingredients = signal<IngredientDraft[]>([]);
   readonly newIngredients = signal<NewIngredientDraft[]>([]);
   readonly steps = signal<StepDraft[]>([{ name: '', description: '', files: [] }]);
-  readonly ingredientSearch = signal('');
-  readonly results = signal<Ingredient[]>([]);
   readonly error = signal('');
   readonly busy = signal(false);
 
@@ -55,22 +51,10 @@ export class RecipeForm {
   categoryId = '';
   cover: File | null = null;
 
-  readonly suggestions = computed(() => {
-    const chosen = new Set(this.ingredients().map((i) => i.id));
-    return flatten(this.results()).filter((i) => !chosen.has(i.id));
-  });
+  readonly ingredientIds = computed(() => this.ingredients().map((i) => i.id));
 
   constructor() {
     this.api.getCategories().subscribe((categories) => this.categories.set(categories));
-    this.search$
-      .pipe(
-        debounceTime(250),
-        distinctUntilChanged(),
-        switchMap((term) => this.api.getIngredients(term)),
-        takeUntilDestroyed(),
-      )
-      .subscribe((items) => this.results.set(items));
-
     effect(() => {
       const id = this.id();
       if (id) {
@@ -89,15 +73,6 @@ export class RecipeForm {
     );
   }
 
-  searchIngredients(term: string): void {
-    this.ingredientSearch.set(term);
-    if (term.trim()) {
-      this.search$.next(term.trim());
-    } else {
-      this.results.set([]);
-    }
-  }
-
   addIngredient(ingredient: Ingredient): void {
     this.ingredients.update((list) => [
       ...list,
@@ -110,10 +85,7 @@ export class RecipeForm {
   }
 
   addNewIngredient(): void {
-    this.newIngredients.update((list) => [
-      ...list,
-      { name: this.ingredientSearch(), unit: 'Grams', quantity: 100 },
-    ]);
+    this.newIngredients.update((list) => [...list, { name: '', unit: 'Grams', quantity: 100 }]);
   }
 
   removeNewIngredient(index: number): void {
@@ -178,8 +150,4 @@ export class RecipeForm {
       error: (err) => this.error.set(errorMessage(err)),
     });
   }
-}
-
-function flatten(items: Ingredient[]): Ingredient[] {
-  return items.flatMap((item) => [item, ...flatten(item.children ?? [])]);
 }
