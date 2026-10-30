@@ -5,8 +5,9 @@ import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { RecipeDetails } from '../../../core/models';
+import { isVideoUrl } from '../../../core/utils/media';
 import { errorMessage } from '../../../core/utils/error-message';
-import { CommentSection } from '../comment-section/comment-section';
+import { CommentSection } from '../../../shared/components/comment-section/comment-section';
 import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 
@@ -81,7 +82,5 @@ export class RecipeDetail {
     });
   }
 
-  isVideo(url: string): boolean {
-    return /\.(mp4|webm|mov|avi|mkv)$/i.test(url);
-  }
+  protected readonly isVideo = isVideoUrl;
 }

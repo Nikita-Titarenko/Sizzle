@@ -11,12 +11,12 @@ import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 const PAGE_SIZE = 12;
 
 @Component({
-  selector: 'app-recipe-list',
+  selector: 'app-explore',
   imports: [FormsModule, RecipeGrid, Pager],
-  templateUrl: './recipe-list.html',
-  styleUrl: './recipe-list.scss',
+  templateUrl: './explore.html',
+  styleUrl: './explore.scss',
 })
-export class RecipeList {
+export class Explore {
   private readonly catalogApi = inject(CatalogApi);
   private readonly recipesApi = inject(RecipesApi);
   private readonly reload$ = new Subject<void>();

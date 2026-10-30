@@ -3,7 +3,9 @@
 }
 @if (recipe(); as r) {
   <article class="detail">
-    @if (r.fileUrl) {
+    @if (isVideo(r.fileUrl)) {
+      <video class="cover" [src]="r.fileUrl" controls playsinline></video>
+    } @else if (r.fileUrl) {
       <img class="cover" [src]="r.fileUrl" [alt]="r.name" />
     }
     <div class="row title">
