@@ -55,9 +55,9 @@
       @if (selectedIngredients().length) {
         <div class="selected">
           @for (ingredient of selectedIngredients(); track ingredient.id) {
-            <span class="selected-chip">
+            <span class="removable-chip">
               @if (ingredient.parentName) {
-                <span class="parent">{{ ingredient.parentName }} ›</span>
+                <span class="chip-context">{{ ingredient.parentName }} ›</span>
               }
               {{ ingredient.name }}
               <button

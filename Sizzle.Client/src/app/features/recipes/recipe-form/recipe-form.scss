@@ -103,32 +103,6 @@ h2 {
   }
 }
 
-.parent-chip {
-  display: inline-flex;
-  align-items: center;
-  align-self: flex-start;
-  gap: 6px;
-  padding: 4px 6px 4px 12px;
-  border-radius: 999px;
-  background: #fff1e6;
-  color: var(--accent-dark);
-  font-weight: 600;
-
-  button {
-    display: inline-flex;
-    padding: 3px;
-    border: none;
-    border-radius: 50%;
-    background: none;
-    color: inherit;
-    cursor: pointer;
-
-    &:hover {
-      background: rgb(0 0 0 / 0.08);
-    }
-  }
-}
-
 .remove-new {
   align-self: flex-start;
   color: var(--danger);
@@ -163,4 +137,8 @@ h2 {
 
 .btn app-icon {
   margin-right: 4px;
+}
+
+.parent-chip {
+  align-self: flex-start;
 }

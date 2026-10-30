@@ -118,7 +118,7 @@
           <div class="field">
             <span class="field-label">Parent (optional)</span>
             @if (n.parent) {
-              <span class="parent-chip">
+              <span class="removable-chip parent-chip">
                 {{ n.parent.name }}
                 <button type="button" aria-label="Remove parent" (click)="setParent(n, null)">
                   <app-icon name="close" />
