@@ -1,16 +1,32 @@
 using System.Text;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Sizzle.Domain.Common;
+using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure;
 using Sizzle.Application.Services.Recipes;
+using Sizzle.Application.Services;
 using Sizzle.WebApi.Hubs;
+using Sizzle.WebApi.ServiceExtensions;
 using Sizzle.WebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.Configure<ApiBehaviorOptions>(options =>
+{
+    options.InvalidModelStateResponseFactory = context => new BadRequestObjectResult(
+        context.ModelState.SelectMany(entry => entry.Value?.Errors.Select(error => new Error
+        {
+            Key = ErrorKey.BadRequest,
+            Field = entry.Key,
+            Message = string.IsNullOrWhiteSpace(error.ErrorMessage) ? "Invalid value" : error.ErrorMessage
+        }) ?? []).ToList());
+});
+builder.Services.AddSwaggerDocumentation();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IRecipeNotificationSender, RecipeNotificationSender>();
 
@@ -41,6 +57,23 @@ builder.Services
                 }
 
                 return Task.CompletedTask;
+            },
+            OnChallenge = async context =>
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                await context.Response.WriteAsJsonAsync(new[]
+                {
+                    new Error { Key = ErrorKey.Incorrect, Message = "Authentication required or token invalid" }
+                });
+            },
+            OnForbidden = async context =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                await context.Response.WriteAsJsonAsync(new[]
+                {
+                    new Error { Key = ErrorKey.Forbidden, Message = "Access denied" }
+                });
             }
         };
 
@@ -58,16 +91,19 @@ builder.Services
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-}
+app.UseSwaggerDocumentation();
 
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.Migrate();
     await DbInitializer.InitializeAsync(dbContext);
+    if (app.Environment.IsDevelopment() && app.Configuration.GetValue<bool>("TestData:Enabled"))
+    {
+        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+        var fileService = scope.ServiceProvider.GetRequiredService<IFileService>();
+        await TestDataInitializer.InitializeAsync(dbContext, userManager, fileService);
+    }
 }
 
 app.UseStaticFiles();

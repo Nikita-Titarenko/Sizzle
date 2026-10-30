@@ -4,12 +4,13 @@ using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
+using Sizzle.Application.Services.Ingredients;
 using Sizzle.Domain.Common;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Recipes;
 
-public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IOptions<BusinessLogicOptions> businessLogicOptions) : IRecipeService
+public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IOptions<BusinessLogicOptions> businessLogicOptions, IIngredientUnitFormatter unitFormatter) : IRecipeService
 {
     public async Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto)
     {
@@ -49,7 +50,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<RecipeDto> { Errors = [mediaError] };
         }
 
-        var ingredients = await ResolveIngredientIdsAsync(dto.IngredientIds, dto.NewIngredientNames);
+        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients);
         if (!ingredients.IsSuccess)
         {
             return new Result<RecipeDto> { Errors = ingredients.Errors };
@@ -72,7 +73,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Description = step.Description,
                 Position = index
             }).ToList(),
-            RecipeIngredients = ingredients.Value!.Select(id => new RecipeIngredient { IngredientId = id }).ToList()
+            RecipeIngredients = ingredients.Value!.Select(entry => new RecipeIngredient { IngredientId = entry.Key, Quantity = entry.Value }).ToList()
         };
 
         var savedPaths = new List<string>();
@@ -152,6 +153,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Ingredients = recipe.RecipeIngredients.Select(link => new RecipeIngredientDto
                 {
                     Id = link.IngredientId,
+                    Quantity = link.Quantity,
+                    Unit = unitFormatter.Format(link.Ingredient.Unit, dto.LanguageCode),
                     Name = link.Ingredient.Translations.FirstOrDefault(t => t.LanguageCode == dto.LanguageCode)?.Name
                         ?? link.Ingredient.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.Name
                         ?? string.Empty
@@ -191,7 +194,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<RecipeDto> { Errors = [mediaError] };
         }
 
-        var ingredients = await ResolveIngredientIdsAsync(dto.IngredientIds, dto.NewIngredientNames);
+        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients);
         if (!ingredients.IsSuccess)
         {
             return new Result<RecipeDto> { Errors = ingredients.Errors };
@@ -214,7 +217,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             Position = index
         }).ToList();
 
-        var selectedIds = ingredients.Value!.ToHashSet();
+        var selectedIds = ingredients.Value!.Keys.ToHashSet();
         var removedIngredients = recipe.RecipeIngredients.Where(link => !selectedIds.Contains(link.IngredientId)).ToList();
         recipeRepository.RemoveIngredients(removedIngredients);
         foreach (var link in removedIngredients)
@@ -222,10 +225,17 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             recipe.RecipeIngredients.Remove(link);
         }
 
-        var currentIds = recipe.RecipeIngredients.Select(link => link.IngredientId).ToHashSet();
-        foreach (var ingredientId in selectedIds.Except(currentIds))
+        var currentLinks = recipe.RecipeIngredients.ToDictionary(link => link.IngredientId);
+        foreach (var (ingredientId, quantity) in ingredients.Value)
         {
-            recipe.RecipeIngredients.Add(new RecipeIngredient { IngredientId = ingredientId });
+            if (currentLinks.TryGetValue(ingredientId, out var link))
+            {
+                link.Quantity = quantity;
+            }
+            else
+            {
+                recipe.RecipeIngredients.Add(new RecipeIngredient { IngredientId = ingredientId, Quantity = quantity });
+            }
         }
 
         var savedPaths = new List<string>();
@@ -460,52 +470,98 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
     }
 
-    private async Task<Result<Guid[]>> ResolveIngredientIdsAsync(Guid[] ingredientIds, string[] newIngredientNames)
+    private async Task<Result<Dictionary<Guid, int>>> ResolveIngredientsAsync(RecipeIngredientInputDto[] selectedIngredients, NewIngredientDto[] newIngredients)
     {
-        var ids = ingredientIds.Distinct().ToHashSet();
-        if (ids.Contains(Guid.Empty))
+        if (selectedIngredients.Any(ingredient => ingredient == null || ingredient.Id == Guid.Empty))
         {
-            return new Result<Guid[]> { Errors = [new Error { Message = "Invalid ingredient id", Key = ErrorKey.BadRequest }] };
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Invalid ingredient id", Key = ErrorKey.BadRequest }] };
         }
 
-        var existing = await ingredientRepository.GetByIdsAsync(ids.ToArray());
-        if (existing.Count != ids.Count)
+        if (selectedIngredients.Any(ingredient => ingredient.Quantity <= 0) || newIngredients.Any(ingredient => ingredient == null || ingredient.Quantity <= 0))
         {
-            return new Result<Guid[]> { Errors = [new Error { Message = "Ingredient not found", Key = ErrorKey.NotFound }] };
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Ingredient quantity must be greater than zero", Key = ErrorKey.BadRequest }] };
         }
 
-        if (newIngredientNames.Any(string.IsNullOrWhiteSpace))
+        if (selectedIngredients.Select(ingredient => ingredient.Id).Distinct().Count() != selectedIngredients.Length)
         {
-            return new Result<Guid[]> { Errors = [new Error { Message = "Ingredient name cannot be empty", Key = ErrorKey.BadRequest }] };
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Duplicate ingredient id", Key = ErrorKey.BadRequest }] };
         }
 
-        var names = newIngredientNames.Select(name => name.Trim())
-            .Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
-        if (names.Length == 0)
+        if (newIngredients.Any(ingredient => ingredient == null || string.IsNullOrWhiteSpace(ingredient.Name)))
         {
-            return new Result<Guid[]> { Value = ids.ToArray() };
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Ingredient name cannot be empty", Key = ErrorKey.BadRequest }] };
         }
 
-        var matched = await ingredientRepository.GetByNamesAsync(names.Select(name => name.ToLowerInvariant()).ToArray());
-        foreach (var name in names)
+        if (newIngredients.Any(ingredient => !Enum.IsDefined(ingredient.Unit)))
+        {
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Invalid ingredient unit", Key = ErrorKey.BadRequest }] };
+        }
+
+        var quantities = selectedIngredients.ToDictionary(ingredient => ingredient.Id, ingredient => ingredient.Quantity);
+        var ids = quantities.Keys.ToHashSet();
+        var parentIds = newIngredients.Where(ingredient => ingredient.ParentId.HasValue)
+            .Select(ingredient => ingredient.ParentId!.Value).Distinct().ToHashSet();
+        if (parentIds.Contains(Guid.Empty))
+        {
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Invalid parent ingredient id", Key = ErrorKey.BadRequest }] };
+        }
+
+        var existing = await ingredientRepository.GetByIdsAsync(ids.Concat(parentIds).Distinct().ToArray());
+        var existingIds = existing.Select(ingredient => ingredient.Id).ToHashSet();
+        if (!ids.IsSubsetOf(existingIds))
+        {
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Ingredient not found", Key = ErrorKey.NotFound }] };
+        }
+
+        if (!parentIds.IsSubsetOf(existingIds))
+        {
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Parent ingredient not found", Key = ErrorKey.NotFound }] };
+        }
+
+        if (existing.Any(ingredient => parentIds.Contains(ingredient.Id) && ingredient.ParentId.HasValue))
+        {
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Parent ingredient cannot have a parent", Key = ErrorKey.BadRequest }] };
+        }
+
+        var ingredientsToResolve = newIngredients
+            .Select(ingredient => new NewIngredientDto { Name = ingredient.Name.Trim(), ParentId = ingredient.ParentId, Unit = ingredient.Unit, Quantity = ingredient.Quantity })
+            .ToArray();
+        if (ingredientsToResolve.Length == 0)
+        {
+            return new Result<Dictionary<Guid, int>> { Value = quantities };
+        }
+
+        if (ingredientsToResolve.Select(ingredient => ingredient.Name).Distinct(StringComparer.OrdinalIgnoreCase).Count() != ingredientsToResolve.Length)
+        {
+            return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Duplicate ingredient name", Key = ErrorKey.BadRequest }] };
+        }
+
+        var matched = await ingredientRepository.GetByNamesAsync(ingredientsToResolve
+            .Select(ingredient => ingredient.Name.ToLowerInvariant()).Distinct().ToArray());
+        foreach (var input in ingredientsToResolve)
         {
             var ingredient = matched.FirstOrDefault(i => i.Translations.Any(t =>
-                string.Equals(t.Name, name, StringComparison.OrdinalIgnoreCase)));
+                string.Equals(t.Name, input.Name, StringComparison.OrdinalIgnoreCase)));
 
             if (ingredient == null)
             {
                 ingredient = new Ingredient
                 {
                     Id = Guid.NewGuid(),
-                    Translations = [new IngredientTranslation { LanguageCode = "en", Name = name }]
+                    ParentId = input.ParentId,
+                    Unit = input.Unit,
+                    Translations = [new IngredientTranslation { LanguageCode = "en", Name = input.Name }]
                 };
                 ingredientRepository.Add(ingredient);
                 matched.Add(ingredient);
             }
 
-            ids.Add(ingredient.Id);
+            if (!quantities.TryAdd(ingredient.Id, input.Quantity))
+            {
+                return new Result<Dictionary<Guid, int>> { Errors = [new Error { Message = "Duplicate ingredient", Key = ErrorKey.BadRequest }] };
+            }
         }
 
-        return new Result<Guid[]> { Value = ids.ToArray() };
+        return new Result<Dictionary<Guid, int>> { Value = quantities };
     }
 }

@@ -308,6 +308,9 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("char(36)");
 
+                    b.Property<int>("Unit")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ParentId");
@@ -380,6 +383,9 @@ namespace Sizzle.Infrastructure.Migrations
 
                     b.Property<Guid>("IngredientId")
                         .HasColumnType("char(36)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("int");
 
                     b.HasKey("RecipeId", "IngredientId");
 

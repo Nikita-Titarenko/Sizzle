@@ -4,6 +4,8 @@ public class Ingredient
 {
     public Guid Id { get; set; }
 
+    public IngredientUnit Unit { get; set; }
+
     public Guid? ParentId { get; set; }
 
     public Ingredient? Parent { get; set; }

@@ -1,0 +1,382 @@
+[
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000002",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000001",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000003",
+    "name": "Garlic Chicken and Rice",
+    "filePath": null,
+    "description": "Tender chicken and fluffy rice with garlic and bell pepper.",
+    "cookingTimeMinutes": 40,
+    "ingredients": [
+      { "ingredientId": "1784e7da-96d9-4f90-a560-f9cc1987d3be", "quantity": 400 },
+      { "ingredientId": "e41ce3ee-4f43-4515-b611-bf3b2f7fe88f", "quantity": 200 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 3 },
+      { "ingredientId": "6dc3f97d-0244-4db9-aa7f-57a8734eaf2c", "quantity": 1 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 20 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 5 }
+    ],
+    "steps": [
+      { "name": "Prepare the rice", "description": "Rinse the rice and cook until tender according to the package directions." },
+      { "name": "Sear the chicken", "description": "Cut the chicken into pieces and cook in oil until browned and fully cooked." },
+      { "name": "Finish the skillet", "description": "Add chopped pepper and garlic, cook until tender, then fold in the rice and season." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000003",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000012",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000015",
+    "name": "Lemon Salmon with Potatoes",
+    "description": "Roasted salmon served with crisp potatoes and lemon.",
+    "cookingTimeMinutes": 45,
+    "ingredients": [
+      { "ingredientId": "9ee9adf1-0ea8-45dd-a8b4-6528b2ba5f1d", "quantity": 350 },
+      { "ingredientId": "4d831c73-5433-45c9-888c-66489aa9aeb4", "quantity": 4 },
+      { "ingredientId": "1e2ca132-9aec-41a4-9f01-e21f036d8df9", "quantity": 1 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 25 },
+      { "ingredientId": "f98a9973-e25a-4de0-a42e-1a188f8109d3", "quantity": 10 }
+    ],
+    "steps": [
+      { "name": "Roast the potatoes", "description": "Cut the potatoes into wedges, coat with oil, and roast at 200 C for 25 minutes." },
+      { "name": "Cook the salmon", "description": "Place salmon alongside the potatoes and roast until it flakes easily, about 12 to 15 minutes." },
+      { "name": "Serve", "description": "Squeeze lemon over the fish and scatter chopped parsley on top." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000004",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000004",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000001",
+    "name": "Mushroom Spinach Omelette",
+    "description": "Soft eggs folded around sauteed mushrooms and spinach.",
+    "cookingTimeMinutes": 15,
+    "ingredients": [
+      { "ingredientId": "acecd984-b7e5-4cee-a313-e81edf455eff", "quantity": 3 },
+      { "ingredientId": "3f969cc5-2930-4e8a-85f2-cc6467342258", "quantity": 100 },
+      { "ingredientId": "90d44117-d3f0-4d47-b48c-91f835783d5a", "quantity": 50 },
+      { "ingredientId": "bfe30ce2-3e3d-473f-84de-f5fc986a40ca", "quantity": 15 }
+    ],
+    "steps": [
+      { "name": "Cook the vegetables", "description": "Saute sliced mushrooms in butter, then wilt the spinach." },
+      { "name": "Add the eggs", "description": "Beat the eggs and pour them into the skillet over the vegetables." },
+      { "name": "Fold and serve", "description": "Cook gently until set, fold the omelette, and serve warm." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000005",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000015",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000005",
+    "name": "Hearty Lentil Tomato Soup",
+    "description": "A comforting soup of lentils, tomatoes, carrots, and garlic.",
+    "cookingTimeMinutes": 50,
+    "ingredients": [
+      { "ingredientId": "6ea7a91d-1950-4cbb-8806-d24e52ea58ac", "quantity": 250 },
+      { "ingredientId": "f2a08840-0a95-46d8-b769-f8f2a8ef3f0f", "quantity": 3 },
+      { "ingredientId": "19d7c07a-5687-4605-9b92-4621639b6aba", "quantity": 2 },
+      { "ingredientId": "93fd58f7-24b0-42f4-ab65-af8c5f94d871", "quantity": 1 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 2 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 20 }
+    ],
+    "steps": [
+      { "name": "Prepare the vegetables", "description": "Dice the onion, carrots, and tomatoes; mince the garlic." },
+      { "name": "Build the soup", "description": "Soften the onion and carrots in oil, add garlic, tomatoes, lentils, and water." },
+      { "name": "Simmer", "description": "Simmer for about 35 minutes until the lentils are tender. Season and serve." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000006",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000010",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000006",
+    "name": "Cucumber Tomato Feta Salad",
+    "description": "Fresh cucumber and tomato salad with feta and lemon dressing.",
+    "cookingTimeMinutes": 15,
+    "ingredients": [
+      { "ingredientId": "e4df73de-1cac-4828-9050-ab7e4bf09fe9", "quantity": 1 },
+      { "ingredientId": "f2a08840-0a95-46d8-b769-f8f2a8ef3f0f", "quantity": 3 },
+      { "ingredientId": "062b7a9a-f0ca-4a81-8288-cd202215e7c2", "quantity": 120 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 25 },
+      { "ingredientId": "1e2ca132-9aec-41a4-9f01-e21f036d8df9", "quantity": 1 }
+    ],
+    "steps": [
+      { "name": "Chop the produce", "description": "Slice the cucumber and chop the tomatoes into bite-sized pieces." },
+      { "name": "Make the dressing", "description": "Whisk olive oil with lemon juice." },
+      { "name": "Assemble", "description": "Toss the vegetables with dressing and crumble feta over the top." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000007",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000006",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Beef and Pepper Skillet",
+    "description": "Quick seared beef with sweet peppers, onion, and garlic.",
+    "cookingTimeMinutes": 30,
+    "ingredients": [
+      { "ingredientId": "b59d2572-df6f-4230-91f7-2d8757487f79", "quantity": 400 },
+      { "ingredientId": "6dc3f97d-0244-4db9-aa7f-57a8734eaf2c", "quantity": 2 },
+      { "ingredientId": "93fd58f7-24b0-42f4-ab65-af8c5f94d871", "quantity": 1 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 2 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 20 },
+      { "ingredientId": "7624f4ef-1ce3-4e75-93a8-e9755efee3a8", "quantity": 3 }
+    ],
+    "steps": [
+      { "name": "Slice the ingredients", "description": "Thinly slice the beef, peppers, and onion; mince the garlic." },
+      { "name": "Sear the beef", "description": "Cook the beef in a hot oiled skillet until browned, then set aside." },
+      { "name": "Finish", "description": "Saute the vegetables, return the beef to the pan, and season with black pepper." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000008",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000009",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Creamy Mushroom Pasta",
+    "description": "Comforting pasta coated in a mushroom, cream, and Parmesan sauce.",
+    "cookingTimeMinutes": 35,
+    "ingredients": [
+      { "ingredientId": "2deea5c6-9d33-4433-b1f4-5edfa6dbf6a6", "quantity": 250 },
+      { "ingredientId": "3f969cc5-2930-4e8a-85f2-cc6467342258", "quantity": 200 },
+      { "ingredientId": "9d0963a8-4bac-4836-9d51-06731f02f84a", "quantity": 150 },
+      { "ingredientId": "fd2a31da-b8f0-4e6d-90ab-d37bd3ec6a9e", "quantity": 50 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 2 },
+      { "ingredientId": "bfe30ce2-3e3d-473f-84de-f5fc986a40ca", "quantity": 20 }
+    ],
+    "steps": [
+      { "name": "Boil the pasta", "description": "Cook the pasta until al dente and reserve a splash of cooking water." },
+      { "name": "Cook the mushrooms", "description": "Saute sliced mushrooms and garlic in butter until golden." },
+      { "name": "Make it creamy", "description": "Add cream and Parmesan, simmer gently, then toss with pasta and cooking water." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000009",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000013",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000001",
+    "name": "Apple Cinnamon Oatmeal",
+    "description": "Warm oats with milk, tender apple, and a hint of cinnamon.",
+    "cookingTimeMinutes": 20,
+    "ingredients": [
+      { "ingredientId": "87a8aee7-d3f8-4301-b0d1-ed91656a205b", "quantity": 100 },
+      { "ingredientId": "1408c8db-dba8-4c17-b7b5-49e35715cbbc", "quantity": 300 },
+      { "ingredientId": "0462954e-7c34-4645-b717-59e0a6a7d2ed", "quantity": 1 },
+      { "ingredientId": "16c945ce-b209-4e3d-b471-0fe4a8609333", "quantity": 2 }
+    ],
+    "steps": [
+      { "name": "Prep the apple", "description": "Core and dice the apple into small pieces." },
+      { "name": "Cook the oats", "description": "Simmer oats in milk, stirring, until creamy, about 8 minutes." },
+      { "name": "Finish", "description": "Stir in apple and cinnamon, cook for 3 more minutes, and serve." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000010",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000018",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000014",
+    "name": "Chickpea Rice Bowl",
+    "description": "A nourishing bowl of rice, chickpeas, spinach, and lemon.",
+    "cookingTimeMinutes": 30,
+    "ingredients": [
+      { "ingredientId": "e41ce3ee-4f43-4515-b611-bf3b2f7fe88f", "quantity": 180 },
+      { "ingredientId": "003571fc-96c5-4b25-9c1c-73a1f3119c6a", "quantity": 200 },
+      { "ingredientId": "90d44117-d3f0-4d47-b48c-91f835783d5a", "quantity": 80 },
+      { "ingredientId": "1e2ca132-9aec-41a4-9f01-e21f036d8df9", "quantity": 1 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 20 }
+    ],
+    "steps": [
+      { "name": "Cook the rice", "description": "Rinse and cook the rice until fluffy." },
+      { "name": "Warm the chickpeas", "description": "Heat the chickpeas in olive oil, then add spinach and cook until wilted." },
+      { "name": "Assemble the bowls", "description": "Spoon rice into bowls, top with chickpeas and spinach, and squeeze lemon over everything." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000011",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000003",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Картопля по-селянськи з часником та розмарином",
+    "description": "Хрустка запечена картопля з ароматом свіжого розмарину та часнику.",
+    "cookingTimeMinutes": 40,
+    "ingredients": [
+      { "ingredientId": "4d831c73-5433-45c9-888c-66489aa9aeb4", "quantity": 600 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 3 },
+      { "ingredientId": "eb28ebdd-c920-4fcb-8198-e5decb176d07", "quantity": 10 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 35 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 5 }
+    ],
+    "steps": [
+      { "name": "Підготовка картоплі", "description": "Наріжте картоплю дольками, змішайте з оливковою олією, сіллю та дрібно нарізаним розмарином." },
+      { "name": "Запікання", "description": "Викладіть картоплю на деко та запікайте при 200 °C близько 30 хвилин до золотистої скоринки." },
+      { "name": "Подача", "description": "За кілька хвилин до готовності додайте подрібнений часник і перемішайте." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000012",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000001",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000005",
+    "name": "Гарбузовий крем-суп",
+    "description": "Ніжний та зігрівальний суп з вершками та спеціями.",
+    "cookingTimeMinutes": 35,
+    "ingredients": [
+      { "ingredientId": "9d0963a8-4bac-4836-9d51-06731f02f84a", "quantity": 100 },
+      { "ingredientId": "93fd58f7-24b0-42f4-ab65-af8c5f94d871", "quantity": 1 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 2 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 5 },
+      { "ingredientId": "16a66290-c294-4c59-a1ba-19e984ec081d", "quantity": 2 }
+    ],
+    "steps": [
+      { "name": "Пасерування", "description": "Обсмажте нарізану цибулю та часник у каструлі до м'якості." },
+      { "name": "Варка", "description": "Додайте воду або овочевий бульйон і варіть до готовності овочів." },
+      { "name": "Збивання", "description": "Збийте все блендером до однорідної маси, додайте вершки та мускатний горіх." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000013",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000012",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000006",
+    "name": "Салат з руколою та чері",
+    "description": "Легкий та свіжий салат з пармезаном і бальзамічним оцтом.",
+    "cookingTimeMinutes": 10,
+    "ingredients": [
+      { "ingredientId": "7395d48a-6e67-4b06-8adb-812b2e453ace", "quantity": 100 },
+      { "ingredientId": "c7402a54-d0c9-4555-a0df-5af3bfab84c3", "quantity": 150 },
+      { "ingredientId": "fd2a31da-b8f0-4e6d-90ab-d37bd3ec6a9e", "quantity": 40 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 20 },
+      { "ingredientId": "1b7e66a5-8577-4b9e-a4a4-d036b31a1a94", "quantity": 10 }
+    ],
+    "steps": [
+      { "name": "Підготовка", "description": "Промийте руколу та розріжте помідори чері навпіл." },
+      { "name": "Змішування", "description": "Викладіть зелень та помідори в салатницю, додайте тонкі слайси пармезану." },
+      { "name": "Заправка", "description": "Збризніть оливковою олією та бальзамічним оцтом перед подачею." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000014",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000009",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Куряче філе з овочами гриль",
+    "description": "Соковите куряче філе з кабачками та солодким перцем.",
+    "cookingTimeMinutes": 25,
+    "ingredients": [
+      { "ingredientId": "1784e7da-96d9-4f90-a560-f9cc1987d3be", "quantity": 350 },
+      { "ingredientId": "cd2994ea-31c5-4d07-a0fd-8c0564f4f633", "quantity": 200 },
+      { "ingredientId": "6dc3f97d-0244-4db9-aa7f-57a8734eaf2c", "quantity": 2 },
+      { "ingredientId": "6a4df938-b5f2-4148-bebb-42caea1c699f", "quantity": 5 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 25 }
+    ],
+    "steps": [
+      { "name": "Маринування", "description": "Натріть куряче філе паприкою, сіллю та олією." },
+      { "name": "Обсмажування", "description": "Обсмажте курку та нарізані овочі на пательні-гриль до готовності." },
+      { "name": "Подача", "description": "Подавайте гарячими разом з овочами." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000015",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000018",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000011",
+    "name": "Банановий смузі з полуницею",
+    "filePath": "recipes/b0c1e000000040008000000000000015/b0c1e000-0000-4000-8000-000000000015.jpg",
+    "description": "Освіжаючий та поживний напій на основі молока.",
+    "cookingTimeMinutes": 5,
+    "ingredients": [
+      { "ingredientId": "a5d165c4-0095-40a0-93e0-43c76191a859", "quantity": 1 },
+      { "ingredientId": "417c2224-aaa4-45bc-a5d5-0f3d52c43cd8", "quantity": 100 },
+      { "ingredientId": "1408c8db-dba8-4c17-b7b5-49e35715cbbc", "quantity": 250 },
+      { "ingredientId": "615c78d8-32f8-488c-b7e1-b874d52ec77a", "quantity": 15 }
+    ],
+    "steps": [
+      { "name": "Підготовка інгредієнтів", "description": "Очистьте банан і підготуйте ягоди полуниці." },
+      { "name": "Змішування", "description": "Покладіть усі інгредієнти у чашу блендера та збийте до однорідної кремової текстури." },
+      { "name": "Подача", "description": "Перелийте у склянку та подавайте охолодженим." }
+    ]
+  },
+    {
+    "id": "64a32f62-625b-463f-87fd-da921d474882",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000003",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000006",
+    "name": "Салат з пекінкою та крабовими паличками",
+    "description": "Смачний, поживний зимовий салатик з пекінською капустою та крабовими паличками. Гарно смакує з рисом та як самостійна страва.",
+    "cookingTimeMinutes": 20,
+    "ingredients": [
+      { "ingredientId": "9ea1c462-f47b-4d4b-aa21-dcedd3d8e670", "quantity": 300 },
+      { "ingredientId": "acecd984-b7e5-4cee-a313-e81edf455eff", "quantity": 3 },
+      { "ingredientId": "15e0b6a7-333b-4de1-969b-0bd563006e1d", "quantity": 150 },
+      { "ingredientId": "f98a9973-e25a-4de0-a42e-1a188f8109d3", "quantity": 2 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 1 },
+      { "ingredientId": "7624f4ef-1ce3-4e75-93a8-e9755efee3a8", "quantity": 1 }
+    ],
+    "steps": [
+      { "name": "Зварити яйця", "description": "Зварити круто яйця. Почистити, дрібно порізати.", "filePaths": ["recipes/64a32f62625b463f87fdda921d474882/step-1-1-64a32f62-625b-463f-87fd-da921d474882.webp"] },
+      { "name": "Пошинкувати капусту", "description": "Пошинкувати пекінську капусту.", "filePaths": ["recipes/64a32f62625b463f87fdda921d474882/step-2-1-64a32f62-625b-463f-87fd-da921d474882.webp"] },
+      { "name": "Підготувати кукурудзу", "description": "Відкрити банку з кукурудзою, злити зайву вологу.", "filePaths": ["recipes/64a32f62625b463f87fdda921d474882/step-3-1-64a32f62-625b-463f-87fd-da921d474882.webp"] },
+      { "name": "Підготувати крабові палички", "description": "Зняти з крабових паличок захисну оболонку. Порізати кубиками. Змішати вище перераховані інгредієнти.", "filePaths": ["recipes/64a32f62625b463f87fdda921d474882/step-4-1-64a32f62-625b-463f-87fd-da921d474882.webp"] },
+      { "name": "Заправити салат", "description": "Ретельно перемішати усі інгредієнти, додати за смаком спеції, зелень та майонез.", "filePaths": ["recipes/64a32f62625b463f87fdda921d474882/step-5-1-64a32f62-625b-463f-87fd-da921d474882.webp"] }
+    ]
+  },
+  {
+    "id": "ad7fde79-9f5f-490d-ae2f-53b4c666b113",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000003",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Макарони з фаршем та овочами на сковороді",
+    "description": "Швидко, смачно, все готується в одному посуді.",
+    "cookingTimeMinutes": 55,
+    "ingredients": [
+      { "ingredientId": "93fd58f7-24b0-42f4-ab65-af8c5f94d871", "quantity": 1 },
+      { "ingredientId": "19d7c07a-5687-4605-9b92-4621639b6aba", "quantity": 2 },
+      { "ingredientId": "6dc3f97d-0244-4db9-aa7f-57a8734eaf2c", "quantity": 1 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 4 },
+      { "ingredientId": "2deea5c6-9d33-4433-b1f4-5edfa6dbf6a6", "quantity": 250 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 45 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 1 },
+      { "ingredientId": "7624f4ef-1ce3-4e75-93a8-e9755efee3a8", "quantity": 1 }
+    ],
+    "steps": [
+      { "name": "Обсмажування фаршу", "description": "На сковорідці розігріти олію і всипати фарш, на середньому вогні обсмажувати, перемішуючи хвилин 10.", "filePaths": ["recipes/ad7fde799f5f490dae2f53b4c666b113/step-1-1-ad7fde79-9f5f-490d-ae2f-53b4c666b113.webp", "recipes/ad7fde799f5f490dae2f53b4c666b113/step-1-2-ad7fde79-9f5f-490d-ae2f-53b4c666b113.webp"] },
+      { "name": "Додавання овочів", "description": "Додати порізану кубиками цибулю та порізану брусочками моркву, обсмажувати хвилин 7-10. Додати порізаний кубиками солодкий перець та томатну пасту.", "filePaths": ["recipes/ad7fde799f5f490dae2f53b4c666b113/step-2-1-ad7fde79-9f5f-490d-ae2f-53b4c666b113.webp"] },
+      { "name": "Тушкування з макаронами", "description": "Всипати макарони, перемішати, додати сіль, за бажанням цукор, перець, спеції. Влити воду, перемішати, довести до кипіння. Зменшити вогонь до мінімуму, накрити кришкою і тушкувати 20-25 хвилин.", "filePaths": ["recipes/ad7fde799f5f490dae2f53b4c666b113/step-3-1-ad7fde79-9f5f-490d-ae2f-53b4c666b113.webp"] }
+    ]
+  },
+  {
+    "id": "c1d2e3f4-0000-4000-8000-000000000001",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000003",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Chicken Fajita Casserole",
+    "filePath": "recipes/c1d2e3f4000040008000000000000001/c1d2e3f4-0000-4000-8000-000000000001.webm",
+    "description": "An easy and quick chicken fajita casserole made with cilantro lime rice, chicken, peppers, onions, corn, and black beans.",
+    "cookingTimeMinutes": 30,
+    "ingredients": [
+      { "ingredientId": "b63c67d9-56c6-4913-9a91-c61fbb06f5f8", "quantity": 8 },
+      { "ingredientId": "93fd58f7-24b0-42f4-ab65-af8c5f94d871", "quantity": 2 },
+      { "ingredientId": "6dc3f97d-0244-4db9-aa7f-57a8734eaf2c", "quantity": 4 },
+      { "ingredientId": "15e0b6a7-333b-4de1-969b-0bd563006e1d", "quantity": 1 },
+      { "ingredientId": "0a56cc72-d828-4b90-b1a0-e17b6c2cfbd8", "quantity": 1 },
+      { "ingredientId": "bfe30ce2-3e3d-473f-84de-f5fc986a40ca", "quantity": 30 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 1 },
+      { "ingredientId": "7624f4ef-1ce3-4e75-93a8-e9755efee3a8", "quantity": 1 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 1 },
+      { "ingredientId": "6a4df938-b5f2-4148-bebb-42caea1c699f", "quantity": 1 },
+      { "ingredientId": "e7b5b1fe-4a50-416a-876d-a3d856c4f425", "quantity": 1 }
+    ],
+    "steps": [
+      { "name": "Cook the chicken", "description": "Season the chicken and cook in butter in a large skillet until golden and cooked through. Remove and set aside." },
+      { "name": "Sauté the vegetables", "description": "In the same skillet, season and sauté the peppers and onions until softened and lightly browned. Remove and set aside." },
+      { "name": "Prepare the rice base", "description": "Add the drained corn to the same hot skillet, season with salt and pepper, and cook for a few minutes until lightly charred. Stir in the black beans and cilantro lime rice and heat for 1–2 minutes until warmed through." },
+      { "name": "Assemble the casserole", "description": "Spread the rice, corn, and black bean mixture evenly across the bottom of the casserole dish. Add a layer of shredded cheese, followed by the peppers and onions, and arrange the chicken evenly over the vegetables. Top with another layer of shredded cheese." },
+      { "name": "Bake and serve", "description": "Bake at 375°F for 5–8 minutes, or until the cheese is melted and bubbly. Broil for the last 1–2 minutes for a golden-brown top if desired, top with fresh cilantro, let sit for a few minutes, then serve." }
+    ]
+  },
+  {
+    "id": "b0c1e000-0000-4000-8000-000000000001",
+    "applicationUserId": "a11ce000-0000-4000-8000-000000000003",
+    "categoryId": "ae7c1000-0000-4000-8000-000000000007",
+    "name": "Tomato Basil Spaghetti",
+    "filePath": "recipes/b0c1e000000040008000000000000001/b0c1e000-0000-4000-8000-000000000001.jpg",
+    "description": "A bright tomato sauce tossed with spaghetti and fresh basil.",
+    "cookingTimeMinutes": 30,
+    "ingredients": [
+      { "ingredientId": "3bdc98d8-1117-44e5-88a9-6192a5399b73", "quantity": 250 },
+      { "ingredientId": "f2a08840-0a95-46d8-b769-f8f2a8ef3f0f", "quantity": 4 },
+      { "ingredientId": "70eeb5d8-52f8-4978-9308-2586e6e4ad75", "quantity": 2 },
+      { "ingredientId": "26794f8d-4701-4ff6-b35f-d3dc3e6a6e94", "quantity": 15 },
+      { "ingredientId": "c7f16fa9-94c6-4f03-b9a2-fbe86e9539a5", "quantity": 30 },
+      { "ingredientId": "b230a95f-e441-4e96-84a1-421b6684f189", "quantity": 5 }
+    ],
+    "steps": [
+      { "name": "Cook the pasta", "description": "Boil the spaghetti in salted water until al dente. Reserve a little cooking water." },
+      { "name": "Make the sauce", "description": "Warm the oil, saute minced garlic, then add chopped tomatoes and simmer for 12 minutes." },
+      { "name": "Combine", "description": "Toss the spaghetti with the sauce and a splash of cooking water. Finish with basil." }
+    ]
+  }
+]

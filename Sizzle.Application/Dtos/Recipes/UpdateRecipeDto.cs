@@ -18,7 +18,7 @@ public class UpdateRecipeDto
 
     public RecipeStepInputDto[] Steps { get; init; } = [];
 
-    public Guid[] IngredientIds { get; init; } = [];
+    public RecipeIngredientInputDto[] Ingredients { get; init; } = [];
 
-    public string[] NewIngredientNames { get; init; } = [];
+    public NewIngredientDto[] NewIngredients { get; init; } = [];
 }

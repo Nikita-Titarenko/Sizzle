@@ -6,7 +6,7 @@ namespace Sizzle.Application.Services.Comments;
 
 public interface ICommentService
 {
-    Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize);
+    Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(GetCommentsByRecipeIdDto dto);
 
     Task<Result<CommentDto>> CreateAsync(CreateCommentDto dto);
 

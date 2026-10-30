@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sizzle.Application.Dtos.Users;
 using Sizzle.Application.Services.Users;
+using Sizzle.Domain.Common;
 using Sizzle.WebApi.Requests.Users;
 
 namespace Sizzle.WebApi.Controllers;
@@ -9,26 +10,52 @@ namespace Sizzle.WebApi.Controllers;
 [Route("api/[controller]")]
 public class UsersController(IUserService userService, IUserFollowerService followerService) : BaseController
 {
+    /// <summary>Follow a user.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.BadRequest — the user tries to follow themselves.</para>
+    /// <para>ErrorKey.NotFound — the target user does not exist.</para>
+    /// <para>ErrorKey.AlreadyExists — the subscription already exists.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpPost("{userId:guid}/follow")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status409Conflict)]
     public async Task<ActionResult> Follow(Guid userId)
     {
         var result = await followerService.FollowAsync(GetUserId(), userId);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    /// <summary>Unfollow a user.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the subscription does not exist.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpDelete("{userId:guid}/follow")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult> Unfollow(Guid userId)
     {
         var result = await followerService.UnfollowAsync(GetUserId(), userId);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    /// <summary>Register a user and send a confirmation email.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.AlreadyExists — the email is already registered.</para>
+    /// <para>ErrorKey.UnexpectedError — registration failed (400).</para>
+    /// <para>ErrorKey.BadRequest — invalid request data (400).</para>
+    /// </remarks>
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterResultDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<RegisterResultDto>> RegisterUser(RegisterUserRequestModel request)
     {
         var result = await userService.RegisterUserAsync(new RegisterUserDto
@@ -46,8 +73,17 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return Accepted(result.Value);
     }
 
+    /// <summary>Confirm an email address using a code and receive a token.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the user does not exist.</para>
+    /// <para>ErrorKey.AlreadyConfirmed — the email is already confirmed (400).</para>
+    /// <para>ErrorKey.Incorrect — the confirmation code is incorrect (400).</para>
+    /// <para>ErrorKey.BadRequest — invalid request data (400).</para>
+    /// </remarks>
     [HttpPost("confirm-email")]
     [ProducesResponseType(typeof(ConfirmEmailResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ConfirmEmailResultDto>> ConfirmEmail(EmailConfirmationRequestModel request)
     {
         var result = await userService.ConfirmEmailAsync(new ConfirmEmailDto
@@ -59,16 +95,32 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    /// <summary>Resend the email confirmation code.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the user does not exist.</para>
+    /// <para>ErrorKey.AlreadyConfirmed — the email is already confirmed (400).</para>
+    /// <para>ErrorKey.BadRequest — invalid request data (400).</para>
+    /// </remarks>
     [HttpPost("resend-confirm-email")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult> ResendConfirmEmail(ResendEmailConfirmationRequestModel request)
     {
         var result = await userService.ResendRegistrationEmailAsync(request.UserId);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    /// <summary>Sign in with an email address and password.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — no user exists with this email address.</para>
+    /// <para>ErrorKey.IncorrectLoginOrPassword — an incorrect password for a confirmed user (400).</para>
+    /// <para>ErrorKey.BadRequest — invalid request data (400).</para>
+    /// </remarks>
     [HttpPost("login")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LoginResultDto>> Login(LoginRequestModel request)
     {
         var result = await userService.LoginAsync(new LoginUserDto
@@ -80,25 +132,40 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    /// <summary>Sign in with a Google token.</summary>
+    /// <remarks>ErrorKey.BadRequest — the Google token or request data is invalid.</remarks>
     [HttpPost("google-login")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<LoginResultDto>> GoogleLogin(GoogleLoginRequestModel requestModel)
     {
         var result = await userService.HandleGoogleLoginAsync(requestModel.IdToken);
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    /// <summary>Get a user's profile.</summary>
+    /// <remarks>ErrorKey.NotFound — the user does not exist.</remarks>
     [HttpGet("{userId:guid}")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<UserDto>> GetUser(Guid userId)
     {
         var result = await userService.GetUserDtoAsync(userId);
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    /// <summary>Update the current user's name and profile image.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the current user does not exist.</para>
+    /// <para>ErrorKey.BadRequest — the image exceeds the size limit or the form is invalid.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpPut]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult> UpdateUserProfile([FromForm] UpdateUserProfileRequestModel request)
     {
         await using var stream = request.Icon?.OpenReadStream();

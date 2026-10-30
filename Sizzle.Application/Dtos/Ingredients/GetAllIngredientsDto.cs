@@ -1,12 +1,10 @@
+using Sizzle.Application.Dtos.Base;
+
 namespace Sizzle.Application.Dtos.Ingredients;
 
-public class GetAllIngredientsDto
+public class GetAllIngredientsDto : PaginationDto
 {
     public string? Search { get; init; }
-
-    public int? PageIndex { get; init; }
-
-    public int? PageSize { get; init; }
 
     public string LanguageCode { get; init; } = "en";
 }

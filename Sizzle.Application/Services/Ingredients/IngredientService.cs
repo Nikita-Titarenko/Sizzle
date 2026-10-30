@@ -3,7 +3,7 @@ using Sizzle.Application.Repositories;
 
 namespace Sizzle.Application.Services.Ingredients;
 
-public class IngredientService(IIngredientRepository ingredientRepository) : IIngredientService
+public class IngredientService(IIngredientRepository ingredientRepository, IIngredientUnitFormatter unitFormatter) : IIngredientService
 {
     public async Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto)
     {
@@ -14,6 +14,7 @@ public class IngredientService(IIngredientRepository ingredientRepository) : IIn
             ingredient => new IngredientListItemDto
             {
                 Id = ingredient.Id,
+                Unit = unitFormatter.Format(ingredient.Unit, dto.LanguageCode),
                 Name = ingredient.Translations.FirstOrDefault(t => t.LanguageCode == dto.LanguageCode)?.Name
                     ?? ingredient.Translations.FirstOrDefault(t => t.LanguageCode == "en")?.Name
                     ?? string.Empty

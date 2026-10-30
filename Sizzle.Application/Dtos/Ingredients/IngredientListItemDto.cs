@@ -6,5 +6,7 @@ public class IngredientListItemDto
 
     public string Name { get; init; } = string.Empty;
 
+    public string Unit { get; init; } = string.Empty;
+
     public List<IngredientListItemDto> Children { get; init; } = [];
 }

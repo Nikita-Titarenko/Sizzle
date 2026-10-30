@@ -1,0 +1,16 @@
+[
+  {
+    "en": {
+      "grams": "g",
+      "milliliters": "ml",
+      "pieces": "pcs"
+    }
+  },
+  {
+    "uk": {
+      "grams": "г",
+      "milliliters": "мл",
+      "pieces": "шт"
+    }
+  }
+]

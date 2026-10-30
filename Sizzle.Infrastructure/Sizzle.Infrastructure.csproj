@@ -17,7 +17,11 @@
 
   <ItemGroup>
     <EmbeddedResource Include="InitialData\ingredients*.json" WithCulture="false" />
+    <EmbeddedResource Include="InitialData\ingredient-unit.json" WithCulture="false" />
     <EmbeddedResource Include="InitialData\categories*.json" WithCulture="false" />
+    <EmbeddedResource Include="TestData\*.json" WithCulture="false" />
+    <EmbeddedResource Include="TestData\recipes-media\*" WithCulture="false" />
+    <EmbeddedResource Include="TestData\recipe-steps-media\*" WithCulture="false" />
   </ItemGroup>
 
   <ItemGroup>

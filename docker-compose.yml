@@ -20,7 +20,7 @@ services:
   sizzle-webapi:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Sizzle.WebApi/Dockerfile
     container_name: sizzle-webapi
     depends_on:
       mysql:

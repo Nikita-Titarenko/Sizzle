@@ -21,8 +21,8 @@ public class UpdateRecipeRequestModel
     public RecipeStepRequestModel[] Steps { get; init; } = [];
 
     [Required]
-    public Guid[] IngredientIds { get; init; } = [];
+    public RecipeIngredientRequestModel[] Ingredients { get; init; } = [];
 
     [Required]
-    public string[] NewIngredientNames { get; init; } = [];
+    public NewIngredientRequestModel[] NewIngredients { get; init; } = [];
 }

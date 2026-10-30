@@ -1,5 +1,6 @@
 using System.Reflection;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Sizzle.Domain.Entities;
 
@@ -28,6 +29,7 @@ public static class DbInitializer
         }
 
         var options = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+        options.Converters.Add(new JsonStringEnumConverter());
         await using var baseStream = assembly.GetManifestResourceStream(baseResource)!;
         var ingredients = await JsonSerializer.DeserializeAsync<List<IngredientSeed>>(baseStream, options)
             ?? throw new InvalidOperationException($"Resource '{baseResource}' is empty.");
@@ -37,11 +39,25 @@ public static class DbInitializer
             throw new InvalidOperationException($"Resource '{baseResource}' contains duplicate ingredient ids.");
         }
 
-        var existingIds = await context.Ingredients.Select(i => i.Id).ToHashSetAsync();
+        if (ingredients.Any(i => i.Id == Guid.Empty || !Enum.IsDefined(i.Unit)))
+        {
+            throw new InvalidOperationException($"Resource '{baseResource}' contains invalid ingredient data.");
+        }
+
+        var existingIngredients = await context.Ingredients.ToListAsync();
+        var existingById = existingIngredients.ToDictionary(i => i.Id);
         var newIngredients = ingredients
-            .Where(i => !existingIds.Contains(i.Id))
-            .Select(i => new Ingredient { Id = i.Id, ParentId = i.ParentId });
+            .Where(i => !existingById.ContainsKey(i.Id))
+            .Select(i => new Ingredient { Id = i.Id, ParentId = i.ParentId, Unit = i.Unit });
         await context.Ingredients.AddRangeAsync(newIngredients);
+
+        foreach (var seed in ingredients)
+        {
+            if (existingById.TryGetValue(seed.Id, out var ingredient))
+            {
+                ingredient.Unit = seed.Unit;
+            }
+        }
 
         var existingTranslations = (await context.IngredientTranslations
             .Select(t => new { t.IngredientId, t.LanguageCode })
@@ -170,6 +186,8 @@ public static class DbInitializer
         public Guid Id { get; set; }
 
         public Guid? ParentId { get; set; }
+
+        public IngredientUnit Unit { get; set; }
     }
 
     private sealed class TranslationSeed

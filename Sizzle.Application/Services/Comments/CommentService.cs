@@ -9,14 +9,14 @@ namespace Sizzle.Application.Services.Comments;
 
 public class CommentService(ICommentRepository commentRepository, IRecipeRepository recipeRepository, IUnitOfWork unitOfWork, IFileService fileService) : ICommentService
 {
-    public async Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize)
+    public async Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(GetCommentsByRecipeIdDto dto)
     {
-        if (!await recipeRepository.Exists(recipeId))
+        if (!await recipeRepository.Exists(dto.RecipeId))
         {
             return new Result<PageResponse<CommentDto>> { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
         }
 
-        var page = await commentRepository.GetByRecipeIdAsync(recipeId, pageIndex, pageSize);
+        var page = await commentRepository.GetByRecipeIdAsync(dto.RecipeId, dto.PageIndex, dto.PageSize);
         return new Result<PageResponse<CommentDto>>
         {
             Value = new PageResponse<CommentDto>

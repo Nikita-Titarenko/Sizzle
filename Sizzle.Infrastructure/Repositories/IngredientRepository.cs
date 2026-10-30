@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Sizzle.Application.Repositories;
 using Sizzle.Domain.Entities;
+using Sizzle.Infrastructure.Extensions;
 
 namespace Sizzle.Infrastructure.Repositories;
 
@@ -8,7 +9,7 @@ public class IngredientRepository(ApplicationDbContext dbContext) : Repository<I
 {
     public Task<List<Ingredient>> GetByIdsAsync(Guid[] ids)
     {
-        return DbSet.Where(i => ids.Contains(i.Id)).ToListAsync();
+        return DbSet.WhereIdIn(ids, ingredient => ingredient.Id).ToListAsync();
     }
 
     public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames)

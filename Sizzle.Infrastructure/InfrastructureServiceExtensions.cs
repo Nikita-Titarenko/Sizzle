@@ -6,6 +6,7 @@ using Microsoft.Extensions.Hosting;
 using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
+using Sizzle.Application.Services.Ingredients;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Options;
 using Sizzle.Infrastructure.Repositories;
@@ -52,6 +53,7 @@ public static class InfrastructureServiceExtensions
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddSingleton<IIngredientUnitFormatter, IngredientUnitFormatter>();
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
         services.AddScoped<IIngredientRepository, IngredientRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
