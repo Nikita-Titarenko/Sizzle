@@ -38,6 +38,16 @@ services:
     working_dir: /src/Sizzle.WebApi
     command: dotnet watch run --project Sizzle.WebApi.csproj --urls http://0.0.0.0:8080
 
+  sizzle-client:
+    build:
+      context: ./Sizzle.Client
+      dockerfile: Dockerfile
+    container_name: sizzle-client
+    depends_on:
+      - sizzle-webapi
+    ports:
+      - "4200:80"
+
 volumes:
   mysql_data:
   nuget_cache:
