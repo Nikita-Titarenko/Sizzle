@@ -60,10 +60,12 @@ src/
     │   ├── services/    current user profile, SignalR notifications
     │   └── utils/
     ├── layout/          header and notification toasts shown on every page
-    ├── features/        routed pages grouped by area (auth, recipes, users)
-    │                    plus components only that area uses (comment-item, ingredient-picker)
-    └── shared/          reusable components and pipes (recipe-card, pager, user-avatar, ...)
+    ├── features/        routed pages grouped by area (auth, feed, recipes, users)
+    │                    plus components only that area uses (feed-item, comments-drawer, ingredient-picker)
+    └── shared/          reusable components and pipes (recipe-card, comment-section, icon, user-avatar, ...)
 ```
+
+The home page (`features/feed`) is a vertical, snap-scrolling feed with one recipe per screen: Shorts/Reels-style action rail (like, comments, share, open recipe, views), Instagram-style caption with author and follow button, double-tap to like, and category filters. Video covers (`.mp4`, `.webm`, `.mov`, ...) autoplay muted while on screen; images and recipes without media work the same way. Arrow keys or `j`/`k` move between posts on desktop. The searchable grid lives at `/explore`.
 
 Every component lives in its own folder as `name.ts` + `name.html` + `name.scss`. Pages are lazy-loaded from `app.routes.ts`.
 Format with `npx prettier --write "src/**/*.{ts,html,scss}"`.
