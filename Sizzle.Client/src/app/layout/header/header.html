@@ -13,5 +13,12 @@
       <a routerLink="/login" routerLinkActive="active">Log in</a>
       <a routerLink="/register" class="btn small">Sign up</a>
     }
+    <select class="language" aria-label="Content language" (change)="changeLanguage($event)">
+      @for (option of languages; track option.code) {
+        <option [value]="option.code" [selected]="option.code === language.current()">
+          {{ option.code.toUpperCase() }} · {{ option.label }}
+        </option>
+      }
+    </select>
   </nav>
 </header>
