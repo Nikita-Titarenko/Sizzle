@@ -1,0 +1,17 @@
+<div class="backdrop" (click)="closed.emit()"></div>
+<aside
+  class="drawer"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Comments on ' + recipe().name"
+>
+  <header class="drawer-header">
+    <b>{{ recipe().name }}</b>
+    <button type="button" class="close" aria-label="Close comments" (click)="closed.emit()">
+      <app-icon name="close" />
+    </button>
+  </header>
+  <div class="drawer-body">
+    <app-comment-section [recipeId]="recipe().id" />
+  </div>
+</aside>

@@ -1,0 +1,12 @@
+<ul class="users">
+  @for (u of users(); track u.id) {
+    <li>
+      <a class="row" [routerLink]="['/users', u.id]">
+        <app-user-avatar [name]="u.name" [imageUrl]="u.imageUrl" />
+        {{ u.name }}
+      </a>
+    </li>
+  } @empty {
+    <li class="muted">{{ emptyText() }}</li>
+  }
+</ul>

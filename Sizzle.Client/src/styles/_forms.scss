@@ -1,0 +1,43 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  label,
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+}
+
+input,
+textarea,
+select {
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  font-weight: 400; // labels are bold, the controls inside them are not
+
+  &:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+  }
+}
+
+textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+// A labelled group that is not a single form control (e.g. a file picker),
+// where a <label> would forward clicks to the first button inside it.
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+}

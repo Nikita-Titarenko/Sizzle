@@ -1,0 +1,28 @@
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
+@if (user(); as u) {
+  <section class="card row header">
+    <app-user-avatar [name]="u.name" [imageUrl]="u.imageUrl" size="large" />
+    <div>
+      <h1>{{ u.name }}</h1>
+    </div>
+    <span class="spacer"></span>
+    @if (auth.isLoggedIn() && !isMe()) {
+      <button class="btn" [class.outline]="followed()" (click)="toggleFollow()">
+        {{ followed() ? 'Unfollow' : 'Follow' }}
+      </button>
+    }
+  </section>
+
+  <h2>Recipes</h2>
+  @if (page(); as page) {
+    <app-recipe-grid [recipes]="page.data" />
+    <app-pager
+      [pageIndex]="pageIndex()"
+      [pageSize]="pageSize"
+      [total]="page.totalSize"
+      (change)="pageIndex.set($event)"
+    />
+  }
+}

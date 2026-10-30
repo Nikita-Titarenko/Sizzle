@@ -1,0 +1,18 @@
+@if (notifications.items().length) {
+  <aside class="toasts">
+    @for (item of notifications.items(); track item.recipeId) {
+      <div class="toast">
+        <a
+          [routerLink]="['/recipes', item.recipeId]"
+          (click)="notifications.dismiss(item.recipeId)"
+        >
+          <b>{{ item.authorName }}</b>
+          posted “{{ item.recipeName }}”
+        </a>
+        <button class="link" aria-label="Dismiss" (click)="notifications.dismiss(item.recipeId)">
+          ✕
+        </button>
+      </div>
+    }
+  </aside>
+}

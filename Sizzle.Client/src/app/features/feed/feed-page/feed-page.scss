@@ -1,0 +1,188 @@
+.feed-page {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - var(--header-height));
+}
+
+.filters {
+  display: flex;
+  gap: 8px;
+  padding: 10px 16px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  justify-content: safe center;
+
+  .chip {
+    flex-shrink: 0;
+  }
+}
+
+.ingredient-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.divider-v {
+  flex-shrink: 0;
+  width: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
+.ingredient-panel {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, calc(100% - 32px));
+  padding: 16px;
+  translate: -50% 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.15);
+
+  p {
+    margin: 0;
+  }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.icon-button {
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--border);
+  }
+}
+
+.selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.scroller {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  scroll-snap-align: start;
+
+  &.end {
+    height: 120px;
+  }
+}
+
+.stepper {
+  position: absolute;
+  top: 50%;
+  right: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  translate: 0 -50%;
+
+  button {
+    display: inline-flex;
+    padding: 12px;
+    border: none;
+    border-radius: 50%;
+    background: #f1ebe5;
+    color: var(--text);
+    font-size: 1.4rem;
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      background: var(--border);
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+}
+
+.toast {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  z-index: 40;
+  padding: 10px 18px;
+  translate: -50% 0;
+  border-radius: 999px;
+  background: rgb(0 0 0 / 0.8);
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+  .stepper {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .filters {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    z-index: 5;
+    justify-content: flex-start;
+    background: linear-gradient(to bottom, rgb(0 0 0 / 0.45), transparent);
+
+    .chip:not(.on) {
+      border-color: transparent;
+      background: rgb(255 255 255 / 0.2);
+      color: #fff;
+    }
+  }
+}

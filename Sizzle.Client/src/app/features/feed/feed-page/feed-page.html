@@ -1,0 +1,146 @@
+<div class="feed-page">
+  <nav class="filters" aria-label="Filters">
+    <button
+      type="button"
+      class="chip ingredient-toggle"
+      [class.on]="selectedIngredients().length > 0"
+      [attr.aria-expanded]="ingredientPanelOpen()"
+      (click)="ingredientPanelOpen.set(!ingredientPanelOpen())"
+    >
+      <app-icon name="filter" />
+      Ingredients
+      @if (selectedIngredients().length) {
+        <span class="count">{{ selectedIngredients().length }}</span>
+      }
+    </button>
+    <span class="divider-v" aria-hidden="true"></span>
+    <button
+      type="button"
+      class="chip"
+      [class.on]="categoryId() === null"
+      (click)="selectCategory(null)"
+    >
+      For you
+    </button>
+    @for (category of categories(); track category.id) {
+      <button
+        type="button"
+        class="chip"
+        [class.on]="categoryId() === category.id"
+        (click)="selectCategory(category.id)"
+      >
+        {{ category.name }}
+      </button>
+    }
+  </nav>
+
+  @if (ingredientPanelOpen()) {
+    <section class="ingredient-panel" aria-label="Filter by ingredients">
+      <header class="panel-header">
+        <b>Recipes with these ingredients</b>
+        <button
+          type="button"
+          class="icon-button"
+          aria-label="Close ingredient filter"
+          (click)="ingredientPanelOpen.set(false)"
+        >
+          <app-icon name="close" />
+        </button>
+      </header>
+      <app-ingredient-picker
+        placeholder="Search an ingredient, e.g. tomato…"
+        [excludeIds]="selectedIngredientIds()"
+        (picked)="addIngredientFilter($event)"
+      />
+      @if (selectedIngredients().length) {
+        <div class="selected">
+          @for (ingredient of selectedIngredients(); track ingredient.id) {
+            <span class="removable-chip">
+              @if (ingredient.parentName) {
+                <span class="chip-context">{{ ingredient.parentName }} ›</span>
+              }
+              {{ ingredient.name }}
+              <button
+                type="button"
+                [attr.aria-label]="'Remove ' + ingredient.name"
+                (click)="removeIngredientFilter(ingredient.id)"
+              >
+                <app-icon name="close" />
+              </button>
+            </span>
+          }
+          <button type="button" class="link" (click)="clearIngredientFilter()">Clear all</button>
+        </div>
+      } @else {
+        <p class="muted">Pick one or more ingredients to see recipes that use them.</p>
+      }
+    </section>
+  }
+
+  <div class="scroller" #scroller>
+    @for (recipe of recipes(); track recipe.id; let i = $index) {
+      <app-feed-item
+        [attr.data-index]="i"
+        [recipe]="recipe"
+        [active]="i === activeIndex()"
+        [categoryName]="categoryNames().get(recipe.categoryId)"
+        [canFollow]="recipe.userId !== auth.userId()"
+        [muted]="muted()"
+        (mutedChange)="muted.set($event)"
+        (liked)="toggleLike(recipe)"
+        (followed)="toggleFollow(recipe)"
+        (commentsOpened)="commentsFor.set(recipe)"
+        (shared)="share(recipe)"
+      />
+    }
+
+    @if (error()) {
+      <div class="status">
+        <p class="error">{{ error() }}</p>
+        <button type="button" class="btn small" (click)="retry()">Try again</button>
+      </div>
+    } @else if (loading()) {
+      <div class="status muted">Loading…</div>
+    } @else if (recipes().length === 0) {
+      <div class="status muted">
+        @if (hasFilters()) {
+          <p>No recipes match these filters.</p>
+          <button type="button" class="btn small outline" (click)="clearFilters()">
+            Clear filters
+          </button>
+        } @else {
+          <p>No recipes here yet.</p>
+        }
+      </div>
+    } @else if (!hasMore()) {
+      <div class="status end muted">You're all caught up 🎉</div>
+    }
+  </div>
+
+  <div class="stepper">
+    <button
+      type="button"
+      aria-label="Previous recipe"
+      [disabled]="activeIndex() === 0"
+      (click)="scrollBy(-1)"
+    >
+      <app-icon name="chevron-up" />
+    </button>
+    <button
+      type="button"
+      aria-label="Next recipe"
+      [disabled]="activeIndex() >= recipes().length - 1"
+      (click)="scrollBy(1)"
+    >
+      <app-icon name="chevron-down" />
+    </button>
+  </div>
+
+  @if (commentsFor(); as recipe) {
+    <app-comments-drawer [recipe]="recipe" (closed)="commentsFor.set(null)" />
+  }
+
+  @if (toast()) {
+    <div class="toast" role="status">{{ toast() }}</div>
+  }
+</div>

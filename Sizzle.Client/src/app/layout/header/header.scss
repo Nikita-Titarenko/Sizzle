@@ -1,0 +1,50 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  padding: 0 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  white-space: nowrap;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  a:not(.btn) {
+    color: var(--text);
+  }
+
+  a.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 0 12px;
+  }
+
+  .brand {
+    font-size: 1.15rem;
+  }
+
+  .nav {
+    gap: 12px;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,50 @@
+<section class="card">
+  <h2>Comments ({{ total() }})</h2>
+
+  @if (auth.isLoggedIn()) {
+    <form class="form" (ngSubmit)="post(null, draft)">
+      <textarea
+        name="draft"
+        [(ngModel)]="draft"
+        placeholder="Share your thoughts…"
+        maxlength="2000"
+      ></textarea>
+      <div><button class="btn small" [disabled]="!draft.trim()">Post</button></div>
+    </form>
+  } @else {
+    <p class="muted">
+      <a routerLink="/login">Log in</a>
+      to leave a comment.
+    </p>
+  }
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @for (comment of roots(); track comment.id) {
+    <app-comment-item
+      [comment]="comment"
+      [canReply]="auth.isLoggedIn()"
+      [canModify]="comment.userId === auth.userId()"
+      (replied)="post(comment.id, $event)"
+      (edited)="saveEdit(comment, $event)"
+      (deleted)="remove(comment)"
+    />
+    <div class="replies">
+      @for (reply of repliesOf(comment.id); track reply.id) {
+        <app-comment-item
+          [comment]="reply"
+          [canModify]="reply.userId === auth.userId()"
+          (edited)="saveEdit(reply, $event)"
+          (deleted)="remove(reply)"
+        />
+      }
+    </div>
+  } @empty {
+    <p class="muted">No comments yet.</p>
+  }
+
+  @if (comments().length < total()) {
+    <button class="btn small outline" (click)="loadMore()">Load more</button>
+  }
+</section>

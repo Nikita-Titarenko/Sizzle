@@ -1,0 +1,73 @@
+<div class="layout">
+  <aside class="side">
+    <section class="card form">
+      @if (currentUser.user(); as user) {
+        <div class="center">
+          <input
+            #iconInput
+            type="file"
+            hidden
+            [accept]="acceptImages"
+            (change)="pickIcon($event)"
+          />
+          <button
+            type="button"
+            class="avatar-button"
+            aria-label="Change profile photo"
+            (click)="iconInput.click()"
+          >
+            <app-user-avatar
+              [name]="user.name"
+              [imageUrl]="preview() || user.imageUrl"
+              size="large"
+            />
+            <span class="avatar-overlay"><app-icon name="upload" /></span>
+          </button>
+          <div class="row avatar-actions">
+            <button type="button" class="btn small outline" (click)="iconInput.click()">
+              {{ preview() ? 'Choose another' : 'Change photo' }}
+            </button>
+            @if (preview()) {
+              <button type="button" class="link" (click)="clearIcon()">Cancel</button>
+            }
+          </div>
+          <p class="muted">{{ user.email }}</p>
+        </div>
+      }
+      <form class="form" (ngSubmit)="save()">
+        <label>
+          <span>Name</span>
+          <input name="name" [(ngModel)]="name" required />
+        </label>
+        @if (message()) {
+          <p class="muted">{{ message() }}</p>
+        }
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+        <button class="btn small" [disabled]="!name.trim()">Save profile</button>
+      </form>
+    </section>
+    <section class="card">
+      <h3>Following ({{ following().length }})</h3>
+      <app-user-list [users]="following()" emptyText="You don't follow anyone yet." />
+    </section>
+    <section class="card">
+      <h3>Followers ({{ followers().length }})</h3>
+      <app-user-list [users]="followers()" emptyText="No followers yet." />
+    </section>
+  </aside>
+
+  <section>
+    <h2>My recipes</h2>
+    @if (page(); as page) {
+      <app-recipe-grid [recipes]="page.data" emptyText="You haven't posted any recipes yet." />
+      <app-pager
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize"
+        [total]="page.totalSize"
+        (change)="pageIndex.set($event)"
+      />
+    }
+  </section>
+</div>

@@ -1,0 +1,12 @@
+<svg
+  viewBox="0 0 24 24"
+  [attr.fill]="filled() ? 'currentColor' : 'none'"
+  stroke="currentColor"
+  stroke-width="2"
+  stroke-linecap="round"
+  stroke-linejoin="round"
+>
+  @for (d of paths(); track d) {
+    <path [attr.d]="d" />
+  }
+</svg>

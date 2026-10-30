@@ -1,0 +1,5 @@
+@if (imageUrl() && !failed()) {
+  <img [src]="imageUrl()" [alt]="name()" (error)="failed.set(true)" />
+} @else {
+  <span aria-hidden="true">{{ initial() }}</span>
+}
