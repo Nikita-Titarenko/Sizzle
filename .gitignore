@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 .github/
 Sizzle.WebApi/wwwroot/uploads/
+# Local secrets (copy appsettings.Secrets.example.json)
+appsettings.Secrets.json

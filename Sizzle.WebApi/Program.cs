@@ -14,6 +14,7 @@ using Sizzle.WebApi.ServiceExtensions;
 using Sizzle.WebApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 
 builder.Services.AddControllers();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
