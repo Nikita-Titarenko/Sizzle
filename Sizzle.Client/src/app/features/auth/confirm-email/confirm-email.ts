@@ -1,7 +1,7 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../../core/services/api.service';
+import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { errorMessage } from '../../../core/utils/error-message';
 
@@ -11,7 +11,7 @@ import { errorMessage } from '../../../core/utils/error-message';
   templateUrl: './confirm-email.html',
 })
 export class ConfirmEmail {
-  private readonly api = inject(ApiService);
+  private readonly usersApi = inject(UsersApi);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
 
@@ -24,7 +24,7 @@ export class ConfirmEmail {
   submit(): void {
     this.busy.set(true);
     this.error.set('');
-    this.api.confirmEmail(this.userId(), this.code.trim()).subscribe({
+    this.usersApi.confirmEmail(this.userId(), this.code.trim()).subscribe({
       next: ({ jwtToken }) => {
         this.auth.setToken(jwtToken);
         this.router.navigate(['/']);
@@ -37,7 +37,7 @@ export class ConfirmEmail {
   }
 
   resend(): void {
-    this.api.resendConfirmEmail(this.userId()).subscribe({
+    this.usersApi.resendConfirmEmail(this.userId()).subscribe({
       next: () => this.info.set('A new code was sent.'),
       error: (err) => this.error.set(errorMessage(err)),
     });

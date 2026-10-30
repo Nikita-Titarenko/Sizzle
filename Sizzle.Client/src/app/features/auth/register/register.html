@@ -19,7 +19,7 @@
     <button class="btn" [disabled]="busy()">Sign up</button>
   </form>
   <div class="divider">or</div>
-  <a class="btn google block" href="/api/Users/google-login">Continue with Google</a>
+  <a class="btn google block" [href]="googleLoginUrl">Continue with Google</a>
   <p class="muted">
     Already registered?
     <a routerLink="/login">Log in</a>

@@ -1,7 +1,8 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../../../core/services/api.service';
+import { CatalogApi } from '../../../core/api/catalog.api';
+import { RecipesApi } from '../../../core/api/recipes.api';
 import { Category, Ingredient, IngredientUnit } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
 import { IngredientPicker } from '../ingredient-picker/ingredient-picker';
@@ -32,7 +33,8 @@ interface NewIngredientDraft {
   styleUrl: './recipe-form.scss',
 })
 export class RecipeForm {
-  private readonly api = inject(ApiService);
+  private readonly catalogApi = inject(CatalogApi);
+  private readonly recipesApi = inject(RecipesApi);
   private readonly router = inject(Router);
 
   readonly id = input<string>();
@@ -54,7 +56,7 @@ export class RecipeForm {
   readonly ingredientIds = computed(() => this.ingredients().map((i) => i.id));
 
   constructor() {
-    this.api.getCategories().subscribe((categories) => this.categories.set(categories));
+    this.catalogApi.getCategories().subscribe((categories) => this.categories.set(categories));
     effect(() => {
       const id = this.id();
       if (id) {
@@ -122,7 +124,7 @@ export class RecipeForm {
         .map((n) => ({ ...n, name: n.name.trim(), parentId: null })),
     };
     const id = this.id();
-    const request = id ? this.api.updateRecipe(id, value) : this.api.createRecipe(value);
+    const request = id ? this.recipesApi.update(id, value) : this.recipesApi.create(value);
 
     this.busy.set(true);
     this.error.set('');
@@ -136,7 +138,7 @@ export class RecipeForm {
   }
 
   private load(id: string): void {
-    this.api.getRecipe(id).subscribe({
+    this.recipesApi.getById(id).subscribe({
       next: (recipe) => {
         this.name = recipe.name;
         this.description = recipe.description;

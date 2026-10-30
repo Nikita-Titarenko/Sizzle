@@ -1,6 +1,6 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../../core/services/api.service';
+import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { errorMessage } from '../../../core/utils/error-message';
 
@@ -14,7 +14,7 @@ import { errorMessage } from '../../../core/utils/error-message';
   templateUrl: './google-callback.html',
 })
 export class GoogleCallback implements OnInit {
-  private readonly api = inject(ApiService);
+  private readonly usersApi = inject(UsersApi);
   private readonly auth = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -31,7 +31,7 @@ export class GoogleCallback implements OnInit {
       }
     }
 
-    this.api.googleCallback(params).subscribe({
+    this.usersApi.googleCallback(params).subscribe({
       next: (result) => {
         if (!result.jwtToken) {
           this.error.set('The server did not return a token.');

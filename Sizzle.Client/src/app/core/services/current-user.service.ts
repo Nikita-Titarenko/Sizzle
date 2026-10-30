@@ -1,12 +1,12 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
-import { ApiService } from './api.service';
+import { UsersApi } from '../api/users.api';
 import { AuthService } from '../auth/auth.service';
 import { User } from '../models';
 
 /** Profile of the signed-in user, refreshed whenever the token changes. */
 @Injectable({ providedIn: 'root' })
 export class CurrentUserService {
-  private readonly api = inject(ApiService);
+  private readonly usersApi = inject(UsersApi);
   private readonly auth = inject(AuthService);
 
   readonly user = signal<User | null>(null);
@@ -24,7 +24,7 @@ export class CurrentUserService {
       this.user.set(null);
       return;
     }
-    this.api
+    this.usersApi
       .getUser(id)
       .subscribe({ next: (user) => this.user.set(user), error: () => this.user.set(null) });
   }

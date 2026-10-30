@@ -1,6 +1,7 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../../../core/services/api.service';
+import { RecipesApi } from '../../../core/api/recipes.api';
+import { UsersApi } from '../../../core/api/users.api';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { PageResponse, Recipe, User } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
@@ -17,7 +18,8 @@ const PAGE_SIZE = 9;
   styleUrl: './profile.scss',
 })
 export class Profile {
-  private readonly api = inject(ApiService);
+  private readonly recipesApi = inject(RecipesApi);
+  private readonly usersApi = inject(UsersApi);
   protected readonly currentUser = inject(CurrentUserService);
 
   readonly pageSize = PAGE_SIZE;
@@ -32,14 +34,14 @@ export class Profile {
   private icon: File | null = null;
 
   constructor() {
-    this.api.getFollowers().subscribe((users) => this.followers.set(users));
-    this.api.getFollowing().subscribe((users) => this.following.set(users));
+    this.usersApi.getFollowers().subscribe((users) => this.followers.set(users));
+    this.usersApi.getFollowing().subscribe((users) => this.following.set(users));
     effect(() => {
       this.name = this.currentUser.user()?.name ?? this.name;
     });
     effect(() => {
-      this.api
-        .getMyRecipes({ pageIndex: this.pageIndex(), pageSize: PAGE_SIZE })
+      this.recipesApi
+        .getMine({ pageIndex: this.pageIndex(), pageSize: PAGE_SIZE })
         .subscribe((page) => this.page.set(page));
     });
   }
@@ -52,7 +54,7 @@ export class Profile {
   save(): void {
     this.message.set('');
     this.error.set('');
-    this.api.updateProfile(this.name.trim(), this.icon).subscribe({
+    this.usersApi.updateProfile(this.name.trim(), this.icon).subscribe({
       next: () => {
         this.message.set('Profile saved.');
         this.currentUser.refresh();

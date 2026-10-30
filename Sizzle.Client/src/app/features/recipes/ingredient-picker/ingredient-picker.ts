@@ -3,7 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { Ingredient } from '../../../core/models';
-import { ApiService } from '../../../core/services/api.service';
+import { CatalogApi } from '../../../core/api/catalog.api';
 
 /** Search box that suggests catalog ingredients (including nested variants) to add to a recipe. */
 @Component({
@@ -13,7 +13,7 @@ import { ApiService } from '../../../core/services/api.service';
   styleUrl: './ingredient-picker.scss',
 })
 export class IngredientPicker {
-  private readonly api = inject(ApiService);
+  private readonly catalogApi = inject(CatalogApi);
   private readonly search$ = new Subject<string>();
 
   /** Ids already in the recipe; they are hidden from the suggestions. */
@@ -33,7 +33,7 @@ export class IngredientPicker {
       .pipe(
         debounceTime(250),
         distinctUntilChanged(),
-        switchMap((term) => this.api.getIngredients(term)),
+        switchMap((term) => this.catalogApi.getIngredients(term)),
         takeUntilDestroyed(),
       )
       .subscribe((items) => this.results.set(items));

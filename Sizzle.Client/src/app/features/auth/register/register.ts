@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../../../core/services/api.service';
+import { UsersApi } from '../../../core/api/users.api';
 import { errorMessage } from '../../../core/utils/error-message';
 
 @Component({
@@ -10,8 +10,10 @@ import { errorMessage } from '../../../core/utils/error-message';
   templateUrl: './register.html',
 })
 export class Register {
-  private readonly api = inject(ApiService);
+  private readonly usersApi = inject(UsersApi);
   private readonly router = inject(Router);
+
+  readonly googleLoginUrl = this.usersApi.googleLoginUrl();
 
   name = '';
   email = '';
@@ -22,12 +24,14 @@ export class Register {
   submit(): void {
     this.busy.set(true);
     this.error.set('');
-    this.api.register({ name: this.name, email: this.email, password: this.password }).subscribe({
-      next: ({ userId }) => this.router.navigate(['/confirm-email', userId]),
-      error: (err) => {
-        this.busy.set(false);
-        this.error.set(errorMessage(err));
-      },
-    });
+    this.usersApi
+      .register({ name: this.name, email: this.email, password: this.password })
+      .subscribe({
+        next: ({ userId }) => this.router.navigate(['/confirm-email', userId]),
+        error: (err) => {
+          this.busy.set(false);
+          this.error.set(errorMessage(err));
+        },
+      });
   }
 }

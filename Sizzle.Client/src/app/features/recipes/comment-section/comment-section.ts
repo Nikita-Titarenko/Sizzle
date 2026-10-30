@@ -1,7 +1,7 @@
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ApiService } from '../../../core/services/api.service';
+import { CommentsApi } from '../../../core/api/comments.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Comment } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
@@ -16,7 +16,7 @@ const PAGE_SIZE = 20;
   styleUrl: './comment-section.scss',
 })
 export class CommentSection implements OnInit {
-  private readonly api = inject(ApiService);
+  private readonly commentsApi = inject(CommentsApi);
   protected readonly auth = inject(AuthService);
 
   readonly recipeId = input.required<string>();
@@ -42,7 +42,7 @@ export class CommentSection implements OnInit {
   }
 
   post(parentId: string | null, content: string): void {
-    this.api.createComment(this.recipeId(), content.trim(), parentId).subscribe({
+    this.commentsApi.create(this.recipeId(), content.trim(), parentId).subscribe({
       next: (comment) => {
         this.comments.update((list) => (parentId ? [...list, comment] : [comment, ...list]));
         this.total.update((n) => n + 1);
@@ -55,7 +55,7 @@ export class CommentSection implements OnInit {
   }
 
   saveEdit(comment: Comment, content: string): void {
-    this.api.updateComment(comment.id, content).subscribe({
+    this.commentsApi.update(comment.id, content).subscribe({
       next: (updated) => {
         this.comments.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
       },
@@ -67,7 +67,7 @@ export class CommentSection implements OnInit {
     if (!confirm('Delete this comment?')) {
       return;
     }
-    this.api.deleteComment(comment.id).subscribe({
+    this.commentsApi.delete(comment.id).subscribe({
       next: () => {
         this.comments.update((list) =>
           list.filter((c) => c.id !== comment.id && c.parentId !== comment.id),
@@ -79,7 +79,7 @@ export class CommentSection implements OnInit {
   }
 
   private load(pageIndex: number): void {
-    this.api.getComments(this.recipeId(), pageIndex, PAGE_SIZE).subscribe({
+    this.commentsApi.getByRecipe(this.recipeId(), pageIndex, PAGE_SIZE).subscribe({
       next: (page) => {
         this.pageIndex = pageIndex;
         this.total.set(page.totalSize);

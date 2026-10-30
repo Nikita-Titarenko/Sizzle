@@ -1,5 +1,6 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
+import { environment } from '../../../environments/environment';
 import { AuthService } from '../auth/auth.service';
 import { RecipeCreatedEvent } from '../models';
 
@@ -24,7 +25,7 @@ export class NotificationsService {
 
   private async start(token: string): Promise<void> {
     const connection = new HubConnectionBuilder()
-      .withUrl('/hubs/recipes', { accessTokenFactory: () => token })
+      .withUrl(`${environment.apiUrl}/hubs/recipes`, { accessTokenFactory: () => token })
       .withAutomaticReconnect()
       .configureLogging(LogLevel.Warning)
       .build();
