@@ -27,6 +27,7 @@ export type IngredientUnit = 'Grams' | 'Milliliters' | 'Pieces';
 
 export interface Recipe {
   id: string;
+  userId: string;
   userName: string;
   userImageUrl: string | null;
   isFollowed: boolean;
