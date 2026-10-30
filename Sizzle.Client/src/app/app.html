@@ -1,6 +1,6 @@
 <app-header />
 <app-notification-toasts />
 
-<main class="container">
+<main [class.container]="!fullBleed()">
   <router-outlet />
 </main>

@@ -4,8 +4,13 @@ import { authGuard } from './core/auth/auth.guard';
 export const routes: Routes = [
   {
     path: '',
-    loadComponent: () =>
-      import('./features/recipes/recipe-list/recipe-list').then((m) => m.RecipeList),
+    pathMatch: 'full',
+    data: { fullBleed: true },
+    loadComponent: () => import('./features/feed/feed-page/feed-page').then((m) => m.FeedPage),
+  },
+  {
+    path: 'explore',
+    loadComponent: () => import('./features/recipes/explore/explore').then((m) => m.Explore),
   },
   {
     path: 'login',

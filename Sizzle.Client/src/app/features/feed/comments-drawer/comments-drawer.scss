@@ -1,0 +1,79 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  background: rgb(0 0 0 / 0.35);
+  animation: fade 0.2s ease-out;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  width: min(420px, 100vw);
+  background: var(--bg);
+  box-shadow: -8px 0 24px rgb(0 0 0 / 0.15);
+  animation: slide-in 0.25s ease-out;
+}
+
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.close {
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--text);
+  font-size: 1.25rem;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--border);
+  }
+}
+
+.drawer-body {
+  flex: 1;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in {
+  from {
+    translate: 100% 0;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    translate: 0 100%;
+  }
+}
+
+@media (max-width: 640px) {
+  .drawer {
+    top: auto;
+    width: 100%;
+    height: 70dvh;
+    border-radius: 16px 16px 0 0;
+    animation-name: slide-up;
+  }
+}

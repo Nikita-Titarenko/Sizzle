@@ -2,8 +2,9 @@
   <a routerLink="/" class="brand">🔥 Sizzle</a>
   <nav class="nav">
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      Recipes
+      For you
     </a>
+    <a routerLink="/explore" routerLinkActive="active">Explore</a>
     @if (auth.isLoggedIn()) {
       <a routerLink="/recipes/new" routerLinkActive="active">New recipe</a>
       <a routerLink="/profile" routerLinkActive="active">Profile</a>
