@@ -1,0 +1,47 @@
+<div class="comment">
+  <div class="row head">
+    @if (comment().userImageUrl) {
+      <img class="avatar" [src]="comment().userImageUrl" alt="" />
+    } @else {
+      <span class="avatar">{{ comment().userName.charAt(0) }}</span>
+    }
+    <a [routerLink]="['/users', comment().userId]">
+      <b>{{ comment().userName }}</b>
+    </a>
+    <span class="muted">{{ comment().createdAt | date: 'short' }}</span>
+  </div>
+
+  @if (mode() === 'edit') {
+    <form class="form" (ngSubmit)="submitEdit()">
+      <textarea name="edit" [(ngModel)]="editText" maxlength="2000"></textarea>
+      <div class="row">
+        <button class="btn small" [disabled]="!editText.trim()">Save</button>
+        <button type="button" class="link" (click)="mode.set('view')">Cancel</button>
+      </div>
+    </form>
+  } @else {
+    <p class="content">{{ comment().content }}</p>
+  }
+
+  <div class="row actions">
+    @if (canReply()) {
+      <button class="link" (click)="toggleReply()">Reply</button>
+    }
+    @if (canModify()) {
+      <button class="link" (click)="startEdit()">Edit</button>
+      <button class="link" (click)="deleted.emit()">Delete</button>
+    }
+  </div>
+
+  @if (mode() === 'reply') {
+    <form class="form reply" (ngSubmit)="submitReply()">
+      <textarea
+        name="reply"
+        [(ngModel)]="replyText"
+        placeholder="Write a reply…"
+        maxlength="2000"
+      ></textarea>
+      <div><button class="btn small" [disabled]="!replyText.trim()">Reply</button></div>
+    </form>
+  }
+</div>

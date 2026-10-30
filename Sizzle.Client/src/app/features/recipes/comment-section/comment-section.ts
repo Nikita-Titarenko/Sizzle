@@ -1,4 +1,3 @@
-import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,12 +5,13 @@ import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Comment } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
+import { CommentItem } from '../comment-item/comment-item';
 
 const PAGE_SIZE = 20;
 
 @Component({
   selector: 'app-comment-section',
-  imports: [FormsModule, DatePipe, RouterLink, NgTemplateOutlet],
+  imports: [FormsModule, RouterLink, CommentItem],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
@@ -24,12 +24,8 @@ export class CommentSection implements OnInit {
   readonly comments = signal<Comment[]>([]);
   readonly total = signal(0);
   readonly error = signal('');
-  readonly replyTo = signal<string | null>(null);
-  readonly editingId = signal<string | null>(null);
   private pageIndex = 0;
   draft = '';
-  replyText = '';
-  editText = '';
 
   readonly roots = computed(() => this.comments().filter((c) => !c.parentId));
 
@@ -50,24 +46,18 @@ export class CommentSection implements OnInit {
       next: (comment) => {
         this.comments.update((list) => (parentId ? [...list, comment] : [comment, ...list]));
         this.total.update((n) => n + 1);
-        this.draft = '';
-        this.replyText = '';
-        this.replyTo.set(null);
+        if (!parentId) {
+          this.draft = '';
+        }
       },
       error: (err) => this.error.set(errorMessage(err)),
     });
   }
 
-  startEdit(comment: Comment): void {
-    this.editText = comment.content;
-    this.editingId.set(comment.id);
-  }
-
-  saveEdit(comment: Comment): void {
-    this.api.updateComment(comment.id, this.editText.trim()).subscribe({
+  saveEdit(comment: Comment, content: string): void {
+    this.api.updateComment(comment.id, content).subscribe({
       next: (updated) => {
         this.comments.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
-        this.editingId.set(null);
       },
       error: (err) => this.error.set(errorMessage(err)),
     });

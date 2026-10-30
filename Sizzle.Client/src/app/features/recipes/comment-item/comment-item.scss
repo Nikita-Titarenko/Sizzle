@@ -1,0 +1,23 @@
+.comment {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.head {
+  gap: 8px;
+  font-size: 0.9rem;
+}
+
+.content {
+  margin: 8px 0;
+  white-space: pre-wrap;
+}
+
+.actions {
+  gap: 14px;
+  font-size: 0.85rem;
+}
+
+.reply {
+  margin-top: 8px;
+}
