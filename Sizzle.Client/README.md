@@ -4,10 +4,36 @@ Angular frontend for the Sizzle API.
 
 ## Run
 
-1. Start the API from the repository root: `docker compose up -d` (API on http://localhost:8080, Swagger at `/swagger`).
-2. In this folder: `npm install` and then `npm start`. Open http://localhost:4200.
+### Everything in Docker
 
-The dev server proxies `/api`, `/hubs` (SignalR) and `/uploads` to `http://localhost:8080` (see `proxy.conf.json`), so the API does not need CORS.
+From the repository root:
+
+```bash
+docker compose up -d --build
+```
+
+| Service         | URL                           |
+| --------------- | ----------------------------- |
+| Web app         | http://localhost:4200         |
+| API + Swagger   | http://localhost:8080/swagger |
+| MySQL           | localhost:3306                |
+
+The `sizzle-client` container builds the app and serves it with nginx (`nginx.conf`), which forwards `/api`, `/hubs` (SignalR WebSockets) and `/uploads` to the API container. After changing frontend code, rebuild it with `docker compose up -d --build sizzle-client`.
+
+Stop everything with `docker compose down` (add `-v` to also wipe the database).
+
+### Frontend with live reload
+
+For day-to-day frontend work, run the API in Docker and the Angular dev server locally:
+
+```bash
+docker compose up -d mysql sizzle-webapi
+cd Sizzle.Client
+npm install
+npm start
+```
+
+`ng serve` uses the same port (4200), so stop the client container first: `docker compose stop sizzle-client`. The dev server proxies the same paths to `http://localhost:8080` (see `proxy.conf.json`), so the API does not need CORS.
 
 ## Google sign-in
 
