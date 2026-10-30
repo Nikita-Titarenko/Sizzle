@@ -1,7 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { ApiService } from './api.service';
-import { AuthService } from './auth.service';
-import { User } from './models';
+import { AuthService } from '../auth/auth.service';
+import { User } from '../models';
 
 /** Profile of the signed-in user, refreshed whenever the token changes. */
 @Injectable({ providedIn: 'root' })

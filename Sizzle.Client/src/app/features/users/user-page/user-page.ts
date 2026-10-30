@@ -1,9 +1,9 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
-import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
-import { PageResponse, Recipe, User, errorMessage } from '../core/models';
-import { Pager } from '../shared/pager';
-import { RecipeGrid } from '../shared/recipe-grid';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { PageResponse, Recipe, User, errorMessage } from '../../../core/models';
+import { Pager } from '../../../shared/components/pager/pager';
+import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 
 const PAGE_SIZE = 9;
 

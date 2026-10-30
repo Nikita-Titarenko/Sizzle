@@ -13,7 +13,7 @@ import {
   RecipeLike,
   RecipeQuery,
   User,
-} from './models';
+} from '../models';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {

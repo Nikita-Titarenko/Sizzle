@@ -2,14 +2,14 @@ import { DatePipe, NgTemplateOutlet } from '@angular/common';
 import { Component, OnInit, computed, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
-import { Comment, errorMessage } from '../core/models';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { Comment, errorMessage } from '../../../core/models';
 
 const PAGE_SIZE = 20;
 
 @Component({
-  selector: 'app-comments',
+  selector: 'app-comment-section',
   imports: [FormsModule, DatePipe, RouterLink, NgTemplateOutlet],
   template: `
     <section class="card">
@@ -87,7 +87,7 @@ const PAGE_SIZE = 20;
     .reply { margin-top: 8px; }
   `,
 })
-export class Comments implements OnInit {
+export class CommentSection implements OnInit {
   private readonly api = inject(ApiService);
   protected readonly auth = inject(AuthService);
 

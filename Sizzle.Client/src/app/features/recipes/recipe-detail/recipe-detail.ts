@@ -1,14 +1,14 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
-import { RecipeDetails, errorMessage } from '../core/models';
-import { Comments } from '../shared/comments';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { RecipeDetails, errorMessage } from '../../../core/models';
+import { CommentSection } from '../comment-section/comment-section';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [DatePipe, RouterLink, Comments],
+  imports: [DatePipe, RouterLink, CommentSection],
   template: `
     @if (error()) {
       <p class="error">{{ error() }}</p>
@@ -78,7 +78,7 @@ import { Comments } from '../shared/comments';
           </section>
         </div>
 
-        <app-comments [recipeId]="r.id" />
+        <app-comment-section [recipeId]="r.id" />
       </article>
     } @else if (!error()) {
       <p class="muted">Loading…</p>

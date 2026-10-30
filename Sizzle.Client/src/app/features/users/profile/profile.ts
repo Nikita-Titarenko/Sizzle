@@ -1,11 +1,11 @@
 import { Component, effect, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from '../core/api.service';
-import { CurrentUserService } from '../core/current-user.service';
-import { PageResponse, Recipe, User, errorMessage } from '../core/models';
-import { Pager } from '../shared/pager';
-import { RecipeGrid } from '../shared/recipe-grid';
-import { UserList } from '../shared/user-list';
+import { ApiService } from '../../../core/services/api.service';
+import { CurrentUserService } from '../../../core/services/current-user.service';
+import { PageResponse, Recipe, User, errorMessage } from '../../../core/models';
+import { Pager } from '../../../shared/components/pager/pager';
+import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
+import { UserList } from '../../../shared/components/user-list/user-list';
 
 const PAGE_SIZE = 9;
 

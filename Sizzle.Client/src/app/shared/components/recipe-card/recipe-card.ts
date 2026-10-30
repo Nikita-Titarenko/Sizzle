@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Recipe } from '../core/models';
+import { Recipe } from '../../../core/models';
 
 @Component({
   selector: 'app-recipe-card',

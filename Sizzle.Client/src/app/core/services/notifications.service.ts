@@ -1,7 +1,7 @@
 import { Injectable, effect, inject, signal } from '@angular/core';
 import { HubConnection, HubConnectionBuilder, LogLevel } from '@microsoft/signalr';
-import { AuthService } from './auth.service';
-import { RecipeCreatedEvent } from './models';
+import { AuthService } from '../auth/auth.service';
+import { RecipeCreatedEvent } from '../models';
 
 /** Listens on /hubs/recipes for new recipes from users the current user follows. */
 @Injectable({ providedIn: 'root' })

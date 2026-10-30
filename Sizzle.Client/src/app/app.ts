@@ -1,7 +1,7 @@
 import { Component, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { AuthService } from './core/auth.service';
-import { NotificationsService } from './core/notifications.service';
+import { AuthService } from './core/auth/auth.service';
+import { NotificationsService } from './core/services/notifications.service';
 
 @Component({
   selector: 'app-root',

@@ -3,8 +3,8 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
-import { ApiService } from '../core/api.service';
-import { Category, Ingredient, IngredientUnit, errorMessage } from '../core/models';
+import { ApiService } from '../../../core/services/api.service';
+import { Category, Ingredient, IngredientUnit, errorMessage } from '../../../core/models';
 
 interface StepDraft {
   name: string;

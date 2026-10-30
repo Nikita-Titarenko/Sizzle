@@ -1,9 +1,9 @@
 import { Component, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ApiService } from '../core/api.service';
-import { AuthService } from '../core/auth.service';
-import { errorMessage } from '../core/models';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/auth/auth.service';
+import { errorMessage } from '../../../core/models';
 
 @Component({
   selector: 'app-confirm-email',

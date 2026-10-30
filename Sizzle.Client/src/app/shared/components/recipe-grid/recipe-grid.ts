@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
-import { Recipe } from '../core/models';
-import { RecipeCard } from './recipe-card';
+import { Recipe } from '../../../core/models';
+import { RecipeCard } from '../recipe-card/recipe-card';
 
 @Component({
   selector: 'app-recipe-grid',

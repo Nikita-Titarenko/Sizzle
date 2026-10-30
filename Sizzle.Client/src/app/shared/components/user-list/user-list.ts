@@ -1,6 +1,6 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { User } from '../core/models';
+import { User } from '../../../core/models';
 
 @Component({
   selector: 'app-user-list',

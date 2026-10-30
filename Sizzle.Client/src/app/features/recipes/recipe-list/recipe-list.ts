@@ -2,10 +2,10 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Subject, debounceTime, switchMap } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ApiService } from '../core/api.service';
-import { Category, PageResponse, Recipe } from '../core/models';
-import { Pager } from '../shared/pager';
-import { RecipeGrid } from '../shared/recipe-grid';
+import { ApiService } from '../../../core/services/api.service';
+import { Category, PageResponse, Recipe } from '../../../core/models';
+import { Pager } from '../../../shared/components/pager/pager';
+import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 
 const PAGE_SIZE = 12;
 
