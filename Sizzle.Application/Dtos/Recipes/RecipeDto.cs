@@ -4,6 +4,8 @@ public class RecipeDto
 {
     public Guid Id { get; init; }
 
+    public Guid UserId { get; init; }
+
     public string UserName { get; init; } = string.Empty;
 
     public string? UserImageUrl { get; init; }

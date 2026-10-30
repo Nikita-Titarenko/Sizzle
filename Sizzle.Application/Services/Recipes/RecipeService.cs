@@ -112,6 +112,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             Value = new RecipeDetailsDto
             {
                 Id = recipe.Id,
+                UserId = recipe.ApplicationUserId,
                 UserName = recipe.ApplicationUser?.Name ?? string.Empty,
                 UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", recipe.ApplicationUserId.ToString())),
                 IsFollowed = IsFollowingAuthor(recipe, dto.ApplicationUserId),
@@ -383,6 +384,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         return new RecipeDto
         {
             Id = recipe.Id,
+            UserId = recipe.ApplicationUserId,
             UserName = recipe.ApplicationUser?.Name ?? string.Empty,
             UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", recipe.ApplicationUserId.ToString())),
             IsFollowed = IsFollowingAuthor(recipe, applicationUserId),
