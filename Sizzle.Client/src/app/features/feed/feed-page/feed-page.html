@@ -1,5 +1,19 @@
 <div class="feed-page">
-  <nav class="filters" aria-label="Filter by category">
+  <nav class="filters" aria-label="Filters">
+    <button
+      type="button"
+      class="chip ingredient-toggle"
+      [class.on]="selectedIngredients().length > 0"
+      [attr.aria-expanded]="ingredientPanelOpen()"
+      (click)="ingredientPanelOpen.set(!ingredientPanelOpen())"
+    >
+      <app-icon name="filter" />
+      Ingredients
+      @if (selectedIngredients().length) {
+        <span class="count">{{ selectedIngredients().length }}</span>
+      }
+    </button>
+    <span class="divider-v" aria-hidden="true"></span>
     <button
       type="button"
       class="chip"
@@ -19,6 +33,49 @@
       </button>
     }
   </nav>
+
+  @if (ingredientPanelOpen()) {
+    <section class="ingredient-panel" aria-label="Filter by ingredients">
+      <header class="panel-header">
+        <b>Recipes with these ingredients</b>
+        <button
+          type="button"
+          class="icon-button"
+          aria-label="Close ingredient filter"
+          (click)="ingredientPanelOpen.set(false)"
+        >
+          <app-icon name="close" />
+        </button>
+      </header>
+      <app-ingredient-picker
+        placeholder="Search an ingredient, e.g. tomato…"
+        [excludeIds]="selectedIngredientIds()"
+        (picked)="addIngredientFilter($event)"
+      />
+      @if (selectedIngredients().length) {
+        <div class="selected">
+          @for (ingredient of selectedIngredients(); track ingredient.id) {
+            <span class="selected-chip">
+              @if (ingredient.parentName) {
+                <span class="parent">{{ ingredient.parentName }} ›</span>
+              }
+              {{ ingredient.name }}
+              <button
+                type="button"
+                [attr.aria-label]="'Remove ' + ingredient.name"
+                (click)="removeIngredientFilter(ingredient.id)"
+              >
+                <app-icon name="close" />
+              </button>
+            </span>
+          }
+          <button type="button" class="link" (click)="clearIngredientFilter()">Clear all</button>
+        </div>
+      } @else {
+        <p class="muted">Pick one or more ingredients to see recipes that use them.</p>
+      }
+    </section>
+  }
 
   <div class="scroller" #scroller>
     @for (recipe of recipes(); track recipe.id; let i = $index) {
@@ -45,7 +102,16 @@
     } @else if (loading()) {
       <div class="status muted">Loading…</div>
     } @else if (recipes().length === 0) {
-      <div class="status muted">No recipes here yet.</div>
+      <div class="status muted">
+        @if (hasFilters()) {
+          <p>No recipes match these filters.</p>
+          <button type="button" class="btn small outline" (click)="clearFilters()">
+            Clear filters
+          </button>
+        } @else {
+          <p>No recipes here yet.</p>
+        }
+      </div>
     } @else if (!hasMore()) {
       <div class="status end muted">You're all caught up 🎉</div>
     }

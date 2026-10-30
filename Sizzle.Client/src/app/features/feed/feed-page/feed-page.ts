@@ -11,13 +11,15 @@ import {
   viewChildren,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { Subscription } from 'rxjs';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
-import { Category, Recipe } from '../../../core/models';
+import { Category, IngredientChoice, Recipe } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
 import { Icon } from '../../../shared/components/icon/icon';
+import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
 import { CommentsDrawer } from '../comments-drawer/comments-drawer';
 import { FeedItem } from '../feed-item/feed-item';
 
@@ -30,7 +32,7 @@ const VIEW_DELAY_MS = 2000;
 /** Vertical, snap-scrolling recipe feed: one post per screen, like Shorts/Reels. */
 @Component({
   selector: 'app-feed-page',
-  imports: [FeedItem, CommentsDrawer, Icon],
+  imports: [FeedItem, CommentsDrawer, Icon, IngredientPicker],
   templateUrl: './feed-page.html',
   styleUrl: './feed-page.scss',
   host: { '(document:keydown)': 'onKeydown($event)' },
@@ -45,6 +47,8 @@ export class FeedPage {
   readonly recipes = signal<Recipe[]>([]);
   readonly categories = signal<Category[]>([]);
   readonly categoryId = signal<string | null>(null);
+  readonly selectedIngredients = signal<IngredientChoice[]>([]);
+  readonly ingredientPanelOpen = signal(false);
   readonly activeIndex = signal(0);
   readonly loading = signal(false);
   readonly error = signal('');
@@ -56,8 +60,13 @@ export class FeedPage {
   private pageIndex = 0;
   private readonly viewed = new Set<string>();
   private toastTimer?: ReturnType<typeof setTimeout>;
+  private loadSub?: Subscription;
 
   readonly hasMore = computed(() => this.total() === null || this.recipes().length < this.total()!);
+  readonly selectedIngredientIds = computed(() => this.selectedIngredients().map((i) => i.id));
+  readonly hasFilters = computed(
+    () => this.categoryId() !== null || this.selectedIngredients().length > 0,
+  );
   readonly categoryNames = computed(() => new Map(this.categories().map((c) => [c.id, c.name])));
 
   private readonly scroller = viewChild.required<ElementRef<HTMLElement>>('scroller');
@@ -108,16 +117,31 @@ export class FeedPage {
   }
 
   selectCategory(id: string | null): void {
-    if (this.categoryId() === id) {
-      return;
+    if (this.categoryId() !== id) {
+      this.categoryId.set(id);
+      this.reload();
     }
-    this.categoryId.set(id);
-    this.recipes.set([]);
-    this.total.set(null);
-    this.pageIndex = 0;
-    this.activeIndex.set(0);
-    this.scroller().nativeElement.scrollTo({ top: 0 });
-    this.loadNextPage();
+  }
+
+  addIngredientFilter(choice: IngredientChoice): void {
+    this.selectedIngredients.update((list) => [...list, choice]);
+    this.reload();
+  }
+
+  removeIngredientFilter(id: string): void {
+    this.selectedIngredients.update((list) => list.filter((i) => i.id !== id));
+    this.reload();
+  }
+
+  clearIngredientFilter(): void {
+    this.selectedIngredients.set([]);
+    this.reload();
+  }
+
+  clearFilters(): void {
+    this.categoryId.set(null);
+    this.selectedIngredients.set([]);
+    this.reload();
   }
 
   retry(): void {
@@ -184,6 +208,18 @@ export class FeedPage {
     this.showToast('Link copied');
   }
 
+  /** Starts the feed over from the top with the current filters. */
+  private reload(): void {
+    this.loadSub?.unsubscribe();
+    this.loading.set(false);
+    this.recipes.set([]);
+    this.total.set(null);
+    this.pageIndex = 0;
+    this.activeIndex.set(0);
+    this.scroller().nativeElement.scrollTo({ top: 0 });
+    this.loadNextPage();
+  }
+
   private loadNextPage(): void {
     if (this.loading() || !this.hasMore()) {
       return;
@@ -191,18 +227,16 @@ export class FeedPage {
     const categoryId = this.categoryId();
     this.loading.set(true);
     this.error.set('');
-    this.recipesApi
+    this.loadSub = this.recipesApi
       .getAll({
         pageIndex: this.pageIndex,
         pageSize: PAGE_SIZE,
         categoryIds: categoryId ? [categoryId] : [],
+        ingredientIds: this.selectedIngredientIds(),
       })
       .subscribe({
         next: (page) => {
           this.loading.set(false);
-          if (categoryId !== this.categoryId()) {
-            return; // the filter changed while this page was loading
-          }
           this.pageIndex++;
           this.total.set(page.totalSize);
           this.recipes.update((list) => [...list, ...page.data]);

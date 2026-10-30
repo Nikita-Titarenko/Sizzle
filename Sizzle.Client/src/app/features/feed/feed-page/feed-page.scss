@@ -18,6 +18,112 @@
   }
 }
 
+.ingredient-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--accent-dark);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.divider-v {
+  flex-shrink: 0;
+  width: 1px;
+  margin: 4px 2px;
+  background: var(--border);
+}
+
+.ingredient-panel {
+  position: absolute;
+  top: 56px;
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(520px, calc(100% - 32px));
+  padding: 16px;
+  translate: -50% 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.15);
+
+  p {
+    margin: 0;
+  }
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.icon-button {
+  display: inline-flex;
+  padding: 6px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--border);
+  }
+}
+
+.selected {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 999px;
+  background: #fff1e6;
+  color: var(--accent-dark);
+  font-size: 0.85rem;
+  font-weight: 600;
+
+  .parent {
+    font-weight: 400;
+    opacity: 0.75;
+  }
+
+  button {
+    display: inline-flex;
+    padding: 3px;
+    border: none;
+    border-radius: 50%;
+    background: none;
+    color: inherit;
+    cursor: pointer;
+
+    &:hover {
+      background: rgb(0 0 0 / 0.08);
+    }
+  }
+}
+
 .scroller {
   flex: 1;
   min-height: 0;
