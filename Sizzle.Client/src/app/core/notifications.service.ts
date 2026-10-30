@@ -14,7 +14,7 @@ export class NotificationsService {
   constructor() {
     effect(() => {
       const token = this.auth.token();
-      void this.stop().then(() => token && this.start(token));
+      void this.stop().then(() => (token ? this.start(token) : undefined));
     });
   }
 
