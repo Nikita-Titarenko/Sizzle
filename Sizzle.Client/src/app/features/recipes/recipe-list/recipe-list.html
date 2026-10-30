@@ -1,0 +1,34 @@
+<section class="hero">
+  <h1>What are we cooking today?</h1>
+  <input
+    class="search"
+    type="search"
+    placeholder="Search recipes…"
+    [ngModel]="search()"
+    (ngModelChange)="onSearch($event)"
+  />
+</section>
+
+<div class="row chips">
+  @for (category of categories(); track category.id) {
+    <button
+      class="chip"
+      [class.on]="selected().has(category.id)"
+      (click)="toggleCategory(category.id)"
+    >
+      {{ category.name }}
+    </button>
+  }
+</div>
+
+@if (page(); as page) {
+  <app-recipe-grid [recipes]="page.data" emptyText="Nothing found. Try another search." />
+  <app-pager
+    [pageIndex]="pageIndex()"
+    [pageSize]="pageSize"
+    [total]="page.totalSize"
+    (change)="goTo($event)"
+  />
+} @else {
+  <p class="muted">Loading…</p>
+}

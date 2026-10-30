@@ -24,6 +24,8 @@ export class CurrentUserService {
       this.user.set(null);
       return;
     }
-    this.api.getUser(id).subscribe({ next: (user) => this.user.set(user), error: () => this.user.set(null) });
+    this.api
+      .getUser(id)
+      .subscribe({ next: (user) => this.user.set(user), error: () => this.user.set(null) });
   }
 }

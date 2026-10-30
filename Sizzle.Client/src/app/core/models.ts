@@ -107,7 +107,12 @@ export interface RecipeFormValue {
   file: File | null;
   steps: { name: string; description: string; files: File[] }[];
   ingredients: { id: string; quantity: number }[];
-  newIngredients: { name: string; parentId: string | null; unit: IngredientUnit; quantity: number }[];
+  newIngredients: {
+    name: string;
+    parentId: string | null;
+    unit: IngredientUnit;
+    quantity: number;
+  }[];
 }
 
 export interface RecipeCreatedEvent {

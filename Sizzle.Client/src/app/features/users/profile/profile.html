@@ -1,0 +1,54 @@
+<div class="layout">
+  <aside class="side">
+    <section class="card form">
+      @if (currentUser.user(); as user) {
+        <div class="center">
+          @if (preview() || user.imageUrl) {
+            <img class="avatar large" [src]="preview() || user.imageUrl" alt="" />
+          } @else {
+            <span class="avatar large">{{ user.name.charAt(0) }}</span>
+          }
+          <p class="muted">{{ user.email }}</p>
+        </div>
+      }
+      <form class="form" (ngSubmit)="save()">
+        <label>
+          <span>Name</span>
+          <input name="name" [(ngModel)]="name" required />
+        </label>
+        <label>
+          <span>Avatar</span>
+          <input type="file" accept="image/*" (change)="pickIcon($event)" />
+        </label>
+        @if (message()) {
+          <p class="muted">{{ message() }}</p>
+        }
+        @if (error()) {
+          <p class="error">{{ error() }}</p>
+        }
+        <button class="btn small" [disabled]="!name.trim()">Save profile</button>
+      </form>
+    </section>
+    <section class="card">
+      <h3>Following ({{ following().length }})</h3>
+      <app-user-list [users]="following()" emptyText="You don't follow anyone yet." />
+    </section>
+    <section class="card">
+      <h3>Followers ({{ followers().length }})</h3>
+      <app-user-list [users]="followers()" emptyText="No followers yet." />
+    </section>
+  </aside>
+
+  <section>
+    <h2>My recipes</h2>
+    @if (page(); as page) {
+      <app-recipe-grid [recipes]="page.data" emptyText="You haven't posted any recipes yet." />
+      <app-pager
+        [pageIndex]="pageIndex()"
+        [pageSize]="pageSize"
+        [total]="page.totalSize"
+        (change)="pageIndex.set($event)"
+      />
+    }
+  </section>
+</div>

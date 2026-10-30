@@ -1,0 +1,35 @@
+<article class="recipe-card card">
+  <a class="cover-link" [routerLink]="['/recipes', recipe().id]">
+    @if (recipe().fileUrl) {
+      <img class="cover" [src]="recipe().fileUrl" [alt]="recipe().name" loading="lazy" />
+    } @else {
+      <div class="cover placeholder">🍳</div>
+    }
+  </a>
+  <div class="body">
+    <h3>
+      <a [routerLink]="['/recipes', recipe().id]">{{ recipe().name }}</a>
+    </h3>
+    <p class="muted desc">{{ recipe().description }}</p>
+    <div class="row muted meta">
+      <span>⏱ {{ recipe().cookingTimeMinutes }} min</span>
+      <span>👁 {{ recipe().viewCount }}</span>
+      @if (recipe().isLiked) {
+        <span>❤️</span>
+      }
+      <span class="spacer"></span>
+      <span>{{ recipe().creationDate | date: 'mediumDate' }}</span>
+    </div>
+    <a class="row author" [routerLink]="['/users', recipe().userId]">
+      @if (recipe().userImageUrl) {
+        <img class="avatar" [src]="recipe().userImageUrl" alt="" />
+      } @else {
+        <span class="avatar">{{ recipe().userName.charAt(0) }}</span>
+      }
+      <span>{{ recipe().userName }}</span>
+      @if (recipe().isFollowed) {
+        <span class="muted">· following</span>
+      }
+    </a>
+  </div>
+</article>

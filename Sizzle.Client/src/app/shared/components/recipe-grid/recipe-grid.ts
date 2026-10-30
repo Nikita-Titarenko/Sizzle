@@ -5,16 +5,8 @@ import { RecipeCard } from '../recipe-card/recipe-card';
 @Component({
   selector: 'app-recipe-grid',
   imports: [RecipeCard],
-  template: `
-    <div class="grid">
-      @for (recipe of recipes(); track recipe.id) {
-        <app-recipe-card [recipe]="recipe" />
-      } @empty {
-        <p class="muted">{{ emptyText() }}</p>
-      }
-    </div>
-  `,
-  styles: `.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }`,
+  templateUrl: './recipe-grid.html',
+  styleUrl: './recipe-grid.scss',
 })
 export class RecipeGrid {
   readonly recipes = input.required<Recipe[]>();

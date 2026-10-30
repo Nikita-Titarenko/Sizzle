@@ -1,0 +1,32 @@
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  a:not(.btn) {
+    color: var(--text);
+  }
+
+  a.active {
+    color: var(--accent);
+    font-weight: 600;
+  }
+}

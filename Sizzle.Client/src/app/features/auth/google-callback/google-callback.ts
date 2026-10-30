@@ -11,17 +11,7 @@ import { errorMessage } from '../../../core/models';
 @Component({
   selector: 'app-google-callback',
   imports: [RouterLink],
-  template: `
-    <div class="card auth-box">
-      @if (error()) {
-        <h2>Google sign-in failed</h2>
-        <p class="error">{{ error() }}</p>
-        <a routerLink="/login">Back to login</a>
-      } @else {
-        <p>Signing you in with Google…</p>
-      }
-    </div>
-  `,
+  templateUrl: './google-callback.html',
 })
 export class GoogleCallback implements OnInit {
   private readonly api = inject(ApiService);

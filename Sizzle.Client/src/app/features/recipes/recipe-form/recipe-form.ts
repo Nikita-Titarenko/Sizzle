@@ -28,97 +28,8 @@ interface NewIngredientDraft {
 @Component({
   selector: 'app-recipe-form',
   imports: [FormsModule],
-  template: `
-    <h1>{{ id() ? 'Edit recipe' : 'New recipe' }}</h1>
-    <form class="form" (ngSubmit)="submit()">
-      <section class="card form">
-        <label>Name <input name="name" [(ngModel)]="name" required /></label>
-        <label>Description <textarea name="description" [(ngModel)]="description" required></textarea></label>
-        <div class="row">
-          <label>Cooking time (min)
-            <input type="number" min="1" name="time" [(ngModel)]="cookingTimeMinutes" required />
-          </label>
-          <label>Category
-            <select name="category" [(ngModel)]="categoryId" required>
-              <option value="" disabled>Choose…</option>
-              @for (c of categories(); track c.id) { <option [value]="c.id">{{ c.name }}</option> }
-            </select>
-          </label>
-          <label>Cover image
-            <input type="file" accept="image/*" (change)="cover = firstFile($event)" />
-          </label>
-        </div>
-        @if (id()) { <p class="muted">Leave the cover empty to keep the current one.</p> }
-      </section>
-
-      <section class="card form">
-        <h2>Ingredients</h2>
-        @for (i of ingredients(); track i.id; let idx = $index) {
-          <div class="row">
-            <span class="grow">{{ i.name }}</span>
-            <input class="qty" type="number" min="1" [name]="'iq' + idx" [(ngModel)]="i.quantity" />
-            <span class="muted unit">{{ i.unit }}</span>
-            <button type="button" class="link" (click)="removeIngredient(i.id)">Remove</button>
-          </div>
-        }
-        <div class="picker">
-          <input type="search" name="ingredientSearch" placeholder="Search ingredients to add…"
-                 [ngModel]="ingredientSearch()" (ngModelChange)="searchIngredients($event)" />
-          @if (suggestions().length) {
-            <ul class="suggestions">
-              @for (s of suggestions(); track s.id) {
-                <li><button type="button" class="link" (click)="addIngredient(s)">{{ s.name }} <span class="muted">({{ s.unit }})</span></button></li>
-              }
-            </ul>
-          }
-        </div>
-
-        <h3>Not in the list? Add a new ingredient</h3>
-        @for (n of newIngredients(); track $index; let idx = $index) {
-          <div class="row">
-            <input class="grow" placeholder="Name" [name]="'nn' + idx" [(ngModel)]="n.name" />
-            <input class="qty" type="number" min="1" [name]="'nq' + idx" [(ngModel)]="n.quantity" />
-            <select [name]="'nu' + idx" [(ngModel)]="n.unit">
-              @for (u of units; track u) { <option [value]="u">{{ u }}</option> }
-            </select>
-            <button type="button" class="link" (click)="removeNewIngredient(idx)">Remove</button>
-          </div>
-        }
-        <div><button type="button" class="btn small outline" (click)="addNewIngredient()">+ New ingredient</button></div>
-      </section>
-
-      <section class="card form">
-        <h2>Steps</h2>
-        @if (id()) { <p class="muted">Step photos/videos have to be uploaded again when you save.</p> }
-        @for (step of steps(); track $index; let idx = $index) {
-          <div class="step form">
-            <div class="row">
-              <b>Step {{ idx + 1 }}</b><span class="spacer"></span>
-              <button type="button" class="link" (click)="removeStep(idx)" [disabled]="steps().length === 1">Remove</button>
-            </div>
-            <input placeholder="Step title" [name]="'sn' + idx" [(ngModel)]="step.name" required />
-            <textarea placeholder="What to do" [name]="'sd' + idx" [(ngModel)]="step.description" required></textarea>
-            <input type="file" multiple accept="image/*,video/*" (change)="step.files = allFiles($event)" />
-          </div>
-        }
-        <div><button type="button" class="btn small outline" (click)="addStep()">+ Add step</button></div>
-      </section>
-
-      @if (error()) { <p class="error">{{ error() }}</p> }
-      <div><button class="btn" [disabled]="busy() || !canSubmit()">{{ id() ? 'Save changes' : 'Publish recipe' }}</button></div>
-    </form>
-  `,
-  styles: `
-    .row label { flex: 1; min-width: 180px; }
-    .grow { flex: 1; }
-    .qty { width: 90px; }
-    .unit { width: 80px; }
-    .picker { position: relative; }
-    .picker input { width: 100%; }
-    .suggestions { list-style: none; margin: 4px 0 0; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: #fff; max-height: 220px; overflow: auto; }
-    .suggestions li { padding: 4px 0; }
-    .step { border-top: 1px solid var(--border); padding-top: 12px; }
-  `,
+  templateUrl: './recipe-form.html',
+  styleUrl: './recipe-form.scss',
 })
 export class RecipeForm {
   private readonly api = inject(ApiService);
@@ -187,7 +98,10 @@ export class RecipeForm {
   }
 
   addIngredient(ingredient: Ingredient): void {
-    this.ingredients.update((list) => [...list, { id: ingredient.id, name: ingredient.name, unit: ingredient.unit, quantity: 1 }]);
+    this.ingredients.update((list) => [
+      ...list,
+      { id: ingredient.id, name: ingredient.name, unit: ingredient.unit, quantity: 1 },
+    ]);
   }
 
   removeIngredient(id: string): void {
@@ -195,7 +109,10 @@ export class RecipeForm {
   }
 
   addNewIngredient(): void {
-    this.newIngredients.update((list) => [...list, { name: this.ingredientSearch(), unit: 'Grams', quantity: 100 }]);
+    this.newIngredients.update((list) => [
+      ...list,
+      { name: this.ingredientSearch(), unit: 'Grams', quantity: 100 },
+    ]);
   }
 
   removeNewIngredient(index: number): void {
@@ -253,7 +170,9 @@ export class RecipeForm {
         this.cookingTimeMinutes = recipe.cookingTimeMinutes;
         this.categoryId = recipe.categoryId;
         this.ingredients.set(recipe.ingredients.map((i) => ({ ...i })));
-        this.steps.set(recipe.steps.map((s) => ({ name: s.name, description: s.description, files: [] })));
+        this.steps.set(
+          recipe.steps.map((s) => ({ name: s.name, description: s.description, files: [] })),
+        );
       },
       error: (err) => this.error.set(errorMessage(err)),
     });

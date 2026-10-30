@@ -38,7 +38,10 @@ export class ApiService {
 
   /** Exchanges the code Google sent to our redirect page for an app JWT. */
   googleCallback(params: Record<string, string>) {
-    return this.http.get<LoginResult>('/api/Users/google-callback', { params, withCredentials: true });
+    return this.http.get<LoginResult>('/api/Users/google-callback', {
+      params,
+      withCredentials: true,
+    });
   }
 
   getUser(userId: string) {
@@ -89,7 +92,9 @@ export class ApiService {
   }
 
   getMyRecipes(query: RecipeQuery): Observable<PageResponse<Recipe>> {
-    return this.http.get<PageResponse<Recipe>>('/api/recipes/mine', { params: recipeParams(query) });
+    return this.http.get<PageResponse<Recipe>>('/api/recipes/mine', {
+      params: recipeParams(query),
+    });
   }
 
   getRecipe(id: string) {

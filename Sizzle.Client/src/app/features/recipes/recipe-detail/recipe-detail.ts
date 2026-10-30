@@ -9,96 +9,8 @@ import { CommentSection } from '../comment-section/comment-section';
 @Component({
   selector: 'app-recipe-detail',
   imports: [DatePipe, RouterLink, CommentSection],
-  template: `
-    @if (error()) {
-      <p class="error">{{ error() }}</p>
-    }
-    @if (recipe(); as r) {
-      <article class="detail">
-        @if (r.fileUrl) {
-          <img class="cover" [src]="r.fileUrl" [alt]="r.name" />
-        }
-        <div class="row title">
-          <h1>{{ r.name }}</h1>
-          <span class="spacer"></span>
-          @if (auth.isLoggedIn()) {
-            <button class="btn small" [class.outline]="!r.isLiked" (click)="toggleLike()">
-              {{ r.isLiked ? '❤️ Liked' : '🤍 Like' }}
-            </button>
-          }
-          @if (isOwner()) {
-            <a class="btn small outline" [routerLink]="['/recipes', r.id, 'edit']">Edit</a>
-            <button class="btn small danger" (click)="remove()">Delete</button>
-          }
-        </div>
-        <div class="row muted">
-          @if (r.userImageUrl) { <img class="avatar" [src]="r.userImageUrl" alt="" /> }
-          @else { <span class="avatar">{{ r.userName.charAt(0) }}</span> }
-          <a [routerLink]="['/users', r.userId]">{{ r.userName }}</a>
-          @if (auth.isLoggedIn() && !isOwner()) {
-            <button class="btn small" [class.outline]="r.isFollowed" (click)="toggleFollow()">
-              {{ r.isFollowed ? 'Following' : 'Follow' }}
-            </button>
-          }
-          <span>· ⏱ {{ r.cookingTimeMinutes }} min</span>
-          <span>· 👁 {{ r.viewCount }}</span>
-          <span>· {{ r.creationDate | date: 'mediumDate' }}</span>
-        </div>
-        <p class="description">{{ r.description }}</p>
-
-        <div class="columns">
-          <section class="card">
-            <h2>Ingredients</h2>
-            <ul class="ingredients">
-              @for (i of r.ingredients; track i.id) {
-                <li><span>{{ i.name }}</span><span class="muted">{{ i.quantity }} {{ unitLabel(i.unit) }}</span></li>
-              }
-            </ul>
-          </section>
-
-          <section class="card">
-            <h2>Steps</h2>
-            <ol class="steps">
-              @for (step of r.steps; track step.id) {
-                <li>
-                  <h3>{{ step.name }}</h3>
-                  <p>{{ step.description }}</p>
-                  <div class="media">
-                    @for (url of step.fileUrls; track url) {
-                      @if (isVideo(url)) {
-                        <video [src]="url" controls></video>
-                      } @else {
-                        <img [src]="url" alt="" />
-                      }
-                    }
-                  </div>
-                </li>
-              }
-            </ol>
-          </section>
-        </div>
-
-        <app-comment-section [recipeId]="r.id" />
-      </article>
-    } @else if (!error()) {
-      <p class="muted">Loading…</p>
-    }
-  `,
-  styles: `
-    .detail { display: flex; flex-direction: column; gap: 16px; }
-    .cover { width: 100%; max-height: 420px; object-fit: cover; border-radius: var(--radius); }
-    .title h1 { margin: 0; }
-    .description { white-space: pre-wrap; font-size: 1.05rem; }
-    .columns { display: grid; grid-template-columns: 1fr 2fr; gap: 20px; align-items: start; }
-    @media (max-width: 760px) { .columns { grid-template-columns: 1fr; } }
-    .ingredients { list-style: none; padding: 0; margin: 0; }
-    .ingredients li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--border); }
-    .steps { padding-left: 20px; }
-    .steps h3 { margin: 0 0 4px; }
-    .steps p { white-space: pre-wrap; margin: 0 0 8px; }
-    .media { display: flex; gap: 8px; flex-wrap: wrap; }
-    .media img, .media video { max-width: 240px; border-radius: 8px; }
-  `,
+  templateUrl: './recipe-detail.html',
+  styleUrl: './recipe-detail.scss',
 })
 export class RecipeDetail {
   private readonly api = inject(ApiService);
@@ -109,7 +21,9 @@ export class RecipeDetail {
   readonly recipe = signal<RecipeDetails | null>(null);
   readonly error = signal('');
 
-  readonly isOwner = computed(() => !!this.recipe() && this.recipe()!.userId === this.auth.userId());
+  readonly isOwner = computed(
+    () => !!this.recipe() && this.recipe()!.userId === this.auth.userId(),
+  );
 
   constructor() {
     effect(() => {
@@ -161,7 +75,9 @@ export class RecipeDetail {
   }
 
   unitLabel(unit: string): string {
-    return ({ Grams: 'g', Milliliters: 'ml', Pieces: 'pcs' } as Record<string, string>)[unit] ?? unit;
+    return (
+      ({ Grams: 'g', Milliliters: 'ml', Pieces: 'pcs' } as Record<string, string>)[unit] ?? unit
+    );
   }
 
   isVideo(url: string): boolean {

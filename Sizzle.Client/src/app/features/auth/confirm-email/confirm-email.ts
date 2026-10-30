@@ -8,19 +8,7 @@ import { errorMessage } from '../../../core/models';
 @Component({
   selector: 'app-confirm-email',
   imports: [FormsModule],
-  template: `
-    <div class="card auth-box">
-      <h2>Confirm your email</h2>
-      <p class="muted">We sent a confirmation code to your email. Enter it below.</p>
-      <form class="form" (ngSubmit)="submit()">
-        <label>Code <input name="code" [(ngModel)]="code" required autocomplete="one-time-code" /></label>
-        @if (error()) { <div class="error">{{ error() }}</div> }
-        @if (info()) { <div class="muted">{{ info() }}</div> }
-        <button class="btn" [disabled]="busy()">Confirm</button>
-      </form>
-      <p><button class="link" (click)="resend()">Send the code again</button></p>
-    </div>
-  `,
+  templateUrl: './confirm-email.html',
 })
 export class ConfirmEmail {
   private readonly api = inject(ApiService);

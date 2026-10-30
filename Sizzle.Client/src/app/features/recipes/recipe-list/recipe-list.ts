@@ -12,34 +12,8 @@ const PAGE_SIZE = 12;
 @Component({
   selector: 'app-recipe-list',
   imports: [FormsModule, RecipeGrid, Pager],
-  template: `
-    <section class="hero">
-      <h1>What are we cooking today?</h1>
-      <input class="search" type="search" placeholder="Search recipes…"
-             [ngModel]="search()" (ngModelChange)="onSearch($event)" />
-    </section>
-
-    <div class="row chips">
-      @for (category of categories(); track category.id) {
-        <button class="chip" [class.on]="selected().has(category.id)" (click)="toggleCategory(category.id)">
-          {{ category.name }}
-        </button>
-      }
-    </div>
-
-    @if (page(); as page) {
-      <app-recipe-grid [recipes]="page.data" emptyText="Nothing found. Try another search." />
-      <app-pager [pageIndex]="pageIndex()" [pageSize]="pageSize" [total]="page.totalSize" (change)="goTo($event)" />
-    } @else {
-      <p class="muted">Loading…</p>
-    }
-  `,
-  styles: `
-    .hero { text-align: center; margin: 16px 0 24px; }
-    .hero h1 { margin-bottom: 16px; }
-    .search { width: 100%; max-width: 520px; padding: 12px 18px; border-radius: 999px; }
-    .chips { justify-content: center; margin-bottom: 24px; gap: 8px; }
-  `,
+  templateUrl: './recipe-list.html',
+  styleUrl: './recipe-list.scss',
 })
 export class RecipeList {
   private readonly api = inject(ApiService);
