@@ -4,17 +4,19 @@ import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { PageResponse, Recipe, User } from '../../../core/models';
+import { acceptFor, validateMedia } from '../../../core/utils/media';
 import { errorMessage } from '../../../core/utils/error-message';
 import { Pager } from '../../../shared/components/pager/pager';
 import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 import { UserList } from '../../../shared/components/user-list/user-list';
 
 const PAGE_SIZE = 9;
+import { Icon } from '../../../shared/components/icon/icon';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 
 @Component({
   selector: 'app-profile',
-  imports: [UserAvatar, FormsModule, RecipeGrid, Pager, UserList],
+  imports: [Icon, UserAvatar, FormsModule, RecipeGrid, Pager, UserList],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })
@@ -31,6 +33,7 @@ export class Profile {
   readonly preview = signal<string | null>(null);
   readonly message = signal('');
   readonly error = signal('');
+  readonly acceptImages = acceptFor(false);
   name = '';
   private icon: File | null = null;
 
@@ -48,8 +51,32 @@ export class Profile {
   }
 
   pickIcon(event: Event): void {
-    this.icon = (event.target as HTMLInputElement).files?.[0] ?? null;
-    this.preview.set(this.icon ? URL.createObjectURL(this.icon) : null);
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) {
+      return;
+    }
+    const problem = validateMedia(file, false);
+    if (problem) {
+      this.error.set(problem);
+      return;
+    }
+    this.error.set('');
+    this.setIcon(file);
+  }
+
+  clearIcon(): void {
+    this.setIcon(null);
+  }
+
+  private setIcon(file: File | null): void {
+    const previous = this.preview();
+    if (previous) {
+      URL.revokeObjectURL(previous);
+    }
+    this.icon = file;
+    this.preview.set(file ? URL.createObjectURL(file) : null);
   }
 
   save(): void {
@@ -58,6 +85,7 @@ export class Profile {
     this.usersApi.updateProfile(this.name.trim(), this.icon).subscribe({
       next: () => {
         this.message.set('Profile saved.');
+        this.setIcon(null);
         this.currentUser.refresh();
       },
       error: (err) => this.error.set(errorMessage(err)),

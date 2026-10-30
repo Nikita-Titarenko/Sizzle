@@ -3,11 +3,34 @@
     <section class="card form">
       @if (currentUser.user(); as user) {
         <div class="center">
-          <app-user-avatar
-            [name]="user.name"
-            [imageUrl]="preview() || user.imageUrl"
-            size="large"
+          <input
+            #iconInput
+            type="file"
+            hidden
+            [accept]="acceptImages"
+            (change)="pickIcon($event)"
           />
+          <button
+            type="button"
+            class="avatar-button"
+            aria-label="Change profile photo"
+            (click)="iconInput.click()"
+          >
+            <app-user-avatar
+              [name]="user.name"
+              [imageUrl]="preview() || user.imageUrl"
+              size="large"
+            />
+            <span class="avatar-overlay"><app-icon name="upload" /></span>
+          </button>
+          <div class="row avatar-actions">
+            <button type="button" class="btn small outline" (click)="iconInput.click()">
+              {{ preview() ? 'Choose another' : 'Change photo' }}
+            </button>
+            @if (preview()) {
+              <button type="button" class="link" (click)="clearIcon()">Cancel</button>
+            }
+          </div>
           <p class="muted">{{ user.email }}</p>
         </div>
       }
@@ -15,10 +38,6 @@
         <label>
           <span>Name</span>
           <input name="name" [(ngModel)]="name" required />
-        </label>
-        <label>
-          <span>Avatar</span>
-          <input type="file" accept="image/*" (change)="pickIcon($event)" />
         </label>
         @if (message()) {
           <p class="muted">{{ message() }}</p>
