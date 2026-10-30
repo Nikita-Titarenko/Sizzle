@@ -19,3 +19,15 @@
   margin-bottom: 24px;
   gap: 8px;
 }
+
+.ingredient-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 520px;
+  margin: 0 auto 16px;
+}
+
+.selected {
+  gap: 6px;
+}
