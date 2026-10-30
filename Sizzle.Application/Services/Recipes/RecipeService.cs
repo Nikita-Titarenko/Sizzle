@@ -18,18 +18,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
         return new PageResponse<RecipeDto>
         {
-            Data = page.Data.Select(recipe => new RecipeDto
-            {
-                Id = recipe.Id,
-                Name = recipe.Name,
-                Description = recipe.Description,
-                CookingTimeMinutes = recipe.CookingTimeMinutes,
-                CategoryId = recipe.CategoryId,
-                FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
-                ViewCount = recipe.ViewCount,
-                CreationDate = recipe.CreationDate,
-                IsLiked = dto.ApplicationUserId.HasValue && recipe.ApplicationUserRecipes.Any(link => link.IsLiked)
-            }).ToList(),
+            Data = page.Data.Select(recipe => ToRecipeDto(recipe, dto.ApplicationUserId)).ToList(),
             TotalSize = page.TotalSize,
             PageIndex = page.PageIndex,
             PageSize = page.PageSize
@@ -100,19 +89,10 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
         await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
 
+        var savedRecipe = await recipeRepository.GetWithAuthorAsync(recipe.Id, dto.ApplicationUserId);
         return new Result<RecipeDto>
         {
-            Value = new RecipeDto
-            {
-                Id = recipe.Id,
-                Name = recipe.Name,
-                Description = recipe.Description,
-                CookingTimeMinutes = recipe.CookingTimeMinutes,
-                CategoryId = recipe.CategoryId,
-                FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
-                ViewCount = recipe.ViewCount,
-                CreationDate = recipe.CreationDate
-            }
+            Value = ToRecipeDto(savedRecipe!, dto.ApplicationUserId)
         };
     }
 
@@ -134,6 +114,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Id = recipe.Id,
                 UserName = recipe.ApplicationUser?.Name ?? string.Empty,
                 UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", recipe.ApplicationUserId.ToString())),
+                IsFollowed = IsFollowingAuthor(recipe, dto.ApplicationUserId),
                 Name = recipe.Name,
                 Description = recipe.Description,
                 CookingTimeMinutes = recipe.CookingTimeMinutes,
@@ -270,19 +251,10 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             fileService.DeleteFile(path);
         }
 
+        var updatedRecipe = await recipeRepository.GetWithAuthorAsync(recipe.Id, dto.ApplicationUserId);
         return new Result<RecipeDto>
         {
-            Value = new RecipeDto
-            {
-                Id = recipe.Id,
-                Name = recipe.Name,
-                Description = recipe.Description,
-                CookingTimeMinutes = recipe.CookingTimeMinutes,
-                CategoryId = recipe.CategoryId,
-                FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
-                ViewCount = recipe.ViewCount,
-                CreationDate = recipe.CreationDate
-            }
+            Value = ToRecipeDto(updatedRecipe!, dto.ApplicationUserId)
         };
     }
 
@@ -402,20 +374,32 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             }
         }
 
-        return new Result<RecipeDto>
+        var viewedRecipe = await recipeRepository.GetWithAuthorAsync(recipe.Id, dto.ApplicationUserId);
+        return new Result<RecipeDto> { Value = ToRecipeDto(viewedRecipe!, dto.ApplicationUserId) };
+    }
+
+    private RecipeDto ToRecipeDto(Recipe recipe, Guid? applicationUserId)
+    {
+        return new RecipeDto
         {
-            Value = new RecipeDto
-            {
-                Id = recipe.Id,
-                Name = recipe.Name,
-                Description = recipe.Description,
-                CookingTimeMinutes = recipe.CookingTimeMinutes,
-                CategoryId = recipe.CategoryId,
-                FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
-                ViewCount = recipe.ViewCount,
-                CreationDate = recipe.CreationDate
-            }
+            Id = recipe.Id,
+            UserName = recipe.ApplicationUser?.Name ?? string.Empty,
+            UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", recipe.ApplicationUserId.ToString())),
+            IsFollowed = IsFollowingAuthor(recipe, applicationUserId),
+            Name = recipe.Name,
+            Description = recipe.Description,
+            CookingTimeMinutes = recipe.CookingTimeMinutes,
+            CategoryId = recipe.CategoryId,
+            FileUrl = recipe.FilePath == null ? null : fileService.GetFileUrl(recipe.FilePath),
+            ViewCount = recipe.ViewCount,
+            CreationDate = recipe.CreationDate,
+            IsLiked = applicationUserId.HasValue && recipe.ApplicationUserRecipes.Any(link => link.IsLiked)
         };
+    }
+
+    private static bool IsFollowingAuthor(Recipe recipe, Guid? applicationUserId)
+    {
+        return applicationUserId.HasValue && recipe.ApplicationUser?.Followers.Any(follow => follow.FollowerId == applicationUserId.Value) == true;
     }
 
     private async Task<Error?> ValidateRecipeDetailsAsync(Guid categoryId, int cookingTimeMinutes)

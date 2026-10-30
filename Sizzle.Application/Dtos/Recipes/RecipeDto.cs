@@ -4,6 +4,12 @@ public class RecipeDto
 {
     public Guid Id { get; init; }
 
+    public string UserName { get; init; } = string.Empty;
+
+    public string? UserImageUrl { get; init; }
+
+    public bool IsFollowed { get; init; }
+
     public string Name { get; init; } = string.Empty;
 
     public string Description { get; init; } = string.Empty;

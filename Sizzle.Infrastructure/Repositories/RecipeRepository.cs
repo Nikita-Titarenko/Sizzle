@@ -48,15 +48,18 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             };
         }
 
-        var page = query
+        IQueryable<Recipe> page = query
             .OrderByDescending(r => r.CreationDate)
             .ThenBy(r => r.Id)
             .Skip((int)offset)
-            .Take(dto.PageSize);
+            .Take(dto.PageSize)
+            .Include(r => r.ApplicationUser)
+            .AsSplitQuery();
 
         if (dto.ApplicationUserId is Guid userId)
         {
-            page = page.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && link.IsLiked));
+            page = page.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && link.IsLiked))
+                .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
         }
 
         return new PageResponse<Recipe>
@@ -81,6 +84,18 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             .FirstOrDefaultAsync(r => r.Id == recipeId);
     }
 
+    public Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId)
+    {
+        var query = DbSet.AsNoTracking().Include(r => r.ApplicationUser).AsSplitQuery();
+        if (applicationUserId is Guid userId)
+        {
+            query = query.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && link.IsLiked))
+                .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
+        }
+
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId);
+    }
+
     public Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId)
     {
         var query = DbSet.AsNoTracking()
@@ -92,7 +107,8 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
 
         if (applicationUserId is Guid userId)
         {
-            query = query.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && link.IsLiked));
+            query = query.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && link.IsLiked))
+                .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
         }
 
         return query.FirstOrDefaultAsync(r => r.Id == recipeId);

@@ -48,6 +48,24 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    [HttpGet("followers")]
+    [Authorize]
+    [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<UserDto>>> GetFollowers()
+    {
+        return Ok(await followerService.GetFollowersAsync(GetUserId()));
+    }
+
+    [HttpGet("following")]
+    [Authorize]
+    [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<List<UserDto>>> GetFollowing()
+    {
+        return Ok(await followerService.GetFollowingAsync(GetUserId()));
+    }
+
     /// <summary>Register a user and send a confirmation email.</summary>
     /// <remarks>
     /// <para>ErrorKey.AlreadyExists — the email is already registered.</para>

@@ -24,6 +24,26 @@ public class UserFollowerRepository(ApplicationDbContext dbContext) : IUserFollo
             .ToListAsync();
     }
 
+    public Task<List<ApplicationUser>> GetFollowersAsync(Guid userId)
+    {
+        return dbContext.UserFollowers.AsNoTracking()
+            .Where(follow => follow.FollowingId == userId)
+            .OrderByDescending(follow => follow.CreatedAt)
+            .ThenBy(follow => follow.FollowerId)
+            .Select(follow => follow.Follower)
+            .ToListAsync();
+    }
+
+    public Task<List<ApplicationUser>> GetFollowingAsync(Guid userId)
+    {
+        return dbContext.UserFollowers.AsNoTracking()
+            .Where(follow => follow.FollowerId == userId)
+            .OrderByDescending(follow => follow.CreatedAt)
+            .ThenBy(follow => follow.FollowingId)
+            .Select(follow => follow.Following)
+            .ToListAsync();
+    }
+
     public void Add(UserFollower follower)
     {
         dbContext.UserFollowers.Add(follower);

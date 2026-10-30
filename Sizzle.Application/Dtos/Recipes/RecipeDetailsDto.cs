@@ -2,10 +2,6 @@ namespace Sizzle.Application.Dtos.Recipes;
 
 public class RecipeDetailsDto : RecipeDto
 {
-    public string UserName { get; init; } = string.Empty;
-
-    public string? UserImageUrl { get; init; }
-
     public IReadOnlyList<RecipeStepDto> Steps { get; init; } = [];
 
     public IReadOnlyList<RecipeIngredientDto> Ingredients { get; init; } = [];

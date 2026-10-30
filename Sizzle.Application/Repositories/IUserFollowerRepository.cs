@@ -10,6 +10,10 @@ public interface IUserFollowerRepository
 
     Task<List<Guid>> GetFollowerIdsAsync(Guid followingId);
 
+    Task<List<ApplicationUser>> GetFollowersAsync(Guid userId);
+
+    Task<List<ApplicationUser>> GetFollowingAsync(Guid userId);
+
     void Add(UserFollower follower);
 
     void Remove(UserFollower follower);

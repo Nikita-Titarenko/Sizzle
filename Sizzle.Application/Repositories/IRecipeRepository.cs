@@ -10,6 +10,8 @@ public interface IRecipeRepository : IRepository<Recipe>
 
 	Task<Recipe?> GetWithDetailsAsync(Guid recipeId);
 
+	Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId);
+
 	Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId);
 
 	void AddSteps(IEnumerable<RecipeStep> steps);

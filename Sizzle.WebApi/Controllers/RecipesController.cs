@@ -26,7 +26,8 @@ public class RecipesController(IRecipeService recipeService) : BaseController
             Search = request.Search,
             PageIndex = request.PageIndex,
             PageSize = request.PageSize,
-            ApplicationUserId = userId == Guid.Empty ? null : userId
+            ApplicationUserId = userId == Guid.Empty ? null : userId,
+            OwnerId = request.UserId
         });
 
         return Ok(page);
