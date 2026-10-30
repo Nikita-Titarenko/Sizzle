@@ -1,6 +1,17 @@
 <article class="recipe-card card">
   <a class="cover-link" [routerLink]="['/recipes', recipe().id]">
-    @if (recipe().fileUrl) {
+    @if (isVideo()) {
+      <video
+        class="cover"
+        [src]="recipe().fileUrl"
+        muted
+        loop
+        playsinline
+        preload="metadata"
+        (mouseenter)="$any($event.target).play()"
+        (mouseleave)="$any($event.target).pause()"
+      ></video>
+    } @else if (recipe().fileUrl) {
       <img class="cover" [src]="recipe().fileUrl" [alt]="recipe().name" loading="lazy" />
     } @else {
       <div class="cover placeholder">🍳</div>

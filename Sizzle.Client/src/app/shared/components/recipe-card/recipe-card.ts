@@ -1,6 +1,7 @@
 import { DatePipe } from '@angular/common';
-import { Component, input } from '@angular/core';
+import { Component, computed, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { isVideoUrl } from '../../../core/utils/media';
 import { Recipe } from '../../../core/models';
 import { UserAvatar } from '../user-avatar/user-avatar';
 
@@ -12,4 +13,5 @@ import { UserAvatar } from '../user-avatar/user-avatar';
 })
 export class RecipeCard {
   readonly recipe = input.required<Recipe>();
+  readonly isVideo = computed(() => isVideoUrl(this.recipe().fileUrl));
 }
