@@ -3,7 +3,8 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { RecipeDetails, errorMessage } from '../../../core/models';
+import { RecipeDetails } from '../../../core/models';
+import { errorMessage } from '../../../core/utils/error-message';
 import { CommentSection } from '../comment-section/comment-section';
 
 @Component({

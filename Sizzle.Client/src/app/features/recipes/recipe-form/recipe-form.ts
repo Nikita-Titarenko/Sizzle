@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
-import { Category, Ingredient, IngredientUnit, errorMessage } from '../../../core/models';
+import { Category, Ingredient, IngredientUnit } from '../../../core/models';
+import { errorMessage } from '../../../core/utils/error-message';
 
 interface StepDraft {
   name: string;

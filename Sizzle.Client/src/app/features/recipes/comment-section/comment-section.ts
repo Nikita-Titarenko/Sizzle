@@ -4,7 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { Comment, errorMessage } from '../../../core/models';
+import { Comment } from '../../../core/models';
+import { errorMessage } from '../../../core/utils/error-message';
 
 const PAGE_SIZE = 20;
 

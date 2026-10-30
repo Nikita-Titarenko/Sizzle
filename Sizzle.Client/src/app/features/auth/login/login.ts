@@ -3,7 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { errorMessage } from '../../../core/models';
+import { errorMessage } from '../../../core/utils/error-message';
 
 @Component({
   selector: 'app-login',

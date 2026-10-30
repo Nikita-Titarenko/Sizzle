@@ -2,7 +2,7 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../../core/services/api.service';
-import { errorMessage } from '../../../core/models';
+import { errorMessage } from '../../../core/utils/error-message';
 
 @Component({
   selector: 'app-register',

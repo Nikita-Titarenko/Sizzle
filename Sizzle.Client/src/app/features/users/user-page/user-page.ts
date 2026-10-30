@@ -1,7 +1,8 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/auth/auth.service';
-import { PageResponse, Recipe, User, errorMessage } from '../../../core/models';
+import { PageResponse, Recipe, User } from '../../../core/models';
+import { errorMessage } from '../../../core/utils/error-message';
 import { Pager } from '../../../shared/components/pager/pager';
 import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 
