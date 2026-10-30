@@ -13,7 +13,8 @@
       <span class="spacer"></span>
       @if (auth.isLoggedIn()) {
         <button class="btn small" [class.outline]="!r.isLiked" (click)="toggleLike()">
-          {{ r.isLiked ? '❤️ Liked' : '🤍 Like' }}
+          <app-icon name="heart" [filled]="r.isLiked" />
+          {{ r.isLiked ? 'Liked' : 'Like' }}
         </button>
       }
       @if (isOwner()) {
@@ -29,9 +30,15 @@
           {{ r.isFollowed ? 'Following' : 'Follow' }}
         </button>
       }
-      <span>· ⏱ {{ r.cookingTimeMinutes }} min</span>
-      <span>· 👁 {{ r.viewCount }}</span>
-      <span>· {{ r.creationDate | date: 'mediumDate' }}</span>
+      <span class="meta-item">
+        <app-icon name="clock" />
+        {{ r.cookingTimeMinutes }} min
+      </span>
+      <span class="meta-item">
+        <app-icon name="eye" />
+        {{ r.viewCount }}
+      </span>
+      <span>{{ r.creationDate | date: 'mediumDate' }}</span>
     </div>
     <p class="description">{{ r.description }}</p>
 

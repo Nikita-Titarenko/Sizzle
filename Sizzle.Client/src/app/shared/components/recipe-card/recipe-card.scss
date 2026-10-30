@@ -30,7 +30,13 @@ h3 a {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--muted);
   font-size: 3rem;
+  opacity: 0.6;
+}
+
+.liked {
+  color: #ff3b5c;
 }
 
 .body {

@@ -4,10 +4,11 @@ import { RouterLink } from '@angular/router';
 import { isVideoUrl } from '../../../core/utils/media';
 import { Recipe } from '../../../core/models';
 import { UserAvatar } from '../user-avatar/user-avatar';
+import { Icon } from '../icon/icon';
 
 @Component({
   selector: 'app-recipe-card',
-  imports: [UserAvatar, RouterLink, DatePipe],
+  imports: [Icon, UserAvatar, RouterLink, DatePipe],
   templateUrl: './recipe-card.html',
   styleUrl: './recipe-card.scss',
 })

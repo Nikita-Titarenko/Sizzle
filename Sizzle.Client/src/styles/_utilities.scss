@@ -5,6 +5,13 @@
   gap: 12px;
 }
 
+// Icon + value pair, e.g. cooking time or view count.
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .spacer {
   flex: 1;
 }

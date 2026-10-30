@@ -24,7 +24,7 @@
     } @else if (recipe().fileUrl) {
       <img [src]="recipe().fileUrl" [alt]="recipe().name" loading="lazy" />
     } @else {
-      <div class="placeholder"><span>🍳</span></div>
+      <div class="placeholder"><app-icon name="utensils" /></div>
     }
 
     @if (heartBurst()) {

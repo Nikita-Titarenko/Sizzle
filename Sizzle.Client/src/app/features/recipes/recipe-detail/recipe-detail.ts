@@ -10,10 +10,11 @@ import { errorMessage } from '../../../core/utils/error-message';
 import { CommentSection } from '../../../shared/components/comment-section/comment-section';
 import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
+import { Icon } from '../../../shared/components/icon/icon';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [UserAvatar, UnitLabelPipe, DatePipe, RouterLink, CommentSection],
+  imports: [Icon, UserAvatar, UnitLabelPipe, DatePipe, RouterLink, CommentSection],
   templateUrl: './recipe-detail.html',
   styleUrl: './recipe-detail.scss',
 })

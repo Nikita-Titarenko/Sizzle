@@ -113,7 +113,10 @@
         }
       </div>
     } @else if (!hasMore()) {
-      <div class="status end muted">You're all caught up 🎉</div>
+      <div class="status end muted">
+        <app-icon name="check" />
+        You're all caught up
+      </div>
     }
   </div>
 

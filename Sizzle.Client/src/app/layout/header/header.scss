@@ -12,6 +12,9 @@
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   white-space: nowrap;
   font-size: 1.4rem;
   font-weight: 800;
