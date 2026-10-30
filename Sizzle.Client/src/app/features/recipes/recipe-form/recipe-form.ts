@@ -3,9 +3,12 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
-import { Category, Ingredient, IngredientUnit } from '../../../core/models';
+import { Category, IngredientChoice, IngredientUnit } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
-import { IngredientPicker } from '../ingredient-picker/ingredient-picker';
+import { Icon } from '../../../shared/components/icon/icon';
+import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
+import { MediaPicker } from '../../../shared/components/media-picker/media-picker';
+import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
 
 interface StepDraft {
   name: string;
@@ -16,6 +19,7 @@ interface StepDraft {
 interface IngredientDraft {
   id: string;
   name: string;
+  parentName: string | null;
   unit: string;
   quantity: number;
 }
@@ -24,11 +28,19 @@ interface NewIngredientDraft {
   name: string;
   unit: IngredientUnit;
   quantity: number;
+  parent: IngredientChoice | null;
 }
+
+/** The catalog returns short units; new ingredients are sent with the API enum names. */
+const UNIT_BY_SHORT: Record<string, IngredientUnit> = {
+  g: 'Grams',
+  ml: 'Milliliters',
+  pcs: 'Pieces',
+};
 
 @Component({
   selector: 'app-recipe-form',
-  imports: [FormsModule, IngredientPicker],
+  imports: [FormsModule, IngredientPicker, MediaPicker, Icon, UnitLabelPipe],
   templateUrl: './recipe-form.html',
   styleUrl: './recipe-form.scss',
 })
@@ -43,7 +55,9 @@ export class RecipeForm {
   readonly categories = signal<Category[]>([]);
   readonly ingredients = signal<IngredientDraft[]>([]);
   readonly newIngredients = signal<NewIngredientDraft[]>([]);
-  readonly steps = signal<StepDraft[]>([{ name: '', description: '', files: [] }]);
+  readonly steps = signal<StepDraft[]>([emptyStep()]);
+  readonly cover = signal<File[]>([]);
+  readonly currentCoverUrl = signal<string | null>(null);
   readonly error = signal('');
   readonly busy = signal(false);
 
@@ -51,7 +65,6 @@ export class RecipeForm {
   description = '';
   cookingTimeMinutes = 30;
   categoryId = '';
-  cover: File | null = null;
 
   readonly ingredientIds = computed(() => this.ingredients().map((i) => i.id));
 
@@ -75,11 +88,8 @@ export class RecipeForm {
     );
   }
 
-  addIngredient(ingredient: Ingredient): void {
-    this.ingredients.update((list) => [
-      ...list,
-      { id: ingredient.id, name: ingredient.name, unit: ingredient.unit, quantity: 1 },
-    ]);
+  addIngredient(choice: IngredientChoice): void {
+    this.ingredients.update((list) => [...list, { ...choice, quantity: 1 }]);
   }
 
   removeIngredient(id: string): void {
@@ -87,27 +97,36 @@ export class RecipeForm {
   }
 
   addNewIngredient(): void {
-    this.newIngredients.update((list) => [...list, { name: '', unit: 'Grams', quantity: 100 }]);
+    this.newIngredients.update((list) => [
+      ...list,
+      { name: '', unit: 'Grams', quantity: 100, parent: null },
+    ]);
   }
 
   removeNewIngredient(index: number): void {
     this.newIngredients.update((list) => list.filter((_, i) => i !== index));
   }
 
+  /** A variant usually shares its parent's unit, so it is preselected. */
+  setParent(draft: NewIngredientDraft, parent: IngredientChoice | null): void {
+    draft.parent = parent;
+    if (parent && UNIT_BY_SHORT[parent.unit]) {
+      draft.unit = UNIT_BY_SHORT[parent.unit];
+    }
+    this.newIngredients.update((list) => [...list]);
+  }
+
   addStep(): void {
-    this.steps.update((list) => [...list, { name: '', description: '', files: [] }]);
+    this.steps.update((list) => [...list, emptyStep()]);
   }
 
   removeStep(index: number): void {
     this.steps.update((list) => list.filter((_, i) => i !== index));
   }
 
-  firstFile(event: Event): File | null {
-    return (event.target as HTMLInputElement).files?.[0] ?? null;
-  }
-
-  allFiles(event: Event): File[] {
-    return Array.from((event.target as HTMLInputElement).files ?? []);
+  setStepFiles(step: StepDraft, files: File[]): void {
+    step.files = files;
+    this.steps.update((list) => [...list]);
   }
 
   submit(): void {
@@ -116,12 +135,17 @@ export class RecipeForm {
       description: this.description.trim(),
       cookingTimeMinutes: this.cookingTimeMinutes,
       categoryId: this.categoryId,
-      file: this.cover,
+      file: this.cover()[0] ?? null,
       steps: this.steps(),
       ingredients: this.ingredients().map(({ id, quantity }) => ({ id, quantity })),
       newIngredients: this.newIngredients()
         .filter((n) => n.name.trim())
-        .map((n) => ({ ...n, name: n.name.trim(), parentId: null })),
+        .map((n) => ({
+          name: n.name.trim(),
+          unit: n.unit,
+          quantity: n.quantity,
+          parentId: n.parent?.id ?? null,
+        })),
     };
     const id = this.id();
     const request = id ? this.recipesApi.update(id, value) : this.recipesApi.create(value);
@@ -144,7 +168,8 @@ export class RecipeForm {
         this.description = recipe.description;
         this.cookingTimeMinutes = recipe.cookingTimeMinutes;
         this.categoryId = recipe.categoryId;
-        this.ingredients.set(recipe.ingredients.map((i) => ({ ...i })));
+        this.currentCoverUrl.set(recipe.fileUrl);
+        this.ingredients.set(recipe.ingredients.map((i) => ({ ...i, parentName: null })));
         this.steps.set(
           recipe.steps.map((s) => ({ name: s.name, description: s.description, files: [] })),
         );
@@ -152,4 +177,8 @@ export class RecipeForm {
       error: (err) => this.error.set(errorMessage(err)),
     });
   }
+}
+
+function emptyStep(): StepDraft {
+  return { name: '', description: '', files: [] };
 }

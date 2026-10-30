@@ -1,6 +1,8 @@
 <h1>{{ id() ? 'Edit recipe' : 'New recipe' }}</h1>
+
 <form class="form" (ngSubmit)="submit()">
   <section class="card form">
+    <h2>Basics</h2>
     <label>
       <span>Name</span>
       <input name="name" [(ngModel)]="name" required />
@@ -23,84 +25,176 @@
           }
         </select>
       </label>
-      <label>
-        <span>Cover image</span>
-        <input type="file" accept="image/*" (change)="cover = firstFile($event)" />
-      </label>
     </div>
-    @if (id()) {
-      <p class="muted">Leave the cover empty to keep the current one.</p>
-    }
+    <div class="field">
+      <span class="field-label">Cover photo or video</span>
+      <app-media-picker
+        allowVideo
+        [files]="cover()"
+        (filesChange)="cover.set($event)"
+        [currentUrl]="currentCoverUrl()"
+      />
+      @if (id()) {
+        <span class="muted">Leave it as is to keep the current cover.</span>
+      }
+    </div>
   </section>
 
   <section class="card form">
     <h2>Ingredients</h2>
-    @for (i of ingredients(); track i.id; let idx = $index) {
-      <div class="row">
-        <span class="grow">{{ i.name }}</span>
-        <input class="qty" type="number" min="1" [name]="'iq' + idx" [(ngModel)]="i.quantity" />
-        <span class="muted unit">{{ i.unit }}</span>
-        <button type="button" class="link" (click)="removeIngredient(i.id)">Remove</button>
-      </div>
-    }
-    <app-ingredient-picker [excludeIds]="ingredientIds()" (picked)="addIngredient($event)" />
 
-    <h3>Not in the list? Add a new ingredient</h3>
-    @for (n of newIngredients(); track $index; let idx = $index) {
-      <div class="row">
-        <input class="grow" placeholder="Name" [name]="'nn' + idx" [(ngModel)]="n.name" />
-        <input class="qty" type="number" min="1" [name]="'nq' + idx" [(ngModel)]="n.quantity" />
-        <select [name]="'nu' + idx" [(ngModel)]="n.unit">
-          @for (u of units; track u) {
-            <option [value]="u">{{ u }}</option>
-          }
-        </select>
-        <button type="button" class="link" (click)="removeNewIngredient(idx)">Remove</button>
-      </div>
+    @if (ingredients().length) {
+      <ul class="ingredient-list">
+        @for (i of ingredients(); track i.id; let idx = $index) {
+          <li class="ingredient-row">
+            <span class="ingredient-name">
+              @if (i.parentName) {
+                <span class="muted">{{ i.parentName }} ›</span>
+              }
+              {{ i.name }}
+            </span>
+            <input
+              class="qty"
+              type="number"
+              min="1"
+              [name]="'iq' + idx"
+              [(ngModel)]="i.quantity"
+              [attr.aria-label]="'Quantity of ' + i.name"
+            />
+            <span class="muted unit">{{ i.unit | unitLabel }}</span>
+            <button
+              type="button"
+              class="icon-button"
+              [attr.aria-label]="'Remove ' + i.name"
+              (click)="removeIngredient(i.id)"
+            >
+              <app-icon name="close" />
+            </button>
+          </li>
+        }
+      </ul>
     }
-    <div>
-      <button type="button" class="btn small outline" (click)="addNewIngredient()">
-        + New ingredient
-      </button>
+
+    <app-ingredient-picker
+      placeholder="Search ingredients to add…"
+      [excludeIds]="ingredientIds()"
+      (picked)="addIngredient($event)"
+    />
+
+    <div class="subsection">
+      <h3>Not in the catalog?</h3>
+      <p class="muted">
+        Add your own ingredient. Pick a parent to make it a variant (for example, Sweet Potato under
+        Potato).
+      </p>
+
+      @for (n of newIngredients(); track $index; let idx = $index) {
+        <div class="new-ingredient">
+          <div class="new-ingredient-fields">
+            <label class="grow">
+              <span>Name</span>
+              <input [name]="'nn' + idx" [(ngModel)]="n.name" placeholder="e.g. Smoked paprika" />
+            </label>
+            <label>
+              <span>Quantity</span>
+              <input
+                class="qty"
+                type="number"
+                min="1"
+                [name]="'nq' + idx"
+                [(ngModel)]="n.quantity"
+              />
+            </label>
+            <label>
+              <span>Unit</span>
+              <select [name]="'nu' + idx" [(ngModel)]="n.unit">
+                @for (u of units; track u) {
+                  <option [value]="u">{{ u }} ({{ u | unitLabel }})</option>
+                }
+              </select>
+            </label>
+          </div>
+
+          <div class="field">
+            <span class="field-label">Parent (optional)</span>
+            @if (n.parent) {
+              <span class="parent-chip">
+                {{ n.parent.name }}
+                <button type="button" aria-label="Remove parent" (click)="setParent(n, null)">
+                  <app-icon name="close" />
+                </button>
+              </span>
+            } @else {
+              <app-ingredient-picker
+                rootsOnly
+                placeholder="Search a parent ingredient…"
+                (picked)="setParent(n, $event)"
+              />
+            }
+          </div>
+
+          <button type="button" class="link remove-new" (click)="removeNewIngredient(idx)">
+            Remove
+          </button>
+        </div>
+      }
+
+      <div>
+        <button type="button" class="btn small outline" (click)="addNewIngredient()">
+          <app-icon name="plus" />
+          New ingredient
+        </button>
+      </div>
     </div>
   </section>
 
   <section class="card form">
     <h2>Steps</h2>
     @if (id()) {
-      <p class="muted">Step photos/videos have to be uploaded again when you save.</p>
+      <p class="muted">Step photos and videos have to be uploaded again when you save.</p>
     }
+
     @for (step of steps(); track $index; let idx = $index) {
-      <div class="step form">
-        <div class="row">
-          <b>Step {{ idx + 1 }}</b>
-          <span class="spacer"></span>
+      <div class="step">
+        <div class="step-header">
+          <span class="step-number">{{ idx + 1 }}</span>
+          <input
+            class="grow"
+            placeholder="Step title"
+            [name]="'sn' + idx"
+            [(ngModel)]="step.name"
+            required
+          />
           <button
             type="button"
-            class="link"
-            (click)="removeStep(idx)"
+            class="icon-button"
+            aria-label="Remove step"
             [disabled]="steps().length === 1"
+            (click)="removeStep(idx)"
           >
-            Remove
+            <app-icon name="close" />
           </button>
         </div>
-        <input placeholder="Step title" [name]="'sn' + idx" [(ngModel)]="step.name" required />
         <textarea
           placeholder="What to do"
           [name]="'sd' + idx"
           [(ngModel)]="step.description"
           required
         ></textarea>
-        <input
-          type="file"
+        <app-media-picker
           multiple
-          accept="image/*,video/*"
-          (change)="step.files = allFiles($event)"
+          allowVideo
+          [files]="step.files"
+          (filesChange)="setStepFiles(step, $event)"
         />
       </div>
     }
+
     <div>
-      <button type="button" class="btn small outline" (click)="addStep()">+ Add step</button>
+      <button type="button" class="btn small outline" (click)="addStep()">
+        <app-icon name="plus" />
+        Add step
+      </button>
     </div>
   </section>
 
@@ -109,7 +203,7 @@
   }
   <div>
     <button class="btn" [disabled]="busy() || !canSubmit()">
-      {{ id() ? 'Save changes' : 'Publish recipe' }}
+      {{ busy() ? 'Saving…' : id() ? 'Save changes' : 'Publish recipe' }}
     </button>
   </div>
 </form>
