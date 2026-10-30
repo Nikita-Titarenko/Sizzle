@@ -1,20 +1,47 @@
-<div class="picker">
+<div class="picker" [class.open]="open()">
   <input
     type="search"
-    name="ingredientSearch"
-    placeholder="Search ingredients to add…"
+    autocomplete="off"
+    [placeholder]="placeholder()"
     [ngModel]="term()"
+    [ngModelOptions]="{ standalone: true }"
     (ngModelChange)="onTermChange($event)"
+    (focus)="onFocus()"
+    (keydown)="onKeydown($event)"
   />
-  @if (suggestions().length) {
-    <ul class="suggestions">
-      @for (s of suggestions(); track s.id) {
-        <li>
-          <button type="button" class="link" (click)="pick(s)">
-            {{ s.name }}
-            <span class="muted">({{ s.unit }})</span>
+
+  @if (open()) {
+    <ul class="dropdown" role="listbox">
+      @for (row of rows(); track row.choice.id) {
+        <li role="option" [attr.aria-disabled]="row.disabled">
+          <button
+            type="button"
+            class="option"
+            [class.child]="row.depth > 0"
+            [class.parent]="row.hasChildren"
+            [disabled]="row.disabled"
+            (click)="pick(row)"
+          >
+            @if (row.depth > 0) {
+              <app-icon class="branch" name="corner-down-right" />
+            }
+            <span class="name">{{ row.choice.name }}</span>
+            @if (row.hasChildren) {
+              <span class="kind">group</span>
+            }
+            <span class="spacer"></span>
+            @if (row.disabled) {
+              <span class="added">
+                <app-icon name="check" />
+                added
+              </span>
+            } @else {
+              <span class="muted unit">{{ row.choice.unit }}</span>
+            }
           </button>
         </li>
+      } @empty {
+        <li class="empty muted">{{ loading() ? 'Searching…' : 'No ingredients found' }}</li>
       }
     </ul>
   }
