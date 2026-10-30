@@ -19,6 +19,16 @@ const ICONS = {
   'volume-off': ['M11 5 6 9H2v6h4l5 4V5z', 'M23 9l-6 6M17 9l6 6'],
   play: ['M5 3l14 9-14 9V3z'],
   close: ['M18 6 6 18M6 6l12 12'],
+  plus: ['M12 5v14M5 12h14'],
+  image: [
+    'M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z',
+    'M8.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z',
+    'M21 15l-5-5L5 21',
+  ],
+  upload: ['M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4', 'M17 8l-5-5-5 5', 'M12 3v12'],
+  filter: ['M22 3H2l8 9.46V19l4 2v-8.54L22 3z'],
+  check: ['M20 6 9 17l-5-5'],
+  'corner-down-right': ['M15 10l5 5-5 5', 'M4 4v7a4 4 0 0 0 4 4h12'],
   'chevron-up': ['M18 15l-6-6-6 6'],
   'chevron-down': ['M6 9l6 6 6-6'],
 } as const;
