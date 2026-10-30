@@ -3,7 +3,6 @@ import { Component, computed, effect, inject, input, signal } from '@angular/cor
 import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../core/api.service';
 import { AuthService } from '../core/auth.service';
-import { CurrentUserService } from '../core/current-user.service';
 import { RecipeDetails, errorMessage } from '../core/models';
 import { Comments } from '../shared/comments';
 
@@ -35,8 +34,12 @@ import { Comments } from '../shared/comments';
         <div class="row muted">
           @if (r.userImageUrl) { <img class="avatar" [src]="r.userImageUrl" alt="" /> }
           @else { <span class="avatar">{{ r.userName.charAt(0) }}</span> }
-          <span>{{ r.userName }}</span>
-          @if (r.isFollowed) { <span>· following</span> }
+          <a [routerLink]="['/users', r.userId]">{{ r.userName }}</a>
+          @if (auth.isLoggedIn() && !isOwner()) {
+            <button class="btn small" [class.outline]="r.isFollowed" (click)="toggleFollow()">
+              {{ r.isFollowed ? 'Following' : 'Follow' }}
+            </button>
+          }
           <span>· ⏱ {{ r.cookingTimeMinutes }} min</span>
           <span>· 👁 {{ r.viewCount }}</span>
           <span>· {{ r.creationDate | date: 'mediumDate' }}</span>
@@ -100,19 +103,13 @@ import { Comments } from '../shared/comments';
 export class RecipeDetail {
   private readonly api = inject(ApiService);
   private readonly router = inject(Router);
-  private readonly currentUser = inject(CurrentUserService);
   protected readonly auth = inject(AuthService);
 
   readonly id = input.required<string>();
   readonly recipe = signal<RecipeDetails | null>(null);
   readonly error = signal('');
 
-  // RecipeDto has no author id yet, so ownership is guessed by author name.
-  // The API still rejects edits/deletes from anyone else.
-  readonly isOwner = computed(() => {
-    const user = this.currentUser.user();
-    return !!user && user.name === this.recipe()?.userName;
-  });
+  readonly isOwner = computed(() => !!this.recipe() && this.recipe()!.userId === this.auth.userId());
 
   constructor() {
     effect(() => {
@@ -136,6 +133,18 @@ export class RecipeDetail {
     }
     this.api.toggleLike(r.id).subscribe({
       next: ({ isLiked }) => this.recipe.set({ ...r, isLiked }),
+      error: (err) => this.error.set(errorMessage(err)),
+    });
+  }
+
+  toggleFollow(): void {
+    const r = this.recipe();
+    if (!r) {
+      return;
+    }
+    const request = r.isFollowed ? this.api.unfollow(r.userId) : this.api.follow(r.userId);
+    request.subscribe({
+      next: () => this.recipe.set({ ...r, isFollowed: !r.isFollowed }),
       error: (err) => this.error.set(errorMessage(err)),
     });
   }
