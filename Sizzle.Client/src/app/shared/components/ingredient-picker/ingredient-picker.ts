@@ -8,11 +8,9 @@ import {
   output,
   signal,
 } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Subject, debounceTime, distinctUntilChanged, switchMap } from 'rxjs';
-import { CatalogApi } from '../../../core/api/catalog.api';
 import { Ingredient, IngredientChoice } from '../../../core/models';
+import { IngredientCatalog } from '../../../core/services/ingredient-catalog.service';
 import { Icon } from '../icon/icon';
 
 interface Row {
@@ -21,6 +19,9 @@ interface Row {
   hasChildren: boolean;
   disabled: boolean;
 }
+
+/** Keeps the dropdown fast when the search box is empty. */
+const MAX_ROWS = 80;
 
 /**
  * Searchable dropdown of catalog ingredients shown as a tree: parents with their
@@ -35,9 +36,8 @@ interface Row {
   host: { '(document:click)': 'onDocumentClick($event)' },
 })
 export class IngredientPicker {
-  private readonly catalogApi = inject(CatalogApi);
+  private readonly catalog = inject(IngredientCatalog);
   private readonly host = inject(ElementRef<HTMLElement>);
-  private readonly search$ = new Subject<string>();
 
   /** Ids already chosen; they stay visible for context but cannot be picked again. */
   readonly excludeIds = input<string[]>([]);
@@ -47,48 +47,48 @@ export class IngredientPicker {
 
   readonly term = signal('');
   readonly open = signal(false);
-  readonly loading = signal(false);
-  private readonly results = signal<Ingredient[]>([]);
+  readonly loading = this.catalog.loading;
 
+  /**
+   * A parent matching the search shows all its variants; otherwise a parent is listed
+   * only for context above its matching variants.
+   */
   readonly rows = computed<Row[]>(() => {
+    const term = this.term().trim().toLowerCase();
+    const matches = (i: Ingredient) => !term || i.name.toLowerCase().includes(term);
     const excluded = new Set(this.excludeIds());
+    const rootsOnly = this.rootsOnly();
     const rows: Row[] = [];
-    for (const parent of this.results()) {
-      const children = this.rootsOnly() ? [] : (parent.children ?? []);
-      rows.push(toRow(parent, null, 0, children.length > 0, excluded));
-      for (const child of children) {
-        rows.push(toRow(child, parent.name, 1, false, excluded));
+
+    for (const parent of this.catalog.tree()) {
+      const variants = parent.children ?? [];
+      const parentMatches = matches(parent);
+      const shownVariants = rootsOnly ? [] : parentMatches ? variants : variants.filter(matches);
+      if (!parentMatches && shownVariants.length === 0) {
+        continue;
+      }
+      rows.push(toRow(parent, null, 0, !rootsOnly && variants.length > 0, excluded));
+      for (const variant of shownVariants) {
+        rows.push(toRow(variant, parent.name, 1, false, excluded));
+      }
+      if (rows.length >= MAX_ROWS) {
+        break;
       }
     }
     return rows;
   });
 
   constructor() {
-    this.search$
-      .pipe(
-        debounceTime(200),
-        distinctUntilChanged(),
-        switchMap((term) => {
-          this.loading.set(true);
-          return this.catalogApi.getIngredients(term, 30);
-        }),
-        takeUntilDestroyed(),
-      )
-      .subscribe((items) => {
-        this.loading.set(false);
-        this.results.set(items);
-      });
+    this.catalog.ensureLoaded();
   }
 
   onFocus(): void {
     this.open.set(true);
-    this.search$.next(this.term().trim());
   }
 
   onTermChange(term: string): void {
     this.term.set(term);
     this.open.set(true);
-    this.search$.next(term.trim());
   }
 
   pick(row: Row): void {
@@ -97,7 +97,6 @@ export class IngredientPicker {
     }
     this.picked.emit(row.choice);
     this.term.set('');
-    this.search$.next('');
   }
 
   onDocumentClick(event: MouseEvent): void {
@@ -111,12 +110,18 @@ export class IngredientPicker {
       this.open.set(false);
     } else if (event.key === 'Enter') {
       event.preventDefault(); // do not submit the surrounding form
-      const first = this.rows().find((row) => !row.disabled);
+      const first =
+        this.rows().find((row) => !row.disabled && matchesExactly(row, this.term())) ??
+        this.rows().find((row) => !row.disabled);
       if (first) {
         this.pick(first);
       }
     }
   }
+}
+
+function matchesExactly(row: Row, term: string): boolean {
+  return row.choice.name.toLowerCase() === term.trim().toLowerCase();
 }
 
 function toRow(

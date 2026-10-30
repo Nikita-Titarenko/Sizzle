@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
 import { Category, IngredientChoice, IngredientUnit } from '../../../core/models';
+import { IngredientCatalog } from '../../../core/services/ingredient-catalog.service';
 import { errorMessage } from '../../../core/utils/error-message';
 import { Icon } from '../../../shared/components/icon/icon';
 import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
@@ -48,6 +49,7 @@ export class RecipeForm {
   private readonly catalogApi = inject(CatalogApi);
   private readonly recipesApi = inject(RecipesApi);
   private readonly router = inject(Router);
+  private readonly ingredientCatalog = inject(IngredientCatalog);
 
   readonly id = input<string>();
   readonly units: IngredientUnit[] = ['Grams', 'Milliliters', 'Pieces'];
@@ -153,7 +155,12 @@ export class RecipeForm {
     this.busy.set(true);
     this.error.set('');
     request.subscribe({
-      next: (recipe) => this.router.navigate(['/recipes', recipe.id ?? id]),
+      next: (recipe) => {
+        if (value.newIngredients.length) {
+          this.ingredientCatalog.refresh();
+        }
+        this.router.navigate(['/recipes', recipe.id ?? id]);
+      },
       error: (err) => {
         this.busy.set(false);
         this.error.set(errorMessage(err));
