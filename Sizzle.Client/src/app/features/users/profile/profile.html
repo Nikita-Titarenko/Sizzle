@@ -3,11 +3,11 @@
     <section class="card form">
       @if (currentUser.user(); as user) {
         <div class="center">
-          @if (preview() || user.imageUrl) {
-            <img class="avatar large" [src]="preview() || user.imageUrl" alt="" />
-          } @else {
-            <span class="avatar large">{{ user.name.charAt(0) }}</span>
-          }
+          <app-user-avatar
+            [name]="user.name"
+            [imageUrl]="preview() || user.imageUrl"
+            size="large"
+          />
           <p class="muted">{{ user.email }}</p>
         </div>
       }

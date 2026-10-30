@@ -1,10 +1,11 @@
 import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { User } from '../../../core/models';
+import { UserAvatar } from '../user-avatar/user-avatar';
 
 @Component({
   selector: 'app-user-list',
-  imports: [RouterLink],
+  imports: [UserAvatar, RouterLink],
   templateUrl: './user-list.html',
   styleUrl: './user-list.scss',
 })

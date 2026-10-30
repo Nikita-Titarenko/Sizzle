@@ -3,11 +3,7 @@
 }
 @if (user(); as u) {
   <section class="card row header">
-    @if (u.imageUrl) {
-      <img class="avatar large" [src]="u.imageUrl" alt="" />
-    } @else {
-      <span class="avatar large">{{ u.name.charAt(0) }}</span>
-    }
+    <app-user-avatar [name]="u.name" [imageUrl]="u.imageUrl" size="large" />
     <div>
       <h1>{{ u.name }}</h1>
     </div>

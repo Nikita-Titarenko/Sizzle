@@ -4,10 +4,11 @@ import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { Comment } from '../../../core/models';
 
-/** A single comment with inline reply and edit forms. API calls are left to the parent. */
+/** A single comment with inline reply and edit forms. API calls are left to the parent. */ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
+
 @Component({
   selector: 'app-comment-item',
-  imports: [FormsModule, DatePipe, RouterLink],
+  imports: [UserAvatar, FormsModule, DatePipe, RouterLink],
   templateUrl: './comment-item.html',
   styleUrl: './comment-item.scss',
 })

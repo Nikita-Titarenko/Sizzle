@@ -10,25 +10,6 @@
   margin: 40px auto;
 }
 
-.avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--border);
-  color: var(--muted);
-  font-weight: 700;
-
-  &.large {
-    width: 96px;
-    height: 96px;
-    font-size: 2rem;
-  }
-}
-
 .chip {
   padding: 6px 14px;
   border: 1px solid var(--border);

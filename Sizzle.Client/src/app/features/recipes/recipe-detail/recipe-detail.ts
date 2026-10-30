@@ -7,10 +7,12 @@ import { AuthService } from '../../../core/auth/auth.service';
 import { RecipeDetails } from '../../../core/models';
 import { errorMessage } from '../../../core/utils/error-message';
 import { CommentSection } from '../comment-section/comment-section';
+import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [DatePipe, RouterLink, CommentSection],
+  imports: [UserAvatar, UnitLabelPipe, DatePipe, RouterLink, CommentSection],
   templateUrl: './recipe-detail.html',
   styleUrl: './recipe-detail.scss',
 })
@@ -77,12 +79,6 @@ export class RecipeDetail {
       next: () => this.router.navigate(['/profile']),
       error: (err) => this.error.set(errorMessage(err)),
     });
-  }
-
-  unitLabel(unit: string): string {
-    return (
-      ({ Grams: 'g', Milliliters: 'ml', Pieces: 'pcs' } as Record<string, string>)[unit] ?? unit
-    );
   }
 
   isVideo(url: string): boolean {

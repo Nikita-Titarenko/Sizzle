@@ -10,10 +10,11 @@ import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 import { UserList } from '../../../shared/components/user-list/user-list';
 
 const PAGE_SIZE = 9;
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 
 @Component({
   selector: 'app-profile',
-  imports: [FormsModule, RecipeGrid, Pager, UserList],
+  imports: [UserAvatar, FormsModule, RecipeGrid, Pager, UserList],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })

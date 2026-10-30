@@ -21,11 +21,7 @@
       <span>{{ recipe().creationDate | date: 'mediumDate' }}</span>
     </div>
     <a class="row author" [routerLink]="['/users', recipe().userId]">
-      @if (recipe().userImageUrl) {
-        <img class="avatar" [src]="recipe().userImageUrl" alt="" />
-      } @else {
-        <span class="avatar">{{ recipe().userName.charAt(0) }}</span>
-      }
+      <app-user-avatar [name]="recipe().userName" [imageUrl]="recipe().userImageUrl" />
       <span>{{ recipe().userName }}</span>
       @if (recipe().isFollowed) {
         <span class="muted">· following</span>

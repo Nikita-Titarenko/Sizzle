@@ -20,11 +20,7 @@
       }
     </div>
     <div class="row muted">
-      @if (r.userImageUrl) {
-        <img class="avatar" [src]="r.userImageUrl" alt="" />
-      } @else {
-        <span class="avatar">{{ r.userName.charAt(0) }}</span>
-      }
+      <app-user-avatar [name]="r.userName" [imageUrl]="r.userImageUrl" />
       <a [routerLink]="['/users', r.userId]">{{ r.userName }}</a>
       @if (auth.isLoggedIn() && !isOwner()) {
         <button class="btn small" [class.outline]="r.isFollowed" (click)="toggleFollow()">
@@ -44,7 +40,7 @@
           @for (i of r.ingredients; track i.id) {
             <li>
               <span>{{ i.name }}</span>
-              <span class="muted">{{ i.quantity }} {{ unitLabel(i.unit) }}</span>
+              <span class="muted">{{ i.quantity }} {{ i.unit | unitLabel }}</span>
             </li>
           }
         </ul>

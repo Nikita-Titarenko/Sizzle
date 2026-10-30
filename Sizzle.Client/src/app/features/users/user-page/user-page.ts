@@ -8,10 +8,11 @@ import { Pager } from '../../../shared/components/pager/pager';
 import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 
 const PAGE_SIZE = 9;
+import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 
 @Component({
   selector: 'app-user-page',
-  imports: [RecipeGrid, Pager],
+  imports: [UserAvatar, RecipeGrid, Pager],
   templateUrl: './user-page.html',
   styleUrl: './user-page.scss',
 })

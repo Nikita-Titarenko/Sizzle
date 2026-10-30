@@ -2,11 +2,7 @@
   @for (u of users(); track u.id) {
     <li>
       <a class="row" [routerLink]="['/users', u.id]">
-        @if (u.imageUrl) {
-          <img class="avatar" [src]="u.imageUrl" alt="" />
-        } @else {
-          <span class="avatar">{{ u.name.charAt(0) }}</span>
-        }
+        <app-user-avatar [name]="u.name" [imageUrl]="u.imageUrl" />
         {{ u.name }}
       </a>
     </li>

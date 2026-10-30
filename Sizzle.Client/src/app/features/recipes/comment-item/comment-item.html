@@ -1,10 +1,6 @@
 <div class="comment">
   <div class="row head">
-    @if (comment().userImageUrl) {
-      <img class="avatar" [src]="comment().userImageUrl" alt="" />
-    } @else {
-      <span class="avatar">{{ comment().userName.charAt(0) }}</span>
-    }
+    <app-user-avatar [name]="comment().userName" [imageUrl]="comment().userImageUrl" />
     <a [routerLink]="['/users', comment().userId]">
       <b>{{ comment().userName }}</b>
     </a>
