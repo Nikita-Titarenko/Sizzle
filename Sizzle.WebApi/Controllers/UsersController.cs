@@ -4,11 +4,13 @@ using Sizzle.Application.Dtos.Users;
 using Sizzle.Application.Services.Users;
 using Sizzle.Domain.Common;
 using Sizzle.WebApi.Requests.Users;
+using Sizzle.WebApi.Services;
 
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public class UsersController(IUserService userService, IUserFollowerService followerService) : BaseController
+public class UsersController(IUserService userService, IUserFollowerService followerService,
+    IGoogleAuthFlowService googleAuthFlowService) : BaseController
 {
     /// <summary>Follow a user.</summary>
     /// <remarks>
@@ -132,16 +134,24 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
-    /// <summary>Sign in with a Google token.</summary>
-    /// <remarks>ErrorKey.BadRequest — the Google token or request data is invalid.</remarks>
-    [HttpPost("google-login")]
+    /// <summary>Start Google sign-in by redirecting the browser to Google's authorization page.</summary>
+    /// <remarks>Creates a short-lived state cookie to validate the Google callback.</remarks>
+    [HttpGet("google-login")]
+    [ProducesResponseType(StatusCodes.Status302Found)]
+    public IActionResult GoogleLogin() => googleAuthFlowService.Start(HttpContext);
+
+    /// <summary>Complete Google sign-in and return an application JWT.</summary>
+    /// <remarks>
+    /// <para>Google redirects the browser here with an authorization code and state. The code is exchanged for Google tokens, and the verified Google profile is used to sign in or register the user.</para>
+    /// <para>ErrorKey.BadRequest — the state is missing, invalid or expired, authorization was denied, or Google authentication failed.</para>
+    /// </remarks>
+    [HttpGet("google-callback")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<LoginResultDto>> GoogleLogin(GoogleLoginRequestModel requestModel)
-    {
-        var result = await userService.HandleGoogleLoginAsync(requestModel.IdToken);
-        return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
-    }
+    public Task<IActionResult> GoogleCallback(
+        [FromQuery] string? code, [FromQuery] string? state, [FromQuery] string? error,
+        CancellationToken cancellationToken)
+        => googleAuthFlowService.CompleteAsync(HttpContext, code, state, error, cancellationToken);
 
     /// <summary>Get a user's profile.</summary>
     /// <remarks>ErrorKey.NotFound — the user does not exist.</remarks>

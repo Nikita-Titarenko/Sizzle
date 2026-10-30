@@ -13,7 +13,7 @@ public interface IUserService
 
     Task<Result<LoginResultDto>> LoginAsync(LoginUserDto dto);
 
-    Task<Result<LoginResultDto>> HandleGoogleLoginAsync(string idToken);
+    Task<Result<LoginResultDto>> LoginWithGoogleAsync(GoogleUserDto profile);
 
     Task<Result<UserDto>> GetUserDtoAsync(Guid userId);
 

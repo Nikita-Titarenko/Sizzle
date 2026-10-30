@@ -1,4 +1,3 @@
-using Google.Apis.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sizzle.Application.Dtos.Users;
@@ -184,51 +183,38 @@ public class UserService(
         };
     }
 
-    public async Task<Result<LoginResultDto>> HandleGoogleLoginAsync(string idToken)
+    public async Task<Result<LoginResultDto>> LoginWithGoogleAsync(GoogleUserDto profile)
     {
-        GoogleJsonWebSignature.Payload payload;
-        try
-        {
-            payload = await GoogleJsonWebSignature.ValidateAsync(idToken);
-        }
-        catch (InvalidJwtException)
-        {
-            return new Result<LoginResultDto>
-            {
-                Errors =
-                [
-                    new Error
-                    {
-                        Message = "Invalid Google token",
-                        Field = nameof(idToken),
-                        Key = ErrorKey.BadRequest
-                    }
-                ]
-            };
-        }
-
-        var user = await userManager.FindByLoginAsync("Google", payload.Subject);
+        var user = await userManager.FindByLoginAsync("Google", profile.Subject);
         var isNewUser = false;
 
         if (user == null)
         {
-            user = await userManager.FindByEmailAsync(payload.Email);
+            user = await userManager.FindByEmailAsync(profile.Email);
             if (user == null)
             {
-                isNewUser = true;
                 user = new ApplicationUser
                 {
-                    UserName = payload.Email,
-                    Email = payload.Email,
+                    UserName = profile.Email,
+                    Email = profile.Email,
                     EmailConfirmed = true,
-                    Name = payload.Name
+                    Name = profile.Name
                 };
 
-                _ = await userManager.CreateAsync(user);
+                var created = await userManager.CreateAsync(user);
+                if (!created.Succeeded)
+                {
+                    return GoogleLoginFailed();
+                }
+
+                isNewUser = true;
             }
 
-            var info = new UserLoginInfo("Google", payload.Subject, "Google");
-            _ = await userManager.AddLoginAsync(user, info);
+            var linked = await userManager.AddLoginAsync(user, new UserLoginInfo("Google", profile.Subject, "Google"));
+            if (!linked.Succeeded)
+            {
+                return GoogleLoginFailed();
+            }
         }
 
         return new Result<LoginResultDto>
@@ -242,6 +228,11 @@ public class UserService(
             }
         };
     }
+
+    private static Result<LoginResultDto> GoogleLoginFailed() => new()
+    {
+        Errors = [new Error { Key = ErrorKey.UnexpectedError, Message = "Google login failed" }]
+    };
 
     public async Task<Result<UserDto>> GetUserDtoAsync(Guid userId)
     {

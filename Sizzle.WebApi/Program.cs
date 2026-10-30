@@ -29,6 +29,7 @@ builder.Services.Configure<ApiBehaviorOptions>(options =>
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddSignalR();
 builder.Services.AddScoped<IRecipeNotificationSender, RecipeNotificationSender>();
+builder.Services.AddScoped<IGoogleAuthFlowService, GoogleAuthFlowService>();
 
 builder.Services
     .AddInfrastructureServices(builder.Configuration, builder.Environment)

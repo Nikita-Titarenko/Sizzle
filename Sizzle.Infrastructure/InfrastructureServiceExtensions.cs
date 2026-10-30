@@ -7,6 +7,7 @@ using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Application.Services.Ingredients;
+using Sizzle.Application.Services.Users;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Options;
 using Sizzle.Infrastructure.Repositories;
@@ -49,6 +50,7 @@ public static class InfrastructureServiceExtensions
             .AddEntityFrameworkStores<ApplicationDbContext>();
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
+        services.AddHttpClient<IGoogleOAuthService, GoogleOAuthService>();
         services.AddScoped<IFileService, FileService>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
 
@@ -71,6 +73,7 @@ public static class InfrastructureServiceExtensions
 
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));
+        services.Configure<GoogleOAuthOptions>(configuration.GetSection("GoogleOAuth"));
         services.Configure<BusinessLogicOptions>(configuration.GetSection("BusinessLogic"));
 
         return services;
