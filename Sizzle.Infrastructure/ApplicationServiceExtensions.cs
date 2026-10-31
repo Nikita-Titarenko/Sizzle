@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using Sizzle.Application.Services.Categories;
 using Sizzle.Application.Services.Comments;
+using Sizzle.Application.Services.Devices;
 using Sizzle.Application.Services.Ingredients;
 using Sizzle.Application.Services.Recipes;
 using Sizzle.Application.Services.Users;
@@ -17,6 +18,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IRecipeService, RecipeService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserFollowerService, UserFollowerService>();
+        services.AddScoped<IDeviceTokenService, DeviceTokenService>();
         return services;
     }
 }
