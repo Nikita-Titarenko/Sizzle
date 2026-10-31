@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sizzle.Application.Dtos.Users;
@@ -13,7 +14,7 @@ namespace Sizzle.WebApi.Controllers;
 [Route("api/[controller]")]
 public class UsersController(IUserService userService, IUserFollowerService followerService,
     IGoogleAuthFlowService googleAuthFlowService, IGoogleOAuthService googleOAuthService,
-    IDeviceTokenService deviceTokenService) : BaseController
+    IDeviceTokenService deviceTokenService, IMapper mapper) : BaseController
 {
     /// <summary>Follow a user.</summary>
     /// <remarks>
@@ -81,12 +82,7 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<RegisterResultDto>> RegisterUser(RegisterUserRequestModel request)
     {
-        var result = await userService.RegisterUserAsync(new RegisterUserDto
-        {
-            Email = request.Email,
-            Name = request.Name,
-            Password = request.Password
-        });
+        var result = await userService.RegisterUserAsync(mapper.Map<RegisterUserDto>(request));
 
         if (!result.IsSuccess)
         {
@@ -109,11 +105,7 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ConfirmEmailResultDto>> ConfirmEmail(EmailConfirmationRequestModel request)
     {
-        var result = await userService.ConfirmEmailAsync(new ConfirmEmailDto
-        {
-            UserId = request.UserId,
-            Code = request.Code
-        });
+        var result = await userService.ConfirmEmailAsync(mapper.Map<ConfirmEmailDto>(request));
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
@@ -146,11 +138,7 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<LoginResultDto>> Login(LoginRequestModel request)
     {
-        var result = await userService.LoginAsync(new LoginUserDto
-        {
-            Email = request.Email,
-            Password = request.Password
-        });
+        var result = await userService.LoginAsync(mapper.Map<LoginUserDto>(request));
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
@@ -253,12 +241,8 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     public async Task<ActionResult> UpdateUserProfile([FromForm] UpdateUserProfileRequestModel request)
     {
         await using var stream = request.Icon?.OpenReadStream();
-        var result = await userService.UpdateUserProfileAsync(GetUserId(), new UpdateUserProfileDto
-        {
-            Name = request.Name,
-            Icon = stream,
-            IconName = request.Icon?.FileName
-        });
+        var result = await userService.UpdateUserProfileAsync(GetUserId(), mapper.Map(request,
+            new UpdateUserProfileDto { Name = request.Name, Icon = stream }));
 
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }

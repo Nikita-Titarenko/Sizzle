@@ -158,6 +158,9 @@ namespace Sizzle.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
@@ -228,10 +231,24 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<bool>("IsLiked")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("IsSaved")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("IsSavedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsShared")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<DateTime?>("IsSharedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<DateTime?>("ViewUpdatedAt")
                         .HasColumnType("datetime(6)");
 
                     b.HasKey("ApplicationUserId", "RecipeId");
+
+                    b.HasIndex("ApplicationUserId", "IsSaved", "IsSavedAt");
 
                     b.HasIndex("RecipeId");
 
@@ -379,6 +396,9 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<string>("FilePath")
                         .HasColumnType("longtext");
 
+                    b.Property<int>("LikeCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("longtext");
@@ -458,6 +478,46 @@ namespace Sizzle.Infrastructure.Migrations
                     b.HasIndex("RecipeStepId");
 
                     b.ToTable("RecipeStepFiles");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.SubscriptionOrder", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<bool>("IsPaid")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<int>("Plan")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("StartsAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "IsPaid", "ExpiresAt");
+
+                    b.ToTable("SubscriptionOrders");
                 });
 
             modelBuilder.Entity("Sizzle.Domain.Entities.UserFollower", b =>
@@ -677,6 +737,17 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("RecipeStep");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.SubscriptionOrder", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("SubscriptionOrders")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.UserFollower", b =>
                 {
                     b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "Follower")
@@ -707,6 +778,8 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("Following");
 
                     b.Navigation("Recipes");
+
+                    b.Navigation("SubscriptionOrders");
                 });
 
             modelBuilder.Entity("Sizzle.Domain.Entities.Category", b =>

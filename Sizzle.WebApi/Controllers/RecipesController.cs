@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sizzle.Application.Dtos;
@@ -9,7 +10,7 @@ using Sizzle.WebApi.Requests.Recipes;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public class RecipesController(IRecipeService recipeService) : BaseController
+public class RecipesController(IRecipeService recipeService, IMapper mapper) : BaseController
 {
     /// <summary>Get a page of recipes with search and filters.</summary>
     /// <remarks>ErrorKey.BadRequest — invalid pagination parameters.</remarks>
@@ -19,18 +20,28 @@ public class RecipesController(IRecipeService recipeService) : BaseController
     public async Task<ActionResult<PageResponse<RecipeDto>>> GetRecipes([FromQuery] GetRecipesRequestModel request)
     {
         var userId = User.Identity?.IsAuthenticated == true ? GetUserId() : Guid.Empty;
-        var page = await recipeService.GetRecipesAsync(new GetRecipesDto
+        var dto = mapper.Map(request, new GetRecipesDto
         {
-            IngredientIds = request.IngredientIds,
-            CategoryIds = request.CategoryIds,
-            Search = request.Search,
-            PageIndex = request.PageIndex,
-            PageSize = request.PageSize,
             ApplicationUserId = userId == Guid.Empty ? null : userId,
             OwnerId = request.UserId
         });
+        var page = await recipeService.GetRecipesAsync(dto);
 
         return Ok(page);
+    }
+
+    [HttpGet("personalized")]
+    [ProducesResponseType(typeof(PageResponse<RecipeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<PageResponse<RecipeDto>>> GetPersonalizedRecipes([FromQuery] GetRecipesRequestModel request)
+    {
+        if (User.Identity?.IsAuthenticated != true)
+        {
+            return await GetRecipes(request);
+        }
+
+        var dto = mapper.Map(request, new GetRecipesDto { ApplicationUserId = GetUserId() });
+        return Ok(await recipeService.GetPersonalizedRecipesAsync(dto));
     }
 
     /// <summary>Get the current user's recipes with filters.</summary>
@@ -46,18 +57,21 @@ public class RecipesController(IRecipeService recipeService) : BaseController
     public async Task<ActionResult<PageResponse<RecipeDto>>> GetMyRecipes([FromQuery] GetRecipesRequestModel request)
     {
         var userId = GetUserId();
-        var page = await recipeService.GetRecipesAsync(new GetRecipesDto
-        {
-            IngredientIds = request.IngredientIds,
-            CategoryIds = request.CategoryIds,
-            Search = request.Search,
-            PageIndex = request.PageIndex,
-            PageSize = request.PageSize,
-            ApplicationUserId = userId,
-            OwnerId = userId
-        });
+        var dto = mapper.Map(request, new GetRecipesDto { ApplicationUserId = userId, OwnerId = userId });
+        var page = await recipeService.GetRecipesAsync(dto);
 
         return Ok(page);
+    }
+
+    [HttpGet("saved")]
+    [Authorize]
+    [ProducesResponseType(typeof(PageResponse<RecipeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PageResponse<RecipeDto>>> GetSavedRecipes([FromQuery] GetRecipesRequestModel request)
+    {
+        return Ok(await recipeService.GetSavedRecipesAsync(mapper.Map(request,
+            new GetRecipesDto { ApplicationUserId = GetUserId(), OwnerId = request.UserId })));
     }
 
     /// <summary>Create a recipe.</summary>
@@ -75,33 +89,8 @@ public class RecipesController(IRecipeService recipeService) : BaseController
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RecipeDto>> CreateRecipe([FromForm] CreateRecipeRequestModel request)
     {
-        var result = await recipeService.CreateRecipeAsync(new CreateRecipeDto
-        {
-            ApplicationUserId = GetUserId(),
-            Name = request.Name,
-            Description = request.Description,
-            CookingTimeMinutes = request.CookingTimeMinutes,
-            CategoryId = request.CategoryId,
-            File = ToUpload(request.File),
-            Steps = request.Steps.Select(step => new RecipeStepInputDto
-            {
-                Name = step.Name,
-                Description = step.Description,
-                Files = step.Files.Select(file => ToUpload(file)!).ToArray()
-            }).ToArray(),
-            Ingredients = request.Ingredients.Select(ingredient => new RecipeIngredientInputDto
-            {
-                Id = ingredient.Id,
-                Quantity = ingredient.Quantity
-            }).ToArray(),
-            NewIngredients = request.NewIngredients.Select(ingredient => new NewIngredientDto
-            {
-                Name = ingredient.Name,
-                ParentId = ingredient.ParentId,
-                Unit = ingredient.Unit,
-                Quantity = ingredient.Quantity
-            }).ToArray()
-        });
+        var result = await recipeService.CreateRecipeAsync(mapper.Map<CreateRecipeDto>(request,
+            options => options.Items["ApplicationUserId"] = GetUserId()));
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
@@ -121,34 +110,11 @@ public class RecipesController(IRecipeService recipeService) : BaseController
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<RecipeDto>> UpdateRecipe(Guid recipeId, [FromForm] UpdateRecipeRequestModel request)
     {
-        var result = await recipeService.UpdateRecipeAsync(new UpdateRecipeDto
+        var result = await recipeService.UpdateRecipeAsync(mapper.Map<UpdateRecipeDto>(request, options =>
         {
-            Id = recipeId,
-            ApplicationUserId = GetUserId(),
-            Name = request.Name,
-            Description = request.Description,
-            CookingTimeMinutes = request.CookingTimeMinutes,
-            CategoryId = request.CategoryId,
-            File = ToUpload(request.File),
-            Steps = request.Steps.Select(step => new RecipeStepInputDto
-            {
-                Name = step.Name,
-                Description = step.Description,
-                Files = step.Files.Select(file => ToUpload(file)!).ToArray()
-            }).ToArray(),
-            Ingredients = request.Ingredients.Select(ingredient => new RecipeIngredientInputDto
-            {
-                Id = ingredient.Id,
-                Quantity = ingredient.Quantity
-            }).ToArray(),
-            NewIngredients = request.NewIngredients.Select(ingredient => new NewIngredientDto
-            {
-                Name = ingredient.Name,
-                ParentId = ingredient.ParentId,
-                Unit = ingredient.Unit,
-                Quantity = ingredient.Quantity
-            }).ToArray()
-        });
+            options.Items["RecipeId"] = recipeId;
+            options.Items["ApplicationUserId"] = GetUserId();
+        }));
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
@@ -210,6 +176,28 @@ public class RecipesController(IRecipeService recipeService) : BaseController
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    [HttpPost("{recipeId:guid}/toggle-save")]
+    [Authorize]
+    [ProducesResponseType(typeof(RecipeSaveDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RecipeSaveDto>> ToggleSave(Guid recipeId)
+    {
+        var result = await recipeService.ToggleSaveAsync(recipeId, GetUserId());
+        return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
+    }
+
+    [HttpPost("{recipeId:guid}/update-share")]
+    [Authorize]
+    [ProducesResponseType(typeof(RecipeShareDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<RecipeShareDto>> UpdateShare(Guid recipeId)
+    {
+        var result = await recipeService.UpdateShareAsync(recipeId, GetUserId());
+        return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
+    }
+
     /// <summary>Record a recipe view if the update interval has elapsed.</summary>
     /// <remarks>
     /// <para>ErrorKey.NotFound — the recipe does not exist.</para>
@@ -225,19 +213,11 @@ public class RecipesController(IRecipeService recipeService) : BaseController
         var result = await recipeService.UpdateViewAsync(new UpdateRecipeViewDto
         {
             RecipeId = recipeId,
-            ApplicationUserId = GetUserId()
+            ApplicationUserId = GetUserId(),
+            LanguageCode = GetLanguageCode()
         });
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
-    private static RecipeMediaUploadDto? ToUpload(IFormFile? file)
-    {
-        return file == null ? null : new RecipeMediaUploadDto
-        {
-            FileName = file.FileName,
-            Length = file.Length,
-            OpenReadStream = file.OpenReadStream
-        };
-    }
 }

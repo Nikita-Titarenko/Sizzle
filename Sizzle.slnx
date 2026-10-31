@@ -5,5 +5,6 @@
   <Project Path="Sizzle.Application/Sizzle.Application.csproj" />
   <Project Path="Sizzle.Domain/Sizzle.Domain.csproj" />
   <Project Path="Sizzle.Infrastructure/Sizzle.Infrastructure.csproj" />
+  <Project Path="Sizzle.MappingTests/Sizzle.MappingTests.csproj" />
   <Project Path="Sizzle.WebApi/Sizzle.WebApi.csproj" />
 </Solution>

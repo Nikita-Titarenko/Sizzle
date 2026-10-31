@@ -1,10 +1,12 @@
+using Microsoft.Extensions.Logging;
 using Sizzle.Application.Repositories;
 using Sizzle.Domain.Common;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Devices;
 
-public class DeviceTokenService(IDeviceTokenRepository deviceTokenRepository, IUnitOfWork unitOfWork) : IDeviceTokenService
+public class DeviceTokenService(IDeviceTokenRepository deviceTokenRepository, IUnitOfWork unitOfWork,
+    ILogger<DeviceTokenService> logger) : IDeviceTokenService
 {
     public const int MaxTokenLength = 512;
 
@@ -14,6 +16,7 @@ public class DeviceTokenService(IDeviceTokenRepository deviceTokenRepository, IU
     {
         if (string.IsNullOrWhiteSpace(token) || token.Length > MaxTokenLength)
         {
+            logger.LogWarning("Device registration rejected for user {UserId}: invalid token", userId);
             return new Result { Errors = [new Error { Key = ErrorKey.BadRequest, Field = "Token", Message = "Invalid device token" }] };
         }
 
@@ -29,6 +32,7 @@ public class DeviceTokenService(IDeviceTokenRepository deviceTokenRepository, IU
         }
 
         await unitOfWork.CommitAsync();
+        logger.LogInformation("Device registered for user {UserId}", userId);
         return new Result();
     }
 
@@ -37,11 +41,13 @@ public class DeviceTokenService(IDeviceTokenRepository deviceTokenRepository, IU
         var existing = await deviceTokenRepository.GetAsync(token);
         if (existing == null || existing.UserId != userId)
         {
+            logger.LogWarning("Device removal rejected for user {UserId}: token not found", userId);
             return new Result { Errors = [new Error { Key = ErrorKey.NotFound, Message = "Device token not found" }] };
         }
 
         deviceTokenRepository.Remove(existing);
         await unitOfWork.CommitAsync();
+        logger.LogInformation("Device removed for user {UserId}", userId);
         return new Result();
     }
 }

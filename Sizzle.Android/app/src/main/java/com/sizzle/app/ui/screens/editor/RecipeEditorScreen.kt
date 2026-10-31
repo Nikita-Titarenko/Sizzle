@@ -180,7 +180,6 @@ fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
         }
     }
 }
-
 @Composable
 private fun PublishBar(vm: RecipeEditorViewModel, onPublish: () -> Unit) {
     Surface(color = Sizzle.colors.surface, border = BorderStroke(1.dp, Sizzle.colors.border)) {

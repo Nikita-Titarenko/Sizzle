@@ -6,6 +6,8 @@ public class UserDto
 
     public required string Name { get; init; }
 
+    public string Description { get; init; } = string.Empty;
+
     public required string Email { get; init; }
 
     public string? ImageUrl { get; set; }

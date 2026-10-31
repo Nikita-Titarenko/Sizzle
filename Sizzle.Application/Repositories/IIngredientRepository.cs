@@ -8,5 +8,7 @@ public interface IIngredientRepository : IRepository<Ingredient>
 
     Task<List<Ingredient>> GetByIdsAsync(Guid[] ids);
 
+    Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids);
+
     Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames);
 }

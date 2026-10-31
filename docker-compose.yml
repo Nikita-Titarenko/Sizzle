@@ -25,10 +25,13 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       ASPNETCORE_URLS: http://0.0.0.0:8080
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
+      Cache__Redis: redis:6379
       ConnectionStrings__DefaultConnection: server=mysql;port=3306;database=sizzle;user=sizzle;password=sizzlepass;
     ports:
       - "8080:8080"
@@ -39,15 +42,32 @@ services:
     command: dotnet watch run --project Sizzle.WebApi.csproj --urls http://0.0.0.0:8080
 
   sizzle-client:
-    build:
-      context: ./Sizzle.Client
-      dockerfile: Dockerfile
+    image: node:24-alpine
     container_name: sizzle-client
     depends_on:
       - sizzle-webapi
+    working_dir: /app
+    volumes:
+      - ./Sizzle.Client:/app
+      - client_node_modules:/app/node_modules
+    command: sh -c "npm ci && npm run start -- --host 0.0.0.0 --poll 1000 --proxy-config proxy.docker.conf.json"
     ports:
-      - "4200:80"
+      - "4200:4200"
+
+  redis:
+    image: redis:7-alpine
+    container_name: sizzle-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
 volumes:
   mysql_data:
   nuget_cache:
+  client_node_modules:
+  redis_data:

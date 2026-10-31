@@ -18,7 +18,8 @@ public static class TestDataInitializer
         var categoryCatalog = await ReadCatalogIdsAsync("categories.json");
 
         if (users.Count != 20 || users.Any(user => user.Id == Guid.Empty || string.IsNullOrWhiteSpace(user.Name)
-                || string.IsNullOrWhiteSpace(user.Email) || string.IsNullOrWhiteSpace(user.Password))
+            || string.IsNullOrWhiteSpace(user.Email) || string.IsNullOrWhiteSpace(user.Password)
+            || string.IsNullOrWhiteSpace(user.Description))
             || users.Select(user => user.Id).Distinct().Count() != users.Count
             || users.Select(user => user.Email).Distinct(StringComparer.OrdinalIgnoreCase).Count() != users.Count)
         {
@@ -30,6 +31,7 @@ public static class TestDataInitializer
             || recipes.Any(recipe => recipe.Id == Guid.Empty || !userIds.Contains(recipe.ApplicationUserId)
                 || !categoryCatalog.Contains(recipe.CategoryId) || string.IsNullOrWhiteSpace(recipe.Name)
                 || string.IsNullOrWhiteSpace(recipe.Description) || recipe.CookingTimeMinutes <= 0
+                || recipe.ViewCount < 0 || recipe.LikeCount < 0 || recipe.LikeCount > recipe.ViewCount
                 || recipe.Ingredients is not { Length: > 0 } || recipe.Steps is not { Length: > 0 }
                 || recipe.Ingredients.Any(ingredient => !ingredientCatalog.Contains(ingredient.IngredientId) || ingredient.Quantity <= 0)
                 || recipe.Ingredients.Select(ingredient => ingredient.IngredientId).Distinct().Count() != recipe.Ingredients.Length
@@ -52,6 +54,17 @@ public static class TestDataInitializer
                     throw new InvalidOperationException($"Test user ID '{user.Id}' is assigned to another email.");
                 }
 
+                var existingUser = await userManager.FindByIdAsync(user.Id.ToString());
+                if (existingUser != null && string.IsNullOrWhiteSpace(existingUser.Description))
+                {
+                    existingUser.Description = user.Description;
+                    var updateResult = await userManager.UpdateAsync(existingUser);
+                    if (!updateResult.Succeeded)
+                    {
+                        throw new InvalidOperationException($"Failed to update test user '{user.Email}': {string.Join(", ", updateResult.Errors.Select(error => error.Description))}");
+                    }
+                }
+
                 continue;
             }
 
@@ -64,6 +77,7 @@ public static class TestDataInitializer
             {
                 Id = user.Id,
                 Name = user.Name,
+                Description = user.Description,
                 UserName = user.Email,
                 Email = user.Email,
                 EmailConfirmed = true
@@ -89,6 +103,8 @@ public static class TestDataInitializer
                 Name = recipe.Name,
                 Description = recipe.Description,
                 CookingTimeMinutes = recipe.CookingTimeMinutes,
+                ViewCount = recipe.ViewCount,
+                LikeCount = recipe.LikeCount,
                 CreationDate = DateTime.UtcNow,
                 RecipeIngredients = recipe.Ingredients.Select(ingredient => new RecipeIngredient
                 {
@@ -255,6 +271,7 @@ public static class TestDataInitializer
     {
         public Guid Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
@@ -267,6 +284,8 @@ public static class TestDataInitializer
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public int CookingTimeMinutes { get; set; }
+        public int ViewCount { get; set; }
+        public int LikeCount { get; set; }
         public string? FilePath { get; set; }
         public IngredientSeed[] Ingredients { get; set; } = [];
         public StepSeed[] Steps { get; set; } = [];

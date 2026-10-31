@@ -52,12 +52,14 @@ export class RecipeDetail {
       this.recipe.set(null);
       this.error.set('');
       this.recipesApi.getById(id).subscribe({
-        next: (recipe) => this.recipe.set(recipe),
+        next: (recipe) => {
+          this.recipe.set(recipe);
+          if (this.auth.isLoggedIn()) {
+            this.recipesApi.registerView(id).subscribe({ error: () => undefined });
+          }
+        },
         error: (err) => this.error.set(this.i18n.error(err)),
       });
-      if (this.auth.isLoggedIn()) {
-        this.recipesApi.registerView(id).subscribe({ error: () => undefined });
-      }
     });
   }
 

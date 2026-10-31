@@ -4,6 +4,7 @@ using Sizzle.Application.Services.Comments;
 using Sizzle.Application.Services.Devices;
 using Sizzle.Application.Services.Ingredients;
 using Sizzle.Application.Services.Recipes;
+using Sizzle.Application.Services.Subscriptions;
 using Sizzle.Application.Services.Users;
 
 namespace Sizzle.Infrastructure;
@@ -18,6 +19,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IRecipeService, RecipeService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserFollowerService, UserFollowerService>();
+        services.AddScoped<ISubscriptionService, SubscriptionService>();
         services.AddScoped<IDeviceTokenService, DeviceTokenService>();
         return services;
     }

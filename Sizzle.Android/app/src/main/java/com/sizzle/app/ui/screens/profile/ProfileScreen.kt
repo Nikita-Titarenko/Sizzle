@@ -181,7 +181,6 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 }
-
 @Composable
 fun ProfileScreen(navigator: Navigator) {
     val container = LocalAppContainer.current

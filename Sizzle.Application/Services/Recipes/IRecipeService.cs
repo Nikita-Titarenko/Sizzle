@@ -8,6 +8,10 @@ public interface IRecipeService
 {
     Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto);
 
+    Task<PageResponse<RecipeDto>> GetSavedRecipesAsync(GetRecipesDto dto);
+
+    Task<PageResponse<RecipeDto>> GetPersonalizedRecipesAsync(GetRecipesDto dto);
+
     Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto);
 
     Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto);
@@ -18,5 +22,10 @@ public interface IRecipeService
 
     Task<Result<RecipeLikeDto>> ToggleLikeAsync(ToggleLikeRecipeDto dto);
 
+    Task<Result<RecipeSaveDto>> ToggleSaveAsync(Guid recipeId, Guid userId);
+
+    Task<Result<RecipeShareDto>> UpdateShareAsync(Guid recipeId, Guid userId);
+
     Task<Result<RecipeDto>> UpdateViewAsync(UpdateRecipeViewDto dto);
+
 }

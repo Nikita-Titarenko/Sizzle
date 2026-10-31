@@ -3,9 +3,13 @@ using Sizzle.Application.Repositories;
 
 namespace Sizzle.Application.Services.Ingredients;
 
-public class IngredientService(IIngredientRepository ingredientRepository, IIngredientUnitFormatter unitFormatter) : IIngredientService
+public class IngredientService(IIngredientRepository ingredientRepository, IIngredientUnitFormatter unitFormatter,
+    IIngredientReadCache cache) : IIngredientService
 {
-    public async Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto)
+    public async Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto) =>
+        await cache.GetOrCreateAsync(dto, () => GetAllCoreAsync(dto));
+
+    private async Task<List<IngredientListItemDto>> GetAllCoreAsync(GetAllIngredientsDto dto)
     {
         var ingredients = (await ingredientRepository.GetAllOrderedAsync(dto.Search, dto.PageIndex, dto.PageSize, dto.LanguageCode)).ToList();
 

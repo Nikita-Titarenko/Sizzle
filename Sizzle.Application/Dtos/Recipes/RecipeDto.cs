@@ -22,9 +22,15 @@ public class RecipeDto
 
     public string? FileUrl { get; init; }
 
-    public int ViewCount { get; init; }
+    public int ViewCount { get; set; }
+
+    public int LikeCount { get; set; }
 
     public DateTime CreationDate { get; init; }
 
-    public bool IsLiked { get; init; }
+    public bool IsLiked { get; set; }
+
+    public bool IsSaved { get; set; }
+
+    public DateTime? IsSavedAt { get; set; }
 }

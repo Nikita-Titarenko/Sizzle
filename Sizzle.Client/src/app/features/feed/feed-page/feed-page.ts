@@ -232,7 +232,7 @@ export class FeedPage {
     this.loading.set(true);
     this.error.set('');
     this.loadSub = this.recipesApi
-      .getAll({
+      .getPersonalized({
         pageIndex: this.pageIndex,
         pageSize: PAGE_SIZE,
         categoryIds: categoryId ? [categoryId] : [],

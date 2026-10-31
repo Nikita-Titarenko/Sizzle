@@ -1,3 +1,5 @@
+using AutoMapper;
+using Microsoft.Extensions.Logging;
 using Sizzle.Application.Dtos;
 using Sizzle.Application.Dtos.Comments;
 using Sizzle.Application.Repositories;
@@ -7,26 +9,30 @@ using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Comments;
 
-public class CommentService(ICommentRepository commentRepository, IRecipeRepository recipeRepository, IUnitOfWork unitOfWork, IFileService fileService) : ICommentService
+public class CommentService(ICommentRepository commentRepository, IRecipeRepository recipeRepository, IUnitOfWork unitOfWork,
+    IMapper mapper, ICommentReadCache cache, ILogger<CommentService> logger) : ICommentService
 {
     public async Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(GetCommentsByRecipeIdDto dto)
     {
-        if (!await recipeRepository.Exists(dto.RecipeId))
+        var page = await cache.GetOrCreateAsync(dto.RecipeId, dto.PageIndex, dto.PageSize, async () =>
+        {
+            if (!await recipeRepository.Exists(dto.RecipeId)) return null;
+
+            var comments = await commentRepository.GetByRecipeIdAsync(dto.RecipeId, dto.PageIndex, dto.PageSize);
+            return new PageResponse<CommentDto>
+            {
+                Data = comments.Data.Select(comment => mapper.Map<CommentDto>(comment)).ToList(),
+                TotalSize = comments.TotalSize,
+                PageIndex = comments.PageIndex,
+                PageSize = comments.PageSize
+            };
+        });
+        if (page == null)
         {
             return new Result<PageResponse<CommentDto>> { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
         }
 
-        var page = await commentRepository.GetByRecipeIdAsync(dto.RecipeId, dto.PageIndex, dto.PageSize);
-        return new Result<PageResponse<CommentDto>>
-        {
-            Value = new PageResponse<CommentDto>
-            {
-                Data = page.Data.Select(comment => ToDto(comment)).ToList(),
-                TotalSize = page.TotalSize,
-                PageIndex = page.PageIndex,
-                PageSize = page.PageSize
-            }
-        };
+        return new Result<PageResponse<CommentDto>> { Value = page };
     }
 
     public async Task<Result<CommentDto>> CreateAsync(CreateCommentDto dto)
@@ -34,11 +40,13 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         var contentError = ValidateContent(dto.Content);
         if (contentError != null)
         {
+            logger.LogWarning("Comment creation rejected for user {UserId} on recipe {RecipeId}: {ErrorKey}", dto.UserId, dto.RecipeId, contentError.Key);
             return new Result<CommentDto> { Errors = [contentError] };
         }
 
         if (!await recipeRepository.Exists(dto.RecipeId))
         {
+            logger.LogWarning("Comment creation rejected: recipe {RecipeId} not found", dto.RecipeId);
             return new Result<CommentDto> { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
         }
 
@@ -47,29 +55,28 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             var parent = await commentRepository.GetAsync(dto.ParentId.Value);
             if (parent == null)
             {
+                logger.LogWarning("Comment creation rejected: parent {ParentId} not found for recipe {RecipeId}", dto.ParentId, dto.RecipeId);
                 return new Result<CommentDto> { Errors = [new Error { Message = "Parent comment not found", Key = ErrorKey.NotFound }] };
             }
 
             if (parent.RecipeId != dto.RecipeId)
             {
+                logger.LogWarning("Comment creation rejected: parent {ParentId} belongs to another recipe", dto.ParentId);
                 return new Result<CommentDto> { Errors = [new Error { Message = "Parent comment belongs to another recipe", Key = ErrorKey.BadRequest }] };
             }
         }
 
-        var comment = new Comment
-        {
-            Id = Guid.NewGuid(),
-            ParentId = dto.ParentId,
-            Content = dto.Content.Trim(),
-            CreatedAt = DateTime.UtcNow,
-            UserId = dto.UserId,
-            RecipeId = dto.RecipeId
-        };
+        var comment = mapper.Map<Comment>(dto);
+        comment.Id = Guid.NewGuid();
+        comment.CreatedAt = DateTime.UtcNow;
 
         commentRepository.Add(comment);
         await unitOfWork.CommitAsync();
+        logger.LogInformation("Comment {CommentId} created on recipe {RecipeId} by user {UserId}", comment.Id, dto.RecipeId, dto.UserId);
         var userName = await commentRepository.GetUserNameAsync(dto.UserId);
-        return new Result<CommentDto> { Value = ToDto(comment, userName) };
+        var created = mapper.Map<CommentDto>(comment, options => options.Items["UserName"] = userName);
+        await cache.AddAsync(created);
+        return new Result<CommentDto> { Value = created };
     }
 
     public async Task<Result<CommentDto>> UpdateAsync(Guid commentId, Guid userId, string content)
@@ -77,23 +84,29 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         var contentError = ValidateContent(content);
         if (contentError != null)
         {
+            logger.LogWarning("Comment update rejected for comment {CommentId}: {ErrorKey}", commentId, contentError.Key);
             return new Result<CommentDto> { Errors = [contentError] };
         }
 
         var comment = await commentRepository.GetWithUserAsync(commentId);
         if (comment == null)
         {
+            logger.LogWarning("Comment update rejected: comment {CommentId} not found", commentId);
             return new Result<CommentDto> { Errors = [new Error { Message = "Comment not found", Key = ErrorKey.NotFound }] };
         }
 
         if (comment.UserId != userId)
         {
+            logger.LogWarning("Comment update denied for user {UserId} on comment {CommentId}", userId, commentId);
             return new Result<CommentDto> { Errors = [new Error { Message = "Only the author can edit this comment", Key = ErrorKey.Forbidden }] };
         }
 
         comment.Content = content.Trim();
         await unitOfWork.CommitAsync();
-        return new Result<CommentDto> { Value = ToDto(comment) };
+        logger.LogInformation("Comment {CommentId} updated by user {UserId}", commentId, userId);
+        var updated = mapper.Map<CommentDto>(comment);
+        await cache.UpdateAsync(updated);
+        return new Result<CommentDto> { Value = updated };
     }
 
     public async Task<Result> DeleteAsync(Guid commentId, Guid userId)
@@ -101,16 +114,20 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         var comment = await commentRepository.GetAsync(commentId);
         if (comment == null)
         {
+            logger.LogWarning("Comment deletion rejected: comment {CommentId} not found", commentId);
             return new Result { Errors = [new Error { Message = "Comment not found", Key = ErrorKey.NotFound }] };
         }
 
         if (comment.UserId != userId)
         {
+            logger.LogWarning("Comment deletion denied for user {UserId} on comment {CommentId}", userId, commentId);
             return new Result { Errors = [new Error { Message = "Only the author can delete this comment", Key = ErrorKey.Forbidden }] };
         }
 
         commentRepository.Remove(comment);
         await unitOfWork.CommitAsync();
+        logger.LogInformation("Comment {CommentId} deleted by user {UserId}", commentId, userId);
+        await cache.InvalidateAsync(comment.RecipeId);
         return new Result();
     }
 
@@ -121,18 +138,4 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             : null;
     }
 
-    private CommentDto ToDto(Comment comment, string? userName = null)
-    {
-        return new CommentDto
-        {
-            Id = comment.Id,
-            ParentId = comment.ParentId,
-            Content = comment.Content,
-            CreatedAt = comment.CreatedAt,
-            UserId = comment.UserId,
-            UserName = userName ?? comment.User?.Name ?? string.Empty,
-            UserImageUrl = fileService.GetFileUrl(Path.Combine("icons", comment.UserId.ToString())),
-            RecipeId = comment.RecipeId
-        };
-    }
 }

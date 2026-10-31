@@ -12,6 +12,12 @@ public class IngredientRepository(ApplicationDbContext dbContext) : Repository<I
         return DbSet.WhereIdIn(ids, ingredient => ingredient.Id).ToListAsync();
     }
 
+    public Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids)
+    {
+        return DbSet.AsNoTracking().WhereIdIn(ids, ingredient => ingredient.Id)
+            .Include(ingredient => ingredient.Translations).ToListAsync();
+    }
+
     public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames)
     {
         return DbSet.Include(i => i.Translations)

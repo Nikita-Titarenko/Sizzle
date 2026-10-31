@@ -18,7 +18,8 @@ public interface IGoogleAuthFlowService
 public sealed class GoogleAuthFlowService(
     IGoogleOAuthService googleOAuthService,
     IUserService userService,
-    IDataProtectionProvider dataProtectionProvider) : IGoogleAuthFlowService
+    IDataProtectionProvider dataProtectionProvider,
+    ILogger<GoogleAuthFlowService> logger) : IGoogleAuthFlowService
 {
     private const string StateCookie = "sizzle.google.state";
     private const string CallbackPath = "/api/Users/google-callback";
@@ -58,6 +59,7 @@ public sealed class GoogleAuthFlowService(
             }
             catch (CryptographicException)
             {
+                logger.LogWarning("Google callback rejected: invalid protected state");
                 return InvalidRequest("Invalid Google authorization state");
             }
         }
@@ -65,21 +67,28 @@ public sealed class GoogleAuthFlowService(
         if (state == null || expectedState == null
             || !CryptographicOperations.FixedTimeEquals(Encoding.UTF8.GetBytes(state), Encoding.UTF8.GetBytes(expectedState)))
         {
+            logger.LogWarning("Google callback rejected: state mismatch or missing state");
             return InvalidRequest("Invalid Google authorization state");
         }
 
         if (!string.IsNullOrEmpty(error) || string.IsNullOrWhiteSpace(code))
         {
+            logger.LogWarning("Google callback rejected: authorization denied or missing code");
             return InvalidRequest("Google authorization was denied");
         }
 
         var profile = await googleOAuthService.ExchangeCodeAsync(code, cancellationToken);
         if (!profile.IsSuccess)
         {
+            logger.LogWarning("Google callback rejected: token exchange failed");
             return Failure(profile);
         }
 
         var result = await userService.LoginWithGoogleAsync(profile.Value!);
+        if (!result.IsSuccess)
+        {
+            logger.LogWarning("Google callback rejected: user sign-in failed");
+        }
         return result.IsSuccess ? new OkObjectResult(result.Value) : Failure(result);
     }
 

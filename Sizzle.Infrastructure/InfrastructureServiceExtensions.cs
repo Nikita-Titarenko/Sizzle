@@ -7,12 +7,16 @@ using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Application.Services.Ingredients;
+using Sizzle.Application.Services.Comments;
+using Sizzle.Application.Services.Recipes;
+using Sizzle.Application.Services.Subscriptions;
 using Sizzle.Application.Services.Notifications;
 using Sizzle.Application.Services.Users;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Options;
 using Sizzle.Infrastructure.Repositories;
 using Sizzle.Infrastructure.Services;
+using StackExchange.Redis;
 
 namespace Sizzle.Infrastructure;
 
@@ -63,6 +67,32 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IUserFollowerRepository, UserFollowerRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddOptions<RecipeCacheOptions>()
+            .Bind(configuration.GetSection("Cache"))
+            .Validate(options => options.DurationSeconds > 0, "Cache:DurationSeconds must be greater than zero.")
+            .Validate(options => options.InteractionFlushIntervalMinutes > 0, "Cache:InteractionFlushIntervalMinutes must be greater than zero.")
+            .ValidateOnStart();
+        services.AddScoped<IRecipeReadCache, RecipeReadCache>();
+        services.AddScoped<IUserReadCache, UserReadCache>();
+        services.AddScoped<ISubscriptionReadCache, SubscriptionReadCache>();
+        services.AddScoped<IIngredientReadCache, IngredientReadCache>();
+        services.AddScoped<ICommentReadCache, CommentReadCache>();
+        if (configuration.GetValue<bool>("Cache:Enabled"))
+        {
+            var redis = configuration["Cache:Redis"] ?? throw new InvalidOperationException("Cache:Redis is required when caching is enabled.");
+            services.AddStackExchangeRedisCache(options => options.Configuration = redis);
+            services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redis));
+            services.AddScoped<RecipeInteractionBuffer>();
+            services.AddScoped<IRecipeInteractionBuffer>(provider => provider.GetRequiredService<RecipeInteractionBuffer>());
+            services.AddHostedService<RecipeInteractionFlushService>();
+        }
+        else
+        {
+            services.AddDistributedMemoryCache();
+            services.AddScoped<IRecipeInteractionBuffer, DisabledRecipeInteractionBuffer>();
+        }
+        services.AddScoped<ISubscriptionOrderRepository, SubscriptionOrderRepository>();
+        services.AddScoped<IStripeGateway, StripeGateway>();
         services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
 
         services.AddHttpClient(nameof(FcmPushNotificationSender));
@@ -71,7 +101,9 @@ public static class InfrastructureServiceExtensions
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));
         services.Configure<GoogleOAuthOptions>(configuration.GetSection("GoogleOAuth"));
+        services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
         services.Configure<BusinessLogicOptions>(configuration.GetSection("BusinessLogic"));
+        services.Configure<RecipeLoggingOptions>(configuration.GetSection("Logging"));
         services.Configure<FirebaseOptions>(configuration.GetSection("Firebase"));
 
         return services;

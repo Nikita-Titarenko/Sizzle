@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sizzle.Application.Dtos;
@@ -10,7 +11,7 @@ using Sizzle.WebApi.Requests.Comments;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/recipes/{recipeId:guid}/comments")]
-public class CommentsController(ICommentService commentService) : BaseController
+public class CommentsController(ICommentService commentService, IMapper mapper) : BaseController
 {
     /// <summary>Get a page of comments for a recipe.</summary>
     /// <remarks>
@@ -23,12 +24,8 @@ public class CommentsController(ICommentService commentService) : BaseController
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<PageResponse<CommentDto>>> GetByRecipeId(Guid recipeId, [FromQuery] PaginationRequestModel request)
     {
-        var result = await commentService.GetByRecipeIdAsync(new GetCommentsByRecipeIdDto
-        {
-            RecipeId = recipeId,
-            PageIndex = request.PageIndex,
-            PageSize = request.PageSize
-        });
+        var result = await commentService.GetByRecipeIdAsync(mapper.Map(request,
+            new GetCommentsByRecipeIdDto { RecipeId = recipeId }));
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
@@ -46,13 +43,8 @@ public class CommentsController(ICommentService commentService) : BaseController
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     public async Task<ActionResult<CommentDto>> Create(Guid recipeId, CreateCommentRequestModel request)
     {
-        var result = await commentService.CreateAsync(new CreateCommentDto
-        {
-            RecipeId = recipeId,
-            ParentId = request.ParentId,
-            Content = request.Content,
-            UserId = GetUserId()
-        });
+        var result = await commentService.CreateAsync(mapper.Map(request,
+            new CreateCommentDto { RecipeId = recipeId, UserId = GetUserId() }));
 
         return !result.IsSuccess ? HandleErrors(result) : StatusCode(StatusCodes.Status201Created, result.Value);
     }

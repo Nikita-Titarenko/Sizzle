@@ -6,6 +6,8 @@ public class ApplicationUser : IdentityUser<Guid>
 {
     public string Name { get; set; } = string.Empty;
 
+    public string? Description { get; set; }
+
     public string? VerificationCode { get; set; }
 
     public ICollection<Recipe> Recipes { get; set; } = [];
@@ -17,4 +19,6 @@ public class ApplicationUser : IdentityUser<Guid>
     public ICollection<UserFollower> Followers { get; set; } = [];
 
     public ICollection<UserFollower> Following { get; set; } = [];
+
+    public ICollection<SubscriptionOrder> SubscriptionOrders { get; set; } = [];
 }

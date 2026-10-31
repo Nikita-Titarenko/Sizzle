@@ -4,6 +4,8 @@ public class UpdateUserProfileDto
 {
     public required string Name { get; init; }
 
+    public string? Description { get; init; }
+
     public Stream? Icon { get; init; }
 
     public string? IconName { get; init; }

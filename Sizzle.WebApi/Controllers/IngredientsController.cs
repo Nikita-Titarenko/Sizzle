@@ -1,3 +1,4 @@
+using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Sizzle.Application.Dtos.Ingredients;
 using Sizzle.Application.Services.Ingredients;
@@ -7,7 +8,7 @@ using Sizzle.WebApi.Requests.Other;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public class IngredientsController(IIngredientService ingredientService) : BaseController
+public class IngredientsController(IIngredientService ingredientService, IMapper mapper) : BaseController
 {
     /// <summary>Get ingredients with search and pagination.</summary>
     /// <remarks>ErrorKey.BadRequest — invalid pagination parameters.</remarks>
@@ -16,13 +17,8 @@ public class IngredientsController(IIngredientService ingredientService) : BaseC
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<IEnumerable<IngredientListItemDto>>> GetAll([FromQuery] SearchPaginationRequestModel request)
     {
-        var ingredients = await ingredientService.GetAllAsync(new GetAllIngredientsDto
-        {
-            Search = request.Search,
-            PageIndex = request.PageIndex,
-            PageSize = request.PageSize,
-            LanguageCode = GetLanguageCode()
-        });
+        var ingredients = await ingredientService.GetAllAsync(mapper.Map(request,
+            new GetAllIngredientsDto { LanguageCode = GetLanguageCode() }));
 
         return Ok(ingredients);
     }

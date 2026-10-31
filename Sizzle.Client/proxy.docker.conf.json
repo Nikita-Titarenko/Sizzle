@@ -1,0 +1,5 @@
+{
+  "/api": { "target": "http://sizzle-webapi:8080", "secure": false, "changeOrigin": false },
+  "/hubs": { "target": "http://sizzle-webapi:8080", "secure": false, "changeOrigin": false, "ws": true },
+  "/uploads": { "target": "http://sizzle-webapi:8080", "secure": false, "changeOrigin": false }
+}

@@ -30,6 +30,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<UserFollower> UserFollowers { get; set; }
 
+    public DbSet<SubscriptionOrder> SubscriptionOrders { get; set; }
+
     public DbSet<DeviceToken> DeviceTokens { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -61,6 +63,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasKey(aur => new { aur.ApplicationUserId, aur.RecipeId });
 
         builder.Entity<ApplicationUserRecipe>()
+            .HasIndex(aur => new { aur.ApplicationUserId, aur.IsSaved, aur.IsSavedAt });
+
+        builder.Entity<ApplicationUserRecipe>()
             .HasOne(aur => aur.ApplicationUser)
             .WithMany(u => u.ApplicationUserRecipes)
             .HasForeignKey(aur => aur.ApplicationUserId)
@@ -89,6 +94,23 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<UserFollower>()
             .HasIndex(follow => follow.FollowingId);
+
+        builder.Entity<SubscriptionOrder>()
+            .HasOne(order => order.User)
+            .WithMany(user => user.SubscriptionOrders)
+            .HasForeignKey(order => order.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<SubscriptionOrder>()
+            .Property(order => order.Amount)
+            .HasPrecision(12, 2);
+
+        builder.Entity<SubscriptionOrder>()
+            .Property(order => order.Currency)
+            .HasMaxLength(3);
+
+        builder.Entity<SubscriptionOrder>()
+            .HasIndex(order => new { order.UserId, order.IsPaid, order.ExpiresAt });
 
         builder.Entity<DeviceToken>()
             .HasKey(device => device.Token);

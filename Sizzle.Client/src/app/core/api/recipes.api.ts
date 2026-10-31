@@ -19,6 +19,10 @@ export class RecipesApi {
     return this.http.get<PageResponse<Recipe>>(this.baseUrl, { params: toParams(query) });
   }
 
+  getPersonalized(query: RecipeQuery) {
+    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/personalized`, { params: toParams(query) });
+  }
+
   getMine(query: RecipeQuery) {
     return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/mine`, { params: toParams(query) });
   }
