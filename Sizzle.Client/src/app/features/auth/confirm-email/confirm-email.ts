@@ -3,14 +3,16 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
-import { errorMessage } from '../../../core/utils/error-message';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-confirm-email',
-  imports: [FormsModule],
+  imports: [TranslatePipe, FormsModule],
   templateUrl: './confirm-email.html',
 })
 export class ConfirmEmail {
+  private readonly i18n = inject(I18n);
   private readonly usersApi = inject(UsersApi);
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
@@ -31,15 +33,15 @@ export class ConfirmEmail {
       },
       error: (err) => {
         this.busy.set(false);
-        this.error.set(errorMessage(err));
+        this.error.set(this.i18n.error(err));
       },
     });
   }
 
   resend(): void {
     this.usersApi.resendConfirmEmail(this.userId()).subscribe({
-      next: () => this.info.set('A new code was sent.'),
-      error: (err) => this.error.set(errorMessage(err)),
+      next: () => this.info.set(this.i18n.t('auth.confirm.resent')),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 }

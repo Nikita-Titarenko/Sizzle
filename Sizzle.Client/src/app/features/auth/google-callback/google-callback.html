@@ -1,9 +1,9 @@
 <div class="card auth-box">
   @if (error()) {
-    <h2>Google sign-in failed</h2>
+    <h2>{{ 'auth.google.failed' | t }}</h2>
     <p class="error">{{ error() }}</p>
-    <a routerLink="/login">Back to login</a>
+    <a routerLink="/login">{{ 'auth.google.backToLogin' | t }}</a>
   } @else {
-    <p>Signing you in with Google…</p>
+    <p>{{ 'auth.google.signingIn' | t }}</p>
   }
 </div>

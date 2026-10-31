@@ -2,14 +2,16 @@ import { Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { UsersApi } from '../../../core/api/users.api';
-import { errorMessage } from '../../../core/utils/error-message';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-register',
-  imports: [FormsModule, RouterLink],
+  imports: [TranslatePipe, FormsModule, RouterLink],
   templateUrl: './register.html',
 })
 export class Register {
+  private readonly i18n = inject(I18n);
   private readonly usersApi = inject(UsersApi);
   private readonly router = inject(Router);
 
@@ -30,7 +32,7 @@ export class Register {
         next: ({ userId }) => this.router.navigate(['/confirm-email', userId]),
         error: (err) => {
           this.busy.set(false);
-          this.error.set(errorMessage(err));
+          this.error.set(this.i18n.error(err));
         },
       });
   }

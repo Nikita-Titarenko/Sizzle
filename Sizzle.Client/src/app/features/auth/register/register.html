@@ -1,27 +1,27 @@
 <div class="card auth-box">
-  <h2>Create account</h2>
+  <h2>{{ 'auth.register.title' | t }}</h2>
   <form class="form" (ngSubmit)="submit()">
     <label>
-      <span>Name</span>
+      <span>{{ 'auth.name' | t }}</span>
       <input name="name" [(ngModel)]="name" required />
     </label>
     <label>
-      <span>Email</span>
+      <span>{{ 'auth.email' | t }}</span>
       <input type="email" name="email" [(ngModel)]="email" required />
     </label>
     <label>
-      <span>Password</span>
+      <span>{{ 'auth.password' | t }}</span>
       <input type="password" name="password" [(ngModel)]="password" required />
     </label>
     @if (error()) {
       <div class="error">{{ error() }}</div>
     }
-    <button class="btn" [disabled]="busy()">Sign up</button>
+    <button class="btn" [disabled]="busy()">{{ 'auth.register.submit' | t }}</button>
   </form>
-  <div class="divider">or</div>
-  <a class="btn google block" [href]="googleLoginUrl">Continue with Google</a>
+  <div class="divider">{{ 'auth.or' | t }}</div>
+  <a class="btn google block" [href]="googleLoginUrl">{{ 'auth.continueWithGoogle' | t }}</a>
   <p class="muted">
-    Already registered?
-    <a routerLink="/login">Log in</a>
+    {{ 'auth.register.haveAccount' | t }}
+    <a routerLink="/login">{{ 'auth.register.logIn' | t }}</a>
   </p>
 </div>
