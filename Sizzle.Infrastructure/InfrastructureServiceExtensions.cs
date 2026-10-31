@@ -7,6 +7,7 @@ using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Application.Services.Ingredients;
+using Sizzle.Application.Services.Notifications;
 using Sizzle.Application.Services.Users;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Options;
@@ -62,19 +63,16 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IUserFollowerRepository, UserFollowerRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
 
-        services.AddScoped<IRecipeRepository, RecipeRepository>();
-
-        services.AddScoped<IRecipeRepository, RecipeRepository>();
-
-        services.AddScoped<IRecipeRepository, RecipeRepository>();
-
-        services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddHttpClient(nameof(FcmPushNotificationSender));
+        services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();
 
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));
         services.Configure<GoogleOAuthOptions>(configuration.GetSection("GoogleOAuth"));
         services.Configure<BusinessLogicOptions>(configuration.GetSection("BusinessLogic"));
+        services.Configure<FirebaseOptions>(configuration.GetSection("Firebase"));
 
         return services;
     }

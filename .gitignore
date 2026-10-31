@@ -365,3 +365,6 @@ FodyWeavers.xsd
 Sizzle.WebApi/wwwroot/uploads/
 # Local secrets (copy appsettings.Secrets.example.json)
 appsettings.Secrets.json
+# Firebase: server key and the Android app config
+firebase-service-account.json
+google-services.json
