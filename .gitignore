@@ -368,3 +368,6 @@ appsettings.Secrets.json
 # Firebase: server key and the Android app config
 firebase-service-account.json
 google-services.json
+
+# JetBrains IDEs
+.idea/

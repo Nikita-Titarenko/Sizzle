@@ -1,89 +1,64 @@
 # Sizzle.Client
 
-Angular frontend for the Sizzle API.
+Angular frontend for Sizzle.
 
-## Run
+## Running
 
-### Everything in Docker
-
-From the repository root:
+Everything in Docker (from the repo root):
 
 ```bash
 docker compose up -d --build
 ```
 
-| Service         | URL                           |
-| --------------- | ----------------------------- |
-| Web app         | http://localhost:4200         |
-| API + Swagger   | http://localhost:8080/swagger |
-| MySQL           | localhost:3306                |
+- Website: http://localhost:4200
+- API / Swagger: http://localhost:8080/swagger
+- MySQL: localhost:3306
 
-The `sizzle-client` container builds the app and serves it with nginx (`nginx.conf`), which forwards `/api`, `/hubs` (SignalR WebSockets) and `/uploads` to the API container. After changing frontend code, rebuild it with `docker compose up -d --build sizzle-client`.
+nginx inside the client container proxies `/api`, `/hubs` and `/uploads` to the API. If you change frontend code, rebuild with `docker compose up -d --build sizzle-client`.
 
-Stop everything with `docker compose down` (add `-v` to also wipe the database).
+`docker compose down` stops everything, `docker compose down -v` also deletes the database.
 
-### Frontend with live reload
+### Dev server
 
-For day-to-day frontend work, run the API in Docker and the Angular dev server locally:
+For frontend work it's nicer to use `ng serve` with live reload:
 
 ```bash
+docker compose stop sizzle-client
 docker compose up -d mysql sizzle-webapi
 cd Sizzle.Client
 npm install
 npm start
 ```
 
-`ng serve` uses the same port (4200), so stop the client container first: `docker compose stop sizzle-client`. The dev server proxies the same paths to `http://localhost:8080` (see `proxy.conf.json`), so the API does not need CORS.
+It runs on the same port (4200) and proxies API calls to `localhost:8080` (see `proxy.conf.json`).
 
-## Tests and checks
+## Tests
 
 ```bash
-npm test              # unit tests in watch mode (Vitest)
-npm run test:ci       # single run, as in CI
-npm run format:check  # Prettier; `npm run format` fixes it
+npm test              # watch mode
+npm run test:ci       # single run
+npm run format:check  # prettier (npm run format to fix)
 ```
 
-Unit tests cover the contracts that break silently: translation keys and placeholders, the
-multipart field names the API binds (`Steps[0].Files`, ...), the `Accept-Language` header,
-file limits mirrored from the API, the ingredient tree, JWT handling and the recipe editor's
-validation.
-
-GitHub Actions (`.github/workflows/ui.yml`) runs on every push and pull request that touches
-`Sizzle.Client/`: formatting, unit tests (failures are annotated on the PR), a production build
-with bundle budgets, and a Docker job that builds the image, validates `nginx.conf` and checks
-that deep links are served by the SPA.
+CI (`.github/workflows/ui.yml`) runs formatting, tests, a production build and a Docker build on every push that touches `Sizzle.Client/`.
 
 ## Google sign-in
 
-1. Copy `Sizzle.WebApi/appsettings.Secrets.example.json` to `Sizzle.WebApi/appsettings.Secrets.json` (git-ignored) and paste the Google client secret.
-2. The secrets file sets `GoogleOAuth:RedirectUri` to `http://localhost:4200/auth/google-callback`. Add this URI under **Authorized redirect URIs** for the OAuth client in Google Cloud Console.
-
-Flow: the "Continue with Google" button opens `/api/Users/google-login`. Google sends the browser back to `/auth/google-callback` in the SPA, which passes `code` and `state` to `/api/Users/google-callback` and stores the returned JWT.
+1. Copy `Sizzle.WebApi/appsettings.Secrets.example.json` to `appsettings.Secrets.json` and fill in the client secret.
+2. Add `http://localhost:4200/auth/google-callback` to the OAuth client's authorized redirect URIs in Google Cloud.
 
 ## Test accounts
 
-When `TestData:Enabled` is on, the seeded users from `Sizzle.Infrastructure/TestData/app-users.json` work, for example `olivia@example.test` / `DemoKitchen!2026`.
+With `TestData:Enabled` turned on, the users from `Sizzle.Infrastructure/TestData/app-users.json` are seeded, e.g. `olivia@example.test` / `DemoKitchen!2026`.
 
-## Project structure
+## Structure
 
 ```
-src/
-├── environments/        API origin (empty = same origin via the dev proxy)
-├── styles/              global SCSS partials: variables, base, buttons, forms, components, utilities
-└── app/
-    ├── core/            app-wide singletons, no UI
-    │   ├── api/         one HTTP service per API area (users, recipes, comments, catalog)
-    │   ├── auth/        JWT storage, route guard, HTTP interceptor
-    │   ├── models/      TypeScript interfaces matching the API DTOs
-    │   ├── services/    current user profile, SignalR notifications
-    │   └── utils/
-    ├── layout/          header and notification toasts shown on every page
-    ├── features/        routed pages grouped by area (auth, feed, recipes, users)
-    │                    plus components only that area uses (feed-item, comments-drawer, ingredient-picker)
-    └── shared/          reusable components and pipes (recipe-card, comment-section, icon, user-avatar, ...)
+src/app/
+  core/       api services, auth (jwt, guard, interceptor), models
+  layout/     header, notifications
+  features/   pages: auth, feed, recipes, users
+  shared/     reusable components and pipes
 ```
 
-The home page (`features/feed`) is a vertical, snap-scrolling feed with one recipe per screen: Shorts/Reels-style action rail (like, comments, share, open recipe, views), Instagram-style caption with author and follow button, double-tap to like, and category filters. Video covers (`.mp4`, `.webm`, `.mov`, ...) autoplay muted while on screen; images and recipes without media work the same way. Arrow keys or `j`/`k` move between posts on desktop. The searchable grid lives at `/explore`.
-
-Every component lives in its own folder as `name.ts` + `name.html` + `name.scss`. Pages are lazy-loaded from `app.routes.ts`.
-Format with `npx prettier --write "src/**/*.{ts,html,scss}"`.
+Each component has its own folder with `.ts`, `.html` and `.scss`. Routes are lazy-loaded from `app.routes.ts`.
