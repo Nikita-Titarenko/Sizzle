@@ -10,12 +10,12 @@
     <span class="spacer"></span>
     @if (auth.isLoggedIn() && !isMe()) {
       <button class="btn" [class.outline]="followed()" (click)="toggleFollow()">
-        {{ followed() ? 'Unfollow' : 'Follow' }}
+        {{ (followed() ? 'user.unfollow' : 'common.follow') | t }}
       </button>
     }
   </section>
 
-  <h2>Recipes</h2>
+  <h2>{{ 'user.recipes' | t }}</h2>
   @if (page(); as page) {
     <app-recipe-grid [recipes]="page.data" />
     <app-pager

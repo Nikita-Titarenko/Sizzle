@@ -13,7 +13,7 @@
           <button
             type="button"
             class="avatar-button"
-            aria-label="Change profile photo"
+            [attr.aria-label]="'profile.changePhotoLabel' | t"
             (click)="iconInput.click()"
           >
             <app-user-avatar
@@ -25,10 +25,12 @@
           </button>
           <div class="row avatar-actions">
             <button type="button" class="btn small outline" (click)="iconInput.click()">
-              {{ preview() ? 'Choose another' : 'Change photo' }}
+              {{ (preview() ? 'profile.choosePhotoAgain' : 'profile.changePhoto') | t }}
             </button>
             @if (preview()) {
-              <button type="button" class="link" (click)="clearIcon()">Cancel</button>
+              <button type="button" class="link" (click)="clearIcon()">
+                {{ 'common.cancel' | t }}
+              </button>
             }
           </div>
           <p class="muted">{{ user.email }}</p>
@@ -36,7 +38,7 @@
       }
       <form class="form" (ngSubmit)="save()">
         <label>
-          <span>Name</span>
+          <span>{{ 'profile.name' | t }}</span>
           <input name="name" [(ngModel)]="name" required />
         </label>
         @if (message()) {
@@ -45,23 +47,25 @@
         @if (error()) {
           <p class="error">{{ error() }}</p>
         }
-        <button class="btn small" [disabled]="!name.trim()">Save profile</button>
+        <button class="btn small" [disabled]="!name.trim()">
+          {{ 'profile.save' | t }}
+        </button>
       </form>
     </section>
     <section class="card">
-      <h3>Following ({{ following().length }})</h3>
-      <app-user-list [users]="following()" emptyText="You don't follow anyone yet." />
+      <h3>{{ 'profile.following' | t: { count: following().length } }}</h3>
+      <app-user-list [users]="following()" [emptyText]="'profile.noFollowing' | t" />
     </section>
     <section class="card">
-      <h3>Followers ({{ followers().length }})</h3>
-      <app-user-list [users]="followers()" emptyText="No followers yet." />
+      <h3>{{ 'profile.followers' | t: { count: followers().length } }}</h3>
+      <app-user-list [users]="followers()" [emptyText]="'profile.noFollowers' | t" />
     </section>
   </aside>
 
   <section>
-    <h2>My recipes</h2>
+    <h2>{{ 'profile.myRecipes' | t }}</h2>
     @if (page(); as page) {
-      <app-recipe-grid [recipes]="page.data" emptyText="You haven't posted any recipes yet." />
+      <app-recipe-grid [recipes]="page.data" [emptyText]="'profile.noRecipes' | t" />
       <app-pager
         [pageIndex]="pageIndex()"
         [pageSize]="pageSize"
