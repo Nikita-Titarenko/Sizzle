@@ -1,0 +1,65 @@
+name: Android
+
+# Runs on every push and pull request that touches the Android app.
+on:
+  push:
+    paths:
+      - 'Sizzle.Android/**'
+      - '.github/workflows/android.yml'
+  pull_request:
+    paths:
+      - 'Sizzle.Android/**'
+      - '.github/workflows/android.yml'
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Sizzle.Android
+
+jobs:
+  build:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      # strings.xml is generated from tools/strings.py, so both files have to be committed together.
+      - name: Check strings are generated
+        run: |
+          python3 tools/strings.py
+          git diff --exit-code app/src/main/res
+
+      # No google-services.json here, so the app builds without Firebase.
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+
+      - name: Unit tests
+        run: ./gradlew testDebugUnitTest
+
+      - name: Upload test report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-test-report
+          path: Sizzle.Android/app/build/reports/tests/testDebugUnitTest
+          retention-days: 7
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sizzle-debug-apk
+          path: Sizzle.Android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
