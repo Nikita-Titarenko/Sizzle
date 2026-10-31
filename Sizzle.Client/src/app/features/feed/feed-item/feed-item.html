@@ -16,7 +16,7 @@
       <button
         class="sound"
         type="button"
-        [attr.aria-label]="muted() ? 'Unmute' : 'Mute'"
+        [attr.aria-label]="(muted() ? 'feed.item.unmute' : 'feed.item.mute') | t"
         (click)="mutedChange.emit(!muted())"
       >
         <app-icon [name]="muted() ? 'volume-off' : 'volume-on'" />
@@ -44,7 +44,7 @@
             [class.following]="recipe().isFollowed"
             (click)="followed.emit()"
           >
-            {{ recipe().isFollowed ? 'Following' : 'Follow' }}
+            {{ (recipe().isFollowed ? 'common.following' : 'common.follow') | t }}
           </button>
         }
       </div>
@@ -60,7 +60,7 @@
         }
         <span class="tag">
           <app-icon name="clock" />
-          {{ recipe().cookingTimeMinutes }} min
+          {{ 'common.minutes' | t: { count: recipe().cookingTimeMinutes } }}
         </span>
       </div>
     </div>
@@ -75,19 +75,19 @@
       (click)="liked.emit()"
     >
       <span class="bubble"><app-icon name="heart" [filled]="recipe().isLiked" /></span>
-      <span class="label">{{ recipe().isLiked ? 'Liked' : 'Like' }}</span>
+      <span class="label">{{ (recipe().isLiked ? 'feed.item.liked' : 'feed.item.like') | t }}</span>
     </button>
     <button type="button" class="action" (click)="commentsOpened.emit()">
       <span class="bubble"><app-icon name="comment" /></span>
-      <span class="label">Comments</span>
+      <span class="label">{{ 'feed.item.comments' | t }}</span>
     </button>
     <button type="button" class="action" (click)="shared.emit()">
       <span class="bubble"><app-icon name="share" /></span>
-      <span class="label">Share</span>
+      <span class="label">{{ 'feed.item.share' | t }}</span>
     </button>
     <a class="action" [routerLink]="['/recipes', recipe().id]">
       <span class="bubble"><app-icon name="book" /></span>
-      <span class="label">Recipe</span>
+      <span class="label">{{ 'feed.item.recipe' | t }}</span>
     </a>
     <div class="action static">
       <span class="bubble"><app-icon name="eye" /></span>

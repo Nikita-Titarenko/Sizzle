@@ -17,10 +17,11 @@ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 /**
  * One full-height post in the feed: media on the left, action rail on the right
  * (overlaid on small screens). Videos play only while the post is the active one.
- */
+ */ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+
 @Component({
   selector: 'app-feed-item',
-  imports: [RouterLink, Icon, UserAvatar],
+  imports: [TranslatePipe, RouterLink, Icon, UserAvatar],
   templateUrl: './feed-item.html',
   styleUrl: './feed-item.scss',
 })
