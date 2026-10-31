@@ -11,8 +11,9 @@ const STORAGE_KEY = 'sizzle.language';
 const FALLBACK: Language = 'en';
 
 /**
- * Content language sent to the API as Accept-Language (category and ingredient names
- * are translated server-side). Defaults to the browser language, can be changed by the user.
+ * App language: picks the UI strings (see core/i18n) and is sent to the API as
+ * Accept-Language, which translates category and ingredient names. Defaults to the
+ * browser language and can be changed by the user.
  */
 @Injectable({ providedIn: 'root' })
 export class LanguageService {
