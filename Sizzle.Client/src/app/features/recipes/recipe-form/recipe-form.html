@@ -1,8 +1,8 @@
 <div class="editor">
   <header class="editor-header">
-    <h1>{{ id() ? 'Edit recipe' : 'New recipe' }}</h1>
+    <h1>{{ (id() ? 'editor.editTitle' : 'editor.newTitle') | t }}</h1>
     <p class="muted">
-      Share a dish with the community. Vertical photos and videos look best in the feed.
+      {{ 'editor.intro' | t }}
     </p>
   </header>
 
@@ -22,7 +22,7 @@
         <input
           class="title-input"
           name="name"
-          placeholder="Recipe name"
+          [placeholder]="'editor.namePlaceholder' | t"
           autocomplete="off"
           [(ngModel)]="name"
           required
@@ -30,14 +30,14 @@
         <textarea
           class="description-input"
           name="description"
-          placeholder="What makes this dish special? Taste, texture, when to cook it…"
+          [placeholder]="'editor.descriptionPlaceholder' | t"
           [(ngModel)]="description"
           required
         ></textarea>
 
         <div class="field">
-          <span class="field-label">Category</span>
-          <div class="category-chips" role="radiogroup" aria-label="Category">
+          <span class="field-label">{{ 'editor.category' | t }}</span>
+          <div class="category-chips" role="radiogroup" [attr.aria-label]="'editor.category' | t">
             @for (c of categories(); track c.id) {
               <button
                 type="button"
@@ -54,19 +54,27 @@
         </div>
 
         <div class="field">
-          <span class="field-label">Cooking time</span>
+          <span class="field-label">{{ 'editor.cookingTime' | t }}</span>
           <div class="stepper-input">
-            <button type="button" aria-label="5 minutes less" (click)="adjustTime(-5)">−</button>
+            <button
+              type="button"
+              [attr.aria-label]="'editor.lessTime' | t"
+              (click)="adjustTime(-5)"
+            >
+              −
+            </button>
             <input
               type="number"
               min="1"
               name="time"
-              aria-label="Cooking time in minutes"
+              [attr.aria-label]="'editor.cookingTimeMinutes' | t"
               [(ngModel)]="cookingTimeMinutes"
               required
             />
-            <span class="suffix">min</span>
-            <button type="button" aria-label="5 minutes more" (click)="adjustTime(5)">+</button>
+            <span class="suffix">{{ 'editor.minutesSuffix' | t }}</span>
+            <button type="button" [attr.aria-label]="'editor.moreTime' | t" (click)="adjustTime(5)">
+              +
+            </button>
           </div>
         </div>
       </div>
@@ -75,14 +83,14 @@
     <section class="panel">
       <header class="panel-header">
         <div>
-          <h2>Ingredients</h2>
-          <p class="muted">Search the catalog, or add your own if it's missing.</p>
+          <h2>{{ 'editor.ingredients' | t }}</h2>
+          <p class="muted">{{ 'editor.ingredientsHint' | t }}</p>
         </div>
         <span class="count-badge">{{ ingredients().length + newIngredients().length }}</span>
       </header>
 
       <app-ingredient-picker
-        placeholder="Search ingredients to add…"
+        [placeholder]="'editor.ingredientSearch' | t"
         [excludeIds]="ingredientIds()"
         (picked)="addIngredient($event)"
       />
@@ -103,14 +111,14 @@
                   min="1"
                   [name]="'iq' + idx"
                   [(ngModel)]="i.quantity"
-                  [attr.aria-label]="'Quantity of ' + i.name"
+                  [attr.aria-label]="'editor.quantityOf' | t: { name: i.name }"
                 />
                 <span class="muted">{{ i.unit | unitLabel }}</span>
               </span>
               <button
                 type="button"
                 class="icon-button"
-                [attr.aria-label]="'Remove ' + i.name"
+                [attr.aria-label]="'common.remove' | t: { name: i.name }"
                 (click)="removeIngredient(i.id)"
               >
                 <app-icon name="close" />
@@ -123,12 +131,12 @@
       @for (n of newIngredients(); track $index; let idx = $index) {
         <div class="new-ingredient">
           <div class="new-ingredient-header">
-            <span class="tag-new">New</span>
+            <span class="tag-new">{{ 'editor.newTag' | t }}</span>
             <span class="spacer"></span>
             <button
               type="button"
               class="icon-button"
-              aria-label="Remove new ingredient"
+              [attr.aria-label]="'editor.removeNew' | t"
               (click)="removeNewIngredient(idx)"
             >
               <app-icon name="close" />
@@ -137,7 +145,7 @@
           <div class="new-ingredient-fields">
             <input
               class="grow"
-              placeholder="Name, e.g. Smoked paprika"
+              [placeholder]="'editor.newNamePlaceholder' | t"
               [name]="'nn' + idx"
               [(ngModel)]="n.name"
             />
@@ -147,9 +155,13 @@
                 min="1"
                 [name]="'nq' + idx"
                 [(ngModel)]="n.quantity"
-                aria-label="Quantity"
+                [attr.aria-label]="'editor.quantity' | t"
               />
-              <select [name]="'nu' + idx" [(ngModel)]="n.unit" aria-label="Unit">
+              <select
+                [name]="'nu' + idx"
+                [(ngModel)]="n.unit"
+                [attr.aria-label]="'editor.unit' | t"
+              >
                 @for (u of units; track u) {
                   <option [value]="u">{{ u | unitLabel }}</option>
                 }
@@ -158,16 +170,20 @@
           </div>
           @if (n.parent) {
             <span class="removable-chip">
-              <span class="chip-context">Variant of</span>
+              <span class="chip-context">{{ 'editor.variantOf' | t }}</span>
               {{ n.parent.name }}
-              <button type="button" aria-label="Remove parent" (click)="setParent(n, null)">
+              <button
+                type="button"
+                [attr.aria-label]="'editor.removeParent' | t"
+                (click)="setParent(n, null)"
+              >
                 <app-icon name="close" />
               </button>
             </span>
           } @else {
             <app-ingredient-picker
               rootsOnly
-              placeholder="Variant of… (optional, e.g. Potato)"
+              [placeholder]="'editor.parentPlaceholder' | t"
               (picked)="setParent(n, $event)"
             />
           }
@@ -176,18 +192,18 @@
 
       <button type="button" class="add-row" (click)="addNewIngredient()">
         <app-icon name="plus" />
-        Add an ingredient that's not in the catalog
+        {{ 'editor.addCustomIngredient' | t }}
       </button>
     </section>
 
     <section class="panel">
       <header class="panel-header">
         <div>
-          <h2>Steps</h2>
+          <h2>{{ 'editor.steps' | t }}</h2>
           <p class="muted">
-            Each step can have several photos or videos.
+            {{ 'editor.stepsHint' | t }}
             @if (id()) {
-              Existing step media has to be uploaded again when you save.
+              {{ 'editor.stepsReupload' | t }}
             }
           </p>
         </div>
@@ -202,7 +218,7 @@
               <div class="step-title-row">
                 <input
                   class="step-title"
-                  placeholder="Step title, e.g. Make the sauce"
+                  [placeholder]="'editor.stepTitlePlaceholder' | t"
                   [name]="'sn' + idx"
                   [(ngModel)]="step.name"
                   required
@@ -210,7 +226,7 @@
                 <button
                   type="button"
                   class="icon-button"
-                  aria-label="Remove step"
+                  [attr.aria-label]="'editor.removeStep' | t"
                   [disabled]="steps().length === 1"
                   (click)="removeStep(idx)"
                 >
@@ -218,7 +234,7 @@
                 </button>
               </div>
               <textarea
-                placeholder="Describe what to do in this step"
+                [placeholder]="'editor.stepDescriptionPlaceholder' | t"
                 [name]="'sd' + idx"
                 [(ngModel)]="step.description"
                 required
@@ -236,7 +252,7 @@
 
       <button type="button" class="add-row" (click)="addStep()">
         <app-icon name="plus" />
-        Add step
+        {{ 'editor.addStep' | t }}
       </button>
     </section>
   </form>
@@ -249,13 +265,15 @@
     } @else {
       <span class="ready">
         <app-icon name="check" />
-        Ready to publish
+        {{ 'editor.ready' | t }}
       </span>
     }
     <span class="spacer"></span>
-    <button type="button" class="btn ghost" (click)="cancel()">Cancel</button>
+    <button type="button" class="btn ghost" (click)="cancel()">
+      {{ 'common.cancel' | t }}
+    </button>
     <button form="recipe-form" class="btn" [disabled]="busy() || !!missingHint()">
-      {{ busy() ? 'Saving…' : id() ? 'Save changes' : 'Publish recipe' }}
+      {{ (busy() ? 'editor.saving' : id() ? 'editor.saveChanges' : 'editor.publish') | t }}
     </button>
   </footer>
 </div>

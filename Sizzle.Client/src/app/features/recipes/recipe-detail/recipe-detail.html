@@ -14,12 +14,16 @@
       @if (auth.isLoggedIn()) {
         <button class="btn small" [class.outline]="!r.isLiked" (click)="toggleLike()">
           <app-icon name="heart" [filled]="r.isLiked" />
-          {{ r.isLiked ? 'Liked' : 'Like' }}
+          {{ (r.isLiked ? 'recipe.liked' : 'recipe.like') | t }}
         </button>
       }
       @if (isOwner()) {
-        <a class="btn small outline" [routerLink]="['/recipes', r.id, 'edit']">Edit</a>
-        <button class="btn small danger" (click)="remove()">Delete</button>
+        <a class="btn small outline" [routerLink]="['/recipes', r.id, 'edit']">
+          {{ 'common.edit' | t }}
+        </a>
+        <button class="btn small danger" (click)="remove()">
+          {{ 'common.delete' | t }}
+        </button>
       }
     </div>
     <div class="row muted">
@@ -27,12 +31,12 @@
       <a [routerLink]="['/users', r.userId]">{{ r.userName }}</a>
       @if (auth.isLoggedIn() && !isOwner()) {
         <button class="btn small" [class.outline]="r.isFollowed" (click)="toggleFollow()">
-          {{ r.isFollowed ? 'Following' : 'Follow' }}
+          {{ (r.isFollowed ? 'common.following' : 'common.follow') | t }}
         </button>
       }
       <span class="meta-item">
         <app-icon name="clock" />
-        {{ r.cookingTimeMinutes }} min
+        {{ 'common.minutes' | t: { count: r.cookingTimeMinutes } }}
       </span>
       <span class="meta-item">
         <app-icon name="eye" />
@@ -44,7 +48,7 @@
 
     <div class="columns">
       <section class="card">
-        <h2>Ingredients</h2>
+        <h2>{{ 'recipe.ingredients' | t }}</h2>
         <ul class="ingredients">
           @for (i of r.ingredients; track i.id) {
             <li>
@@ -56,7 +60,7 @@
       </section>
 
       <section class="card">
-        <h2>Steps</h2>
+        <h2>{{ 'recipe.steps' | t }}</h2>
         <ol class="steps">
           @for (step of r.steps; track step.id) {
             <li>
@@ -80,5 +84,5 @@
     <app-comment-section [recipeId]="r.id" />
   </article>
 } @else if (!error()) {
-  <p class="muted">Loading…</p>
+  <p class="muted">{{ 'common.loading' | t }}</p>
 }

@@ -11,10 +11,11 @@ import { Pager } from '../../../shared/components/pager/pager';
 import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 
 const PAGE_SIZE = 12;
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-explore',
-  imports: [FormsModule, RecipeGrid, Pager, IngredientPicker, Icon],
+  imports: [TranslatePipe, FormsModule, RecipeGrid, Pager, IngredientPicker, Icon],
   templateUrl: './explore.html',
   styleUrl: './explore.scss',
 })
