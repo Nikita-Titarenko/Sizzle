@@ -31,7 +31,7 @@ public sealed class SubscriptionService(
             .ToArray();
     }
 
-    public async Task<Result<SubscriptionCheckoutDto>> StartCheckoutAsync(Guid userId, SubscriptionPlan plan)
+    public async Task<Result<SubscriptionCheckoutDto>> StartCheckoutAsync(Guid userId, SubscriptionPlan plan, CancellationToken cancellationToken = default)
     {
         if (!Enum.IsDefined(plan))
         {
@@ -42,7 +42,7 @@ public sealed class SubscriptionService(
             };
         }
 
-        if (!await users.UserExistsAsync(userId))
+        if (!await users.UserExistsAsync(userId, cancellationToken))
         {
             logger.LogWarning("Checkout rejected: user {UserId} not found", userId);
             return new Result<SubscriptionCheckoutDto>
@@ -59,13 +59,13 @@ public sealed class SubscriptionService(
             Amount = gateway.GetPrice(plan),
             CreatedAt = DateTime.UtcNow
         };
-        await orders.AddAsync(order);
+        await orders.AddAsync(order, cancellationToken);
         var checkout = await gateway.CreateCheckoutAsync(order);
         logger.LogInformation("Subscription checkout created for order {OrderId} and user {UserId}", order.Id, userId);
         return new Result<SubscriptionCheckoutDto> { Value = checkout };
     }
 
-    public async Task<Result> ProcessWebhookAsync(string payload, string signature)
+    public async Task<Result> ProcessWebhookAsync(string payload, string signature, CancellationToken cancellationToken = default)
     {
         if (!gateway.TryParseWebhook(payload, signature, out var payment))
         {
@@ -78,7 +78,7 @@ public sealed class SubscriptionService(
             return new Result();
         }
 
-        var order = await orders.GetAsync(payment.OrderId);
+        var order = await orders.GetAsync(payment.OrderId, cancellationToken);
         if (order == null || order.Currency != payment.Currency.ToUpperInvariant()
             || order.Amount * 100 != payment.AmountTotal)
         {
@@ -86,7 +86,7 @@ public sealed class SubscriptionService(
             return InvalidWebhook();
         }
 
-        var activated = await orders.ActivateAsync(order.Id, DateTime.UtcNow);
+        var activated = await orders.ActivateAsync(order.Id, DateTime.UtcNow, cancellationToken);
         if (activated != null)
         {
             logger.LogInformation("Subscription order {OrderId} activated for user {UserId}", activated.Id, activated.UserId);
@@ -97,10 +97,10 @@ public sealed class SubscriptionService(
         return new Result();
     }
 
-    public async Task<SubscriptionStatusDto> GetStatusAsync(Guid userId)
+    public async Task<SubscriptionStatusDto> GetStatusAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var history = await readCache.GetHistoryAsync(userId, async () =>
-            (await orders.GetPaidByUserAsync(userId)).Select(order => new SubscriptionHistoryDto(
+            (await orders.GetPaidByUserAsync(userId, cancellationToken)).Select(order => new SubscriptionHistoryDto(
                 order.Id, order.Plan, order.Amount, order.Currency,
                 order.StartsAt!.Value, order.ExpiresAt!.Value)).ToArray());
         var now = DateTime.UtcNow;

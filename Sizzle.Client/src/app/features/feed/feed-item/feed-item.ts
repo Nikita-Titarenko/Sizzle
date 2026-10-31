@@ -9,7 +9,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Recipe } from '../../../core/models';
+import { FeedRecipe } from '../../../core/models';
 import { isVideoUrl } from '../../../core/utils/media';
 import { Icon } from '../../../shared/components/icon/icon';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
@@ -26,7 +26,7 @@ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
   styleUrl: './feed-item.scss',
 })
 export class FeedItem {
-  readonly recipe = input.required<Recipe>();
+  readonly recipe = input.required<FeedRecipe>();
   readonly active = input(false);
   readonly categoryName = input<string>();
   readonly canFollow = input(true);

@@ -17,30 +17,30 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
 
     public bool Enabled => true;
 
-    public async Task<bool?> ToggleLikeAsync(Guid userId, Guid recipeId) =>
+    public async Task<bool?> ToggleLikeAsync(Guid userId, Guid recipeId, CancellationToken cancellationToken = default) =>
         await ChangeAsync(userId, recipeId, state =>
         {
             state.IsLiked = !state.IsLiked;
             return state.IsLiked;
-        });
+        }, cancellationToken);
 
-    public Task<RecipeSaveDto?> ToggleSaveAsync(Guid userId, Guid recipeId) =>
+    public Task<RecipeSaveDto?> ToggleSaveAsync(Guid userId, Guid recipeId, CancellationToken cancellationToken = default) =>
         ChangeAsync(userId, recipeId, state =>
         {
             state.IsSaved = !state.IsSaved;
             state.IsSavedAt = state.IsSaved ? DateTime.UtcNow : null;
             return new RecipeSaveDto(recipeId, state.IsSaved, state.IsSavedAt);
-        });
+        }, cancellationToken);
 
-    public Task<RecipeShareDto?> UpdateShareAsync(Guid userId, Guid recipeId) =>
+    public Task<RecipeShareDto?> UpdateShareAsync(Guid userId, Guid recipeId, CancellationToken cancellationToken = default) =>
         ChangeAsync(userId, recipeId, state =>
         {
             state.IsShared = true;
             state.IsSharedAt = DateTime.UtcNow;
             return new RecipeShareDto(recipeId, true, state.IsSharedAt.Value);
-        });
+        }, cancellationToken);
 
-    public async Task<bool> UpdateViewAsync(Guid userId, Guid recipeId, int cooldownMinutes)
+    public async Task<bool> UpdateViewAsync(Guid userId, Guid recipeId, int cooldownMinutes, CancellationToken cancellationToken = default)
     {
         var result = await ChangeAsync(userId, recipeId, state =>
         {
@@ -51,24 +51,26 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
                 state.ViewDelta++;
             }
             return true;
-        });
+        }, cancellationToken);
         return result == true;
     }
 
-    private async Task<T?> ChangeAsync<T>(Guid userId, Guid recipeId, Func<PendingInteraction, T> change)
+    private async Task<T?> ChangeAsync<T>(Guid userId, Guid recipeId, Func<PendingInteraction, T> change, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var id = $"{recipeId:N}:{userId:N}";
         var key = StateKey(id);
         var token = Guid.NewGuid().ToString("N");
         for (var attempt = 0; !await redis.LockTakeAsync(LockKey(id), token, TimeSpan.FromMinutes(2)); attempt++)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             if (attempt == 100) throw new TimeoutException("Could not acquire the recipe interaction lock.");
-            await Task.Delay(25);
+            await Task.Delay(25, cancellationToken);
         }
 
         try
         {
-            if (!await db.Recipes.AnyAsync(recipe => recipe.Id == recipeId)) return default;
+            if (!await db.Recipes.AnyAsync(recipe => recipe.Id == recipeId, cancellationToken)) return default;
 
             var existing = await redis.StringGetAsync(key);
             PendingInteraction state;
@@ -79,7 +81,7 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
             else
             {
                 var link = await db.ApplicationUserRecipes.AsNoTracking()
-                    .FirstOrDefaultAsync(item => item.ApplicationUserId == userId && item.RecipeId == recipeId);
+                    .FirstOrDefaultAsync(item => item.ApplicationUserId == userId && item.RecipeId == recipeId, cancellationToken);
                 state = new PendingInteraction
                 {
                     UserId = userId,
@@ -102,6 +104,7 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
             _ = transaction.SetAddAsync(UserKey(userId), id);
             _ = transaction.SetAddAsync(SeenKey(userId), recipeId.ToString("N"));
             _ = transaction.KeyExpireAsync(SeenKey(userId), TimeSpan.FromSeconds(cacheOptions.Value.DurationSeconds * 2L));
+            cancellationToken.ThrowIfCancellationRequested();
             if (!await transaction.ExecuteAsync()) throw new InvalidOperationException("Unable to queue recipe interaction.");
             return result;
         }
@@ -111,10 +114,11 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
         }
     }
 
-    public async Task ApplyAsync(IReadOnlyCollection<RecipeDto> recipes, Guid? userId)
+    public async Task ApplyAsync(IReadOnlyCollection<RecipeDto> recipes, Guid? userId, CancellationToken cancellationToken = default)
     {
         foreach (var recipe in recipes)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var ids = await redis.SetMembersAsync(RecipeKey(recipe.Id));
             if (ids.Length == 0) continue;
             var values = await redis.StringGetAsync(ids.Select(id => (RedisKey)StateKey(id!)).ToArray());
@@ -124,16 +128,17 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
                 var state = JsonSerializer.Deserialize<PendingInteraction>((string)values[i]!)!;
                 recipe.LikeCount += (state.IsLiked ? 1 : 0) - (state.BaseIsLiked ? 1 : 0);
                 recipe.ViewCount += state.ViewDelta;
-                if (state.UserId != userId) continue;
-                recipe.IsLiked = state.IsLiked;
-                recipe.IsSaved = state.IsSaved;
-                recipe.IsSavedAt = state.IsSavedAt;
+                if (recipe is not FeedRecipeDto feed || state.UserId != userId) continue;
+                feed.IsLiked = state.IsLiked;
+                feed.IsSaved = state.IsSaved;
+                feed.IsSavedAt = state.IsSavedAt;
             }
         }
     }
 
-    public async Task<IReadOnlyList<(Guid RecipeId, bool IsSaved, DateTime? SavedAt)>> GetPendingSavedAsync(Guid userId)
+    public async Task<IReadOnlyList<(Guid RecipeId, bool IsSaved, DateTime? SavedAt)>> GetPendingSavedAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var ids = await redis.SetMembersAsync(UserKey(userId));
         if (ids.Length == 0) return [];
         var values = await redis.StringGetAsync(ids.Select(id => (RedisKey)StateKey(id!)).ToArray());
@@ -143,8 +148,9 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
             .ToArray();
     }
 
-    public async Task<IReadOnlyList<PendingRecipeInteraction>> GetPendingInteractionsAsync(Guid userId)
+    public async Task<IReadOnlyList<PendingRecipeInteraction>> GetPendingInteractionsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var ids = await redis.SetMembersAsync(UserKey(userId));
         var seen = await redis.SetMembersAsync(SeenKey(userId));
         var values = ids.Length == 0 ? [] : await redis.StringGetAsync(ids.Select(id => (RedisKey)StateKey(id!)).ToArray());

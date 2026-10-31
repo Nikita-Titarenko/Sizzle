@@ -1,6 +1,6 @@
 namespace Sizzle.Application.Dtos.Recipes;
 
-public class RecipeDetailsDto : RecipeDto
+public class RecipeDetailsDto : FeedRecipeDto
 {
     public IReadOnlyList<RecipeStepDto> Steps { get; init; } = [];
 

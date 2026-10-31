@@ -6,24 +6,24 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class DeviceTokenRepository(ApplicationDbContext dbContext) : IDeviceTokenRepository
 {
-    public Task<DeviceToken?> GetAsync(string token)
+    public Task<DeviceToken?> GetAsync(string token, CancellationToken cancellationToken = default)
     {
-        return dbContext.DeviceTokens.FindAsync(token).AsTask();
+        return dbContext.DeviceTokens.FindAsync([token], cancellationToken).AsTask();
     }
 
-    public Task<List<string>> GetTokensAsync(IReadOnlyCollection<Guid> userIds)
+    public Task<List<string>> GetTokensAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
     {
         return dbContext.DeviceTokens.AsNoTracking()
             .Where(device => userIds.Contains(device.UserId))
             .Select(device => device.Token)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public Task RemoveAsync(IReadOnlyCollection<string> tokens)
+    public Task RemoveAsync(IReadOnlyCollection<string> tokens, CancellationToken cancellationToken = default)
     {
         return dbContext.DeviceTokens
             .Where(device => tokens.Contains(device.Token))
-            .ExecuteDeleteAsync();
+            .ExecuteDeleteAsync(cancellationToken);
     }
 
     public void Add(DeviceToken deviceToken)

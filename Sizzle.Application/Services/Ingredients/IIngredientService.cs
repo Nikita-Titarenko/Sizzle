@@ -4,5 +4,5 @@ namespace Sizzle.Application.Services.Ingredients;
 
 public interface IIngredientService
 {
-    Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto);
+    Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto, CancellationToken cancellationToken = default);
 }

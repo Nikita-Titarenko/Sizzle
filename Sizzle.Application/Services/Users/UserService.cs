@@ -20,8 +20,9 @@ public class UserService(
 {
     private const string IconFolderName = "icons";
 
-    public async Task<Result<RegisterResultDto>> RegisterUserAsync(RegisterUserDto dto)
+    public async Task<Result<RegisterResultDto>> RegisterUserAsync(RegisterUserDto dto, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var code = GenerateVerificationCode();
         var user = mapper.Map<ApplicationUser>(dto);
         user.VerificationCode = code;
@@ -54,8 +55,9 @@ public class UserService(
         };
     }
 
-    public async Task<Result> ResendRegistrationEmailAsync(Guid userId)
+    public async Task<Result> ResendRegistrationEmailAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var getUserResult = await GetUserAsync(userId);
         if (!getUserResult.IsSuccess)
         {
@@ -98,8 +100,9 @@ public class UserService(
         return new Result();
     }
 
-    public async Task<Result<ConfirmEmailResultDto>> ConfirmEmailAsync(ConfirmEmailDto dto)
+    public async Task<Result<ConfirmEmailResultDto>> ConfirmEmailAsync(ConfirmEmailDto dto, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var getUserResult = await GetUserAsync(dto.UserId);
         if (!getUserResult.IsSuccess)
         {
@@ -163,8 +166,9 @@ public class UserService(
         };
     }
 
-    public async Task<Result<LoginResultDto>> LoginAsync(LoginUserDto dto)
+    public async Task<Result<LoginResultDto>> LoginAsync(LoginUserDto dto, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var user = await userManager.FindByEmailAsync(dto.Email);
         if (user == null)
         {
@@ -219,8 +223,9 @@ public class UserService(
         };
     }
 
-    public async Task<Result<LoginResultDto>> LoginWithGoogleAsync(GoogleUserDto profile)
+    public async Task<Result<LoginResultDto>> LoginWithGoogleAsync(GoogleUserDto profile, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var user = await userManager.FindByLoginAsync("Google", profile.Subject);
         var isNewUser = false;
 
@@ -274,11 +279,11 @@ public class UserService(
         Errors = [new Error { Key = ErrorKey.UnexpectedError, Message = "Google login failed" }]
     };
 
-    public async Task<Result<UserDto>> GetUserDtoAsync(Guid userId)
+    public async Task<Result<UserDto>> GetUserDtoAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         var user = await userCache.GetProfileAsync(userId, async () =>
         {
-            var profile = await userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var profile = await userManager.Users.FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
             return profile == null ? null : mapper.Map<UserDto>(profile);
         });
         return user == null
@@ -286,8 +291,9 @@ public class UserService(
             : new Result<UserDto> { Value = user };
     }
 
-    public async Task<Result> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto)
+    public async Task<Result> UpdateUserProfileAsync(Guid userId, UpdateUserProfileDto dto, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var getUserResult = await GetUserAsync(userId);
         if (!getUserResult.IsSuccess)
         {

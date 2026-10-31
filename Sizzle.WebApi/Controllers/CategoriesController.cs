@@ -11,8 +11,8 @@ public class CategoriesController(ICategoryService categoryService) : BaseContro
     /// <remarks>ErrorKey: none.</remarks>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<CategoryDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<CategoryDto>>> GetAll()
+    public async Task<ActionResult<IReadOnlyList<CategoryDto>>> GetAll(CancellationToken cancellationToken)
     {
-        return Ok(await categoryService.GetAllAsync(GetLanguageCode()));
+        return Ok(await categoryService.GetAllAsync(GetLanguageCode(), cancellationToken));
     }
 }

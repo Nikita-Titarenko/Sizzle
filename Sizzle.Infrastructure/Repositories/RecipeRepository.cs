@@ -8,10 +8,10 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recipe>(dbContext), IRecipeRepository
 {
-    public Task<ApplicationUser?> GetAuthorForMutationAsync(Guid authorId) =>
-        DbContext.Users.Include(user => user.Followers).FirstOrDefaultAsync(user => user.Id == authorId);
+    public Task<ApplicationUser?> GetAuthorForMutationAsync(Guid authorId, CancellationToken cancellationToken = default) =>
+        DbContext.Users.Include(user => user.Followers).FirstOrDefaultAsync(user => user.Id == authorId, cancellationToken);
 
-    public async Task<IReadOnlyList<RecipeInteractionData>> GetRecentInteractionsAsync(Guid userId, int count)
+    public async Task<IReadOnlyList<RecipeInteractionData>> GetRecentInteractionsAsync(Guid userId, int count, CancellationToken cancellationToken = default)
     {
         return await DbContext.ApplicationUserRecipes.AsNoTracking()
             .Where(link => link.ApplicationUserId == userId)
@@ -29,10 +29,10 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
                 link.IsSaved,
                 link.IsShared))
             .AsSplitQuery()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationCandidatesAsync(GetRecipesDto dto)
+    public async Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationCandidatesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking().Where(recipe => recipe.ApplicationUserId != dto.ApplicationUserId);
 
@@ -57,10 +57,10 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
                 recipe.Name,
                 recipe.RecipeIngredients.Select(ingredient => ingredient.IngredientId).ToArray()))
             .AsSplitQuery()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Recipe>> GetByIdsWithAuthorAsync(IReadOnlyCollection<Guid> ids, Guid userId)
+    public async Task<IReadOnlyList<Recipe>> GetByIdsWithAuthorAsync(IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken cancellationToken = default)
     {
         return await DbSet.AsNoTracking()
             .Where(recipe => ids.Contains(recipe.Id))
@@ -68,14 +68,14 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             .Include(recipe => recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsLiked || link.IsSaved)))
             .Include(recipe => recipe.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId))
             .AsSplitQuery()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<PageResponse<Recipe>> GetRecipesAsync(GetRecipesDto dto)
+    public async Task<PageResponse<Recipe>> GetRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         var query = ApplyFilters(DbSet.AsNoTracking(), dto);
 
-        var totalSize = await query.CountAsync();
+        var totalSize = await query.CountAsync(cancellationToken);
         var offset = (long)dto.PageIndex * dto.PageSize;
         if (offset > int.MaxValue)
         {
@@ -96,27 +96,21 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             .Include(r => r.ApplicationUser)
             .AsSplitQuery();
 
-        if (dto.ApplicationUserId is Guid userId)
-        {
-            page = page.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsLiked || link.IsSaved)))
-                .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
-        }
-
         return new PageResponse<Recipe>
         {
-            Data = await page.ToListAsync(),
+            Data = await page.ToListAsync(cancellationToken),
             TotalSize = totalSize,
             PageIndex = dto.PageIndex,
             PageSize = dto.PageSize
         };
     }
 
-    public async Task<PageResponse<Recipe>> GetSavedRecipesAsync(GetRecipesDto dto)
+    public async Task<PageResponse<Recipe>> GetSavedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         var userId = dto.ApplicationUserId!.Value;
         var query = ApplyFilters(DbSet.AsNoTracking()
             .Where(recipe => recipe.ApplicationUserRecipes.Any(link => link.ApplicationUserId == userId && link.IsSaved)), dto);
-        var totalSize = await query.CountAsync();
+        var totalSize = await query.CountAsync(cancellationToken);
         var offset = (long)dto.PageIndex * dto.PageSize;
         if (offset > int.MaxValue)
         {
@@ -139,7 +133,7 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             .Include(recipe => recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsSaved || link.IsLiked)))
             .Include(recipe => recipe.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId))
             .AsSplitQuery()
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new PageResponse<Recipe>
         {
@@ -150,7 +144,7 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
         };
     }
 
-    public async Task<IReadOnlyList<(Guid Id, DateTime? SavedAt)>> GetSavedRecipeIdsAsync(GetRecipesDto dto, Guid[] pendingIds)
+    public async Task<IReadOnlyList<(Guid Id, DateTime? SavedAt)>> GetSavedRecipeIdsAsync(GetRecipesDto dto, Guid[] pendingIds, CancellationToken cancellationToken = default)
     {
         var userId = dto.ApplicationUserId!.Value;
         var query = ApplyFilters(DbSet.AsNoTracking().Where(recipe =>
@@ -161,7 +155,7 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             recipe.Id,
             SavedAt = recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && link.IsSaved)
                 .Max(link => link.IsSavedAt)
-        }).ToListAsync();
+        }).ToListAsync(cancellationToken);
         return entries.Select(entry => (entry.Id, entry.SavedAt)).ToList();
     }
 
@@ -194,12 +188,12 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
         return query;
     }
 
-    public async Task<Recipe?> GetOwnedByUserAsync(Guid recipeId, Guid applicationUserId)
+    public async Task<Recipe?> GetOwnedByUserAsync(Guid recipeId, Guid applicationUserId, CancellationToken cancellationToken = default)
     {
-        return await DbSet.FirstOrDefaultAsync(r => r.Id == recipeId && r.ApplicationUserId == applicationUserId);
+        return await DbSet.FirstOrDefaultAsync(r => r.Id == recipeId && r.ApplicationUserId == applicationUserId, cancellationToken);
     }
 
-    public Task<Recipe?> GetWithDetailsAsync(Guid recipeId, Guid? userId = null)
+    public Task<Recipe?> GetWithDetailsAsync(Guid recipeId, Guid? userId = null, CancellationToken cancellationToken = default)
     {
         var query = DbSet.Include(r => r.RecipeSteps).ThenInclude(step => step.Files)
             .Include(r => r.RecipeIngredients)
@@ -207,10 +201,10 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             .AsSplitQuery();
         if (userId.HasValue)
             query = query.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId));
-        return query.FirstOrDefaultAsync(r => r.Id == recipeId);
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId, cancellationToken);
     }
 
-    public Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId)
+    public Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking().Include(r => r.ApplicationUser).AsSplitQuery();
         if (applicationUserId is Guid userId)
@@ -219,10 +213,10 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
                 .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
         }
 
-        return query.FirstOrDefaultAsync(r => r.Id == recipeId);
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId, cancellationToken);
     }
 
-    public Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId)
+    public Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking()
             .Include(r => r.ApplicationUser)
@@ -237,7 +231,7 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
                 .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
         }
 
-        return query.FirstOrDefaultAsync(r => r.Id == recipeId);
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId, cancellationToken);
     }
 
     public void AddSteps(IEnumerable<RecipeStep> steps)
@@ -255,26 +249,26 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
         DbContext.RecipeIngredients.RemoveRange(ingredients);
     }
 
-    public async Task<ApplicationUserRecipe?> GetUserRecipeAsync(Guid applicationUserId, Guid recipeId)
+    public async Task<ApplicationUserRecipe?> GetUserRecipeAsync(Guid applicationUserId, Guid recipeId, CancellationToken cancellationToken = default)
     {
         return await DbContext.ApplicationUserRecipes
-            .FirstOrDefaultAsync(x => x.ApplicationUserId == applicationUserId && x.RecipeId == recipeId);
+            .FirstOrDefaultAsync(x => x.ApplicationUserId == applicationUserId && x.RecipeId == recipeId, cancellationToken);
     }
 
-    public async Task<bool?> ToggleLikeAsync(Guid applicationUserId, Guid recipeId)
+    public async Task<bool?> ToggleLikeAsync(Guid applicationUserId, Guid recipeId, CancellationToken cancellationToken = default)
     {
         await using var transaction = DbContext.Database.IsRelational()
-            ? await DbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            ? await DbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
             : null;
 
-        var recipe = await DbSet.FirstOrDefaultAsync(item => item.Id == recipeId);
+        var recipe = await DbSet.FirstOrDefaultAsync(item => item.Id == recipeId, cancellationToken);
         if (recipe == null)
         {
             return null;
         }
 
         var link = await DbContext.ApplicationUserRecipes
-            .FirstOrDefaultAsync(item => item.ApplicationUserId == applicationUserId && item.RecipeId == recipeId);
+            .FirstOrDefaultAsync(item => item.ApplicationUserId == applicationUserId && item.RecipeId == recipeId, cancellationToken);
         var isLiked = link == null || !link.IsLiked;
         if (link == null)
         {
@@ -295,13 +289,13 @@ public class RecipeRepository(ApplicationDbContext dbContext) : Repository<Recip
             recipe.LikeCount += isLiked ? 1 : -1;
         }
 
-        await DbContext.SaveChangesAsync();
+        await DbContext.SaveChangesAsync(cancellationToken);
         if (transaction != null)
         {
             await DbSet.Where(item => item.Id == recipeId)
                 .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.LikeCount,
-                    item => item.LikeCount + (isLiked ? 1 : -1)));
-            await transaction.CommitAsync();
+                        item => item.LikeCount + (isLiked ? 1 : -1)), cancellationToken);
+                    await transaction.CommitAsync(cancellationToken);
         }
 
         return isLiked;

@@ -31,20 +31,12 @@
         <app-icon name="eye" />
         {{ recipe().viewCount }}
       </span>
-      @if (recipe().isLiked) {
-        <span class="meta-item liked" [attr.aria-label]="'card.liked' | t">
-          <app-icon name="heart" filled />
-        </span>
-      }
       <span class="spacer"></span>
       <span>{{ recipe().creationDate | date: 'mediumDate' }}</span>
     </div>
     <a class="row author" [routerLink]="['/users', recipe().userId]">
       <app-user-avatar [name]="recipe().userName" [imageUrl]="recipe().userImageUrl" />
       <span>{{ recipe().userName }}</span>
-      @if (recipe().isFollowed) {
-        <span class="muted">· {{ 'card.following' | t }}</span>
-      }
     </a>
   </div>
 </article>

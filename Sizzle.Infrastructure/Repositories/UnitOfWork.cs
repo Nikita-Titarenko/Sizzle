@@ -6,9 +6,9 @@ public sealed class UnitOfWork(ApplicationDbContext dbContext) : IUnitOfWork, ID
 {
     private readonly ApplicationDbContext _dbContext = dbContext;
 
-    public async Task CommitAsync()
+    public async Task CommitAsync(CancellationToken cancellationToken = default)
     {
-        _ = await _dbContext.SaveChangesAsync();
+        _ = await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
     public void Dispose()

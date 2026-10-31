@@ -14,9 +14,11 @@ public class Repository<T>(ApplicationDbContext dbContext) : IRepository<T> wher
         _ = DbSet.Add(entity);
     }
 
-    public async Task<bool> Exists(params object[] keyValues)
+    public Task<bool> Exists(params object[] keyValues) => Exists(CancellationToken.None, keyValues);
+
+    public async Task<bool> Exists(CancellationToken cancellationToken, params object[] keyValues)
     {
-        var entity = await DbSet.FindAsync(keyValues);
+        var entity = await DbSet.FindAsync(keyValues, cancellationToken);
         return entity != null;
     }
 
@@ -30,13 +32,15 @@ public class Repository<T>(ApplicationDbContext dbContext) : IRepository<T> wher
         _ = DbSet.Remove(entity);
     }
 
-    public async Task<T?> GetAsync(params object[] keyValues)
+    public Task<T?> GetAsync(params object[] keyValues) => GetAsync(CancellationToken.None, keyValues);
+
+    public async Task<T?> GetAsync(CancellationToken cancellationToken, params object[] keyValues)
     {
-        return await DbSet.FindAsync(keyValues);
+        return await DbSet.FindAsync(keyValues, cancellationToken);
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<IEnumerable<T>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        return await DbSet.ToListAsync();
+        return await DbSet.ToListAsync(cancellationToken);
     }
 }

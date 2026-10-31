@@ -6,26 +6,26 @@ namespace Sizzle.Application.Services.Recipes;
 
 public interface IRecipeService
 {
-    Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto);
+    Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 
-    Task<PageResponse<RecipeDto>> GetSavedRecipesAsync(GetRecipesDto dto);
+    Task<PageResponse<FeedRecipeDto>> GetSavedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 
-    Task<PageResponse<RecipeDto>> GetPersonalizedRecipesAsync(GetRecipesDto dto);
+    Task<PageResponse<FeedRecipeDto>> GetPersonalizedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto);
+    Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto);
+    Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeDto>> UpdateRecipeAsync(UpdateRecipeDto dto);
+    Task<Result<RecipeDto>> UpdateRecipeAsync(UpdateRecipeDto dto, CancellationToken cancellationToken = default);
 
-    Task<Result> DeleteRecipeAsync(Guid recipeId, Guid applicationUserId);
+    Task<Result> DeleteRecipeAsync(Guid recipeId, Guid applicationUserId, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeLikeDto>> ToggleLikeAsync(ToggleLikeRecipeDto dto);
+    Task<Result<RecipeLikeDto>> ToggleLikeAsync(ToggleLikeRecipeDto dto, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeSaveDto>> ToggleSaveAsync(Guid recipeId, Guid userId);
+    Task<Result<RecipeSaveDto>> ToggleSaveAsync(Guid recipeId, Guid userId, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeShareDto>> UpdateShareAsync(Guid recipeId, Guid userId);
+    Task<Result<RecipeShareDto>> UpdateShareAsync(Guid recipeId, Guid userId, CancellationToken cancellationToken = default);
 
-    Task<Result<RecipeDto>> UpdateViewAsync(UpdateRecipeViewDto dto);
+    Task<Result<FeedRecipeDto>> UpdateViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default);
 
 }

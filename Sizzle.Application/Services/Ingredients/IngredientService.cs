@@ -6,12 +6,12 @@ namespace Sizzle.Application.Services.Ingredients;
 public class IngredientService(IIngredientRepository ingredientRepository, IIngredientUnitFormatter unitFormatter,
     IIngredientReadCache cache) : IIngredientService
 {
-    public async Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto) =>
-        await cache.GetOrCreateAsync(dto, () => GetAllCoreAsync(dto));
+    public async Task<IEnumerable<IngredientListItemDto>> GetAllAsync(GetAllIngredientsDto dto, CancellationToken cancellationToken = default) =>
+        await cache.GetOrCreateAsync(dto, () => GetAllCoreAsync(dto, cancellationToken));
 
-    private async Task<List<IngredientListItemDto>> GetAllCoreAsync(GetAllIngredientsDto dto)
+    private async Task<List<IngredientListItemDto>> GetAllCoreAsync(GetAllIngredientsDto dto, CancellationToken cancellationToken)
     {
-        var ingredients = (await ingredientRepository.GetAllOrderedAsync(dto.Search, dto.PageIndex, dto.PageSize, dto.LanguageCode)).ToList();
+        var ingredients = (await ingredientRepository.GetAllOrderedAsync(dto.Search, dto.PageIndex, dto.PageSize, dto.LanguageCode, cancellationToken)).ToList();
 
         var allItems = ingredients.ToDictionary(
             ingredient => ingredient.Id,

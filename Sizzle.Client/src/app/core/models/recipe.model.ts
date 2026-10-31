@@ -5,7 +5,6 @@ export interface Recipe {
   userId: string;
   userName: string;
   userImageUrl: string | null;
-  isFollowed: boolean;
   name: string;
   description: string;
   cookingTimeMinutes: number;
@@ -13,6 +12,10 @@ export interface Recipe {
   fileUrl: string | null;
   viewCount: number;
   creationDate: string;
+}
+
+export interface FeedRecipe extends Recipe {
+  isFollowed: boolean;
   isLiked: boolean;
 }
 
@@ -30,7 +33,7 @@ export interface RecipeIngredient {
   unit: string;
 }
 
-export interface RecipeDetails extends Recipe {
+export interface RecipeDetails extends FeedRecipe {
   steps: RecipeStep[];
   ingredients: RecipeIngredient[];
 }

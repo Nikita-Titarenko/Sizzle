@@ -8,9 +8,9 @@ public interface ISubscriptionService
 {
     IReadOnlyList<SubscriptionPlanDto> GetPlans();
 
-    Task<Result<SubscriptionCheckoutDto>> StartCheckoutAsync(Guid userId, SubscriptionPlan plan);
+    Task<Result<SubscriptionCheckoutDto>> StartCheckoutAsync(Guid userId, SubscriptionPlan plan, CancellationToken cancellationToken = default);
 
-    Task<Result> ProcessWebhookAsync(string payload, string signature);
+    Task<Result> ProcessWebhookAsync(string payload, string signature, CancellationToken cancellationToken = default);
 
-    Task<SubscriptionStatusDto> GetStatusAsync(Guid userId);
+    Task<SubscriptionStatusDto> GetStatusAsync(Guid userId, CancellationToken cancellationToken = default);
 }

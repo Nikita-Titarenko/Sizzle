@@ -22,37 +22,37 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private const int SavedInteractionWeight = 6;
     private const int ShareInteractionWeight = 10;
 
-    public async Task<PageResponse<RecipeDto>> GetPersonalizedRecipesAsync(GetRecipesDto dto)
+    public async Task<PageResponse<FeedRecipeDto>> GetPersonalizedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         var pendingIds = interactionsBuffer.Enabled
-            ? (await interactionsBuffer.GetPendingInteractionsAsync(dto.ApplicationUserId!.Value))
+            ? (await interactionsBuffer.GetPendingInteractionsAsync(dto.ApplicationUserId!.Value, cancellationToken))
                 .Select(interaction => interaction.RecipeId).Distinct().Order().ToArray()
             : [];
         var seen = pendingIds.ToHashSet();
         var offset = (long)dto.PageIndex * dto.PageSize;
         var required = offset + dto.PageSize;
-        var cached = await readCache.GetOrRefreshAsync<PageResponse<RecipeDto>>(
+        var cached = await readCache.GetOrRefreshAsync<PageResponse<FeedRecipeDto>>(
             $"recipes:personalized:feed:v2:{JsonSerializer.Serialize(new { dto.ApplicationUserId, dto.CategoryIds, dto.IngredientIds, dto.PageSize })}",
             feed =>
             {
                 var unseen = feed.Data.Count(recipe => !seen.Contains(recipe.Id));
                 return unseen >= required || unseen >= feed.TotalSize - feed.Data.Count(recipe => seen.Contains(recipe.Id));
             },
-            (previous, _) => GetPersonalizedRecipesCoreAsync(dto, pendingIds,
-                (int)Math.Min(int.MaxValue, Math.Max(required * 2, (long)(previous?.Data.Count ?? 0) + dto.PageSize * 2L))));
+            (previous, token) => GetPersonalizedRecipesCoreAsync(dto, pendingIds,
+                (int)Math.Min(int.MaxValue, Math.Max(required * 2, (long)(previous?.Data.Count ?? 0) + dto.PageSize * 2L)), token), cancellationToken);
         var available = cached.Data.Where(recipe => !seen.Contains(recipe.Id)).ToArray();
-        var page = new PageResponse<RecipeDto>
+        var page = new PageResponse<FeedRecipeDto>
         {
             Data = offset >= available.Length ? [] : available.Skip((int)offset).Take(dto.PageSize).ToArray(),
             TotalSize = Math.Max(available.Length, cached.TotalSize - (cached.Data.Count - available.Length)),
             PageIndex = dto.PageIndex,
             PageSize = dto.PageSize
         };
-        await interactionsBuffer.ApplyAsync(page.Data, dto.ApplicationUserId);
+        await interactionsBuffer.ApplyAsync(page.Data, dto.ApplicationUserId, cancellationToken);
         return page;
     }
 
-    private async Task<PageResponse<RecipeDto>> GetPersonalizedRecipesCoreAsync(GetRecipesDto dto, Guid[] pendingIds, int batchSize)
+    private async Task<PageResponse<FeedRecipeDto>> GetPersonalizedRecipesCoreAsync(GetRecipesDto dto, Guid[] pendingIds, int batchSize, CancellationToken cancellationToken)
     {
         const int authorMultiplier = 4;
         const int categoryMultiplier = 3;
@@ -60,8 +60,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         const int nameMultiplier = 5;
 
         var userId = dto.ApplicationUserId!.Value;
-        var interactions = await recipeRepository.GetRecentInteractionsAsync(userId, 100);
-        var candidates = await recipeRepository.GetRecommendationCandidatesAsync(dto);
+        var interactions = await recipeRepository.GetRecentInteractionsAsync(userId, 100, cancellationToken);
+        var candidates = await recipeRepository.GetRecommendationCandidatesAsync(dto, cancellationToken);
         var seenIds = interactions.Select(interaction => interaction.Recipe.Id).Concat(pendingIds).ToHashSet();
         var authorWeights = new Dictionary<Guid, int>();
         var categoryWeights = new Dictionary<Guid, int>();
@@ -121,7 +121,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         var pageIds = ranked.Take(batchSize).ToArray();
         var recipes = pageIds.Length == 0
             ? []
-            : await recipeRepository.GetByIdsWithAuthorAsync(pageIds.Select(item => item.Id).ToArray(), userId);
+            : await recipeRepository.GetByIdsWithAuthorAsync(pageIds.Select(item => item.Id).ToArray(), userId, cancellationToken);
         var byId = recipes.ToDictionary(recipe => recipe.Id);
 
         if (recipeLoggingOptions.Value.PersonalizedRecipesLogging && logger.IsEnabled(LogLevel.Information))
@@ -140,13 +140,13 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 .Where(id => ingredientWeights.GetValueOrDefault(id) > 0).Distinct().ToArray();
             var ingredientsById = matchedIngredientIds.Length == 0
                 ? new Dictionary<Guid, Ingredient>()
-                : (await ingredientRepository.GetByIdsWithTranslationsAsync(matchedIngredientIds))
+                : (await ingredientRepository.GetByIdsWithTranslationsAsync(matchedIngredientIds, cancellationToken))
                     .ToDictionary(ingredient => ingredient.Id);
             var categoryIds = returned.Select(item => scoresById[item.Id].Recipe.CategoryId)
                 .Where(id => categoryWeights.GetValueOrDefault(id) > 0).ToHashSet();
             var categoriesById = categoryIds.Count == 0
                 ? new Dictionary<Guid, Category>()
-                : (await categoryRepository.GetAllAsync()).Where(category => categoryIds.Contains(category.Id))
+                : (await categoryRepository.GetAllAsync(cancellationToken)).Where(category => categoryIds.Contains(category.Id))
                     .ToDictionary(category => category.Id);
 
             foreach (var (index, item) in loggedPageIds.Index())
@@ -194,9 +194,9 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             logger.LogInformation("====================");
         }
 
-        return new PageResponse<RecipeDto>
+        return new PageResponse<FeedRecipeDto>
         {
-            Data = pageIds.Where(item => byId.ContainsKey(item.Id)).Select(item => ToRecipeDto(byId[item.Id], userId)).ToArray(),
+            Data = pageIds.Where(item => byId.ContainsKey(item.Id)).Select(item => ToFeedRecipeDto(byId[item.Id], userId)).ToArray(),
             TotalSize = ranked.Count,
             PageIndex = 0,
             PageSize = dto.PageSize
@@ -222,36 +222,41 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         return formatted.Length == 0 ? "-" : formatted;
     }
 
-    public async Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto)
+    public async Task<PageResponse<RecipeDto>> GetRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
-        var cached = await readCache.GetOrCreateAsync($"recipes:list:{JsonSerializer.Serialize(dto)}", _ => GetRecipesCoreAsync(dto));
+        var publicQuery = new GetRecipesDto
+        {
+            OwnerId = dto.OwnerId, Search = dto.Search, CategoryIds = dto.CategoryIds,
+            IngredientIds = dto.IngredientIds, PageIndex = dto.PageIndex, PageSize = dto.PageSize
+        };
+        var cached = await readCache.GetOrCreateAsync($"recipes:list:{JsonSerializer.Serialize(publicQuery)}", token => GetRecipesCoreAsync(publicQuery, token), cancellationToken);
         var result = ClonePage(cached);
-        await interactionsBuffer.ApplyAsync(result.Data, dto.ApplicationUserId);
+        await interactionsBuffer.ApplyAsync(result.Data, null, cancellationToken);
         return result;
     }
 
-    private async Task<PageResponse<RecipeDto>> GetRecipesCoreAsync(GetRecipesDto dto)
+    private async Task<PageResponse<RecipeDto>> GetRecipesCoreAsync(GetRecipesDto dto, CancellationToken cancellationToken)
     {
-        var page = await recipeRepository.GetRecipesAsync(dto);
+        var page = await recipeRepository.GetRecipesAsync(dto, cancellationToken);
         return new PageResponse<RecipeDto>
         {
-            Data = page.Data.Select(recipe => ToRecipeDto(recipe, dto.ApplicationUserId)).ToList(),
+            Data = page.Data.Select(recipe => ToRecipeDto(recipe)).ToList(),
             TotalSize = page.TotalSize,
             PageIndex = page.PageIndex,
             PageSize = page.PageSize
         };
     }
 
-    public async Task<PageResponse<RecipeDto>> GetSavedRecipesAsync(GetRecipesDto dto)
+    public async Task<PageResponse<FeedRecipeDto>> GetSavedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         if (interactionsBuffer.Enabled)
         {
             var userId = dto.ApplicationUserId!.Value;
-            var pending = (await interactionsBuffer.GetPendingSavedAsync(userId))
+            var pending = (await interactionsBuffer.GetPendingSavedAsync(userId, cancellationToken))
                 .ToDictionary(item => item.RecipeId);
             if (pending.Count > 0)
             {
-                var ids = await recipeRepository.GetSavedRecipeIdsAsync(dto, pending.Keys.ToArray());
+                var ids = await recipeRepository.GetSavedRecipeIdsAsync(dto, pending.Keys.ToArray(), cancellationToken);
                 var ordered = ids.Select(item =>
                     pending.TryGetValue(item.Id, out var state)
                         ? (item.Id, SavedAt: state.IsSaved ? state.SavedAt : null)
@@ -262,11 +267,11 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                     .ToArray();
                 var offset = (long)dto.PageIndex * dto.PageSize;
                 var pageIds = offset >= ordered.Length ? [] : ordered.Skip((int)offset).Take(dto.PageSize).Select(item => item.Id).ToArray();
-                var recipes = pageIds.Length == 0 ? [] : await recipeRepository.GetByIdsWithAuthorAsync(pageIds, userId);
+                var recipes = pageIds.Length == 0 ? [] : await recipeRepository.GetByIdsWithAuthorAsync(pageIds, userId, cancellationToken);
                 var byId = recipes.ToDictionary(recipe => recipe.Id);
-                var data = pageIds.Where(byId.ContainsKey).Select(id => ToRecipeDto(byId[id], userId)).ToArray();
-                await interactionsBuffer.ApplyAsync(data, userId);
-                return new PageResponse<RecipeDto>
+                var data = pageIds.Where(byId.ContainsKey).Select(id => ToFeedRecipeDto(byId[id], userId)).ToArray();
+                await interactionsBuffer.ApplyAsync(data, userId, cancellationToken);
+                return new PageResponse<FeedRecipeDto>
                 {
                     Data = data,
                     TotalSize = ordered.Length,
@@ -276,17 +281,17 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             }
         }
 
-        var result = ClonePage(await readCache.GetOrCreateAsync($"recipes:saved:{JsonSerializer.Serialize(dto)}", _ => GetSavedRecipesCoreAsync(dto)));
-        await interactionsBuffer.ApplyAsync(result.Data, dto.ApplicationUserId);
+        var result = CloneFeedPage(await readCache.GetOrCreateAsync($"recipes:saved:{JsonSerializer.Serialize(dto)}", token => GetSavedRecipesCoreAsync(dto, token), cancellationToken));
+        await interactionsBuffer.ApplyAsync(result.Data, dto.ApplicationUserId, cancellationToken);
         return result;
     }
 
-    private async Task<PageResponse<RecipeDto>> GetSavedRecipesCoreAsync(GetRecipesDto dto)
+    private async Task<PageResponse<FeedRecipeDto>> GetSavedRecipesCoreAsync(GetRecipesDto dto, CancellationToken cancellationToken)
     {
-        var page = await recipeRepository.GetSavedRecipesAsync(dto);
-        return new PageResponse<RecipeDto>
+        var page = await recipeRepository.GetSavedRecipesAsync(dto, cancellationToken);
+        return new PageResponse<FeedRecipeDto>
         {
-            Data = page.Data.Select(recipe => ToRecipeDto(recipe, dto.ApplicationUserId)).ToList(),
+            Data = page.Data.Select(recipe => ToFeedRecipeDto(recipe, dto.ApplicationUserId)).ToList(),
             TotalSize = page.TotalSize,
             PageIndex = page.PageIndex,
             PageSize = page.PageSize
@@ -296,9 +301,12 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private static PageResponse<RecipeDto> ClonePage(PageResponse<RecipeDto> page) =>
         JsonSerializer.Deserialize<PageResponse<RecipeDto>>(JsonSerializer.Serialize(page))!;
 
-    public async Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto)
+    private static PageResponse<FeedRecipeDto> CloneFeedPage(PageResponse<FeedRecipeDto> page) =>
+        JsonSerializer.Deserialize<PageResponse<FeedRecipeDto>>(JsonSerializer.Serialize(page))!;
+
+    public async Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto, CancellationToken cancellationToken = default)
     {
-        var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes);
+        var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes, cancellationToken);
         if (detailsError != null)
         {
             return Reject<RecipeDto>("create", null, dto.ApplicationUserId, detailsError);
@@ -310,13 +318,13 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return Reject<RecipeDto>("create", null, dto.ApplicationUserId, mediaError);
         }
 
-        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients);
+        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients, cancellationToken);
         if (!ingredients.IsSuccess)
         {
             return Reject<RecipeDto>("create", null, dto.ApplicationUserId, ingredients.Errors.ToArray());
         }
 
-        var author = await recipeRepository.GetAuthorForMutationAsync(dto.ApplicationUserId);
+        var author = await recipeRepository.GetAuthorForMutationAsync(dto.ApplicationUserId, cancellationToken);
         var recipe = mapper.Map<Recipe>(dto);
         recipe.Id = Guid.NewGuid();
         recipe.ApplicationUser = author;
@@ -341,7 +349,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
             await SaveStepMediaAsync(recipe.RecipeSteps, dto.Steps, recipe.Id, savedPaths);
             recipeRepository.Add(recipe);
-            await unitOfWork.CommitAsync();
+            await unitOfWork.CommitAsync(cancellationToken);
         }
         catch (Exception exception)
         {
@@ -355,29 +363,29 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
 
         operationLogger.LogInformation("Recipe {RecipeId} created by user {UserId}", recipe.Id, dto.ApplicationUserId);
-        var resultDto = ToRecipeDto(recipe, dto.ApplicationUserId);
+        var resultDto = ToFeedRecipeDto(recipe, dto.ApplicationUserId);
         await ingredientCache.IngredientsCreatedAsync(ingredients.Value!.Created);
         await readCache.UpdateListsAsync(new RecipeListMutation(null, ToListSnapshot(recipe, recipe.RecipeSteps), resultDto,
-            author?.Followers.Select(follower => follower.FollowerId).ToArray()));
+            author?.Followers.Select(follower => follower.FollowerId).ToArray()), cancellationToken: cancellationToken);
         await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
         return new Result<RecipeDto>
         {
-            Value = resultDto
+            Value = ToRecipeDto(recipe)
         };
     }
 
-    public async Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto)
+    public async Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto, CancellationToken cancellationToken = default)
     {
         var cached = await readCache.GetOrCreateAsync($"recipes:detail:{dto.Id:N}:{dto.ApplicationUserId}:{dto.LanguageCode}",
-            _ => GetRecipeByIdCoreAsync(dto));
+            token => GetRecipeByIdCoreAsync(dto, token), cancellationToken);
         var result = JsonSerializer.Deserialize<Result<RecipeDetailsDto>>(JsonSerializer.Serialize(cached))!;
-        if (result.Value != null) await interactionsBuffer.ApplyAsync([result.Value], dto.ApplicationUserId);
+        if (result.Value != null) await interactionsBuffer.ApplyAsync([result.Value], dto.ApplicationUserId, cancellationToken);
         return result;
     }
 
-    private async Task<Result<RecipeDetailsDto>> GetRecipeByIdCoreAsync(GetRecipeByIdDto dto)
+    private async Task<Result<RecipeDetailsDto>> GetRecipeByIdCoreAsync(GetRecipeByIdDto dto, CancellationToken cancellationToken)
     {
-        var recipe = await recipeRepository.GetWithFullDetailsAsync(dto.Id, dto.ApplicationUserId);
+        var recipe = await recipeRepository.GetWithFullDetailsAsync(dto.Id, dto.ApplicationUserId, cancellationToken);
         if (recipe == null)
         {
             return new Result<RecipeDetailsDto>
@@ -396,9 +404,9 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         };
     }
 
-    public async Task<Result<RecipeDto>> UpdateRecipeAsync(UpdateRecipeDto dto)
+    public async Task<Result<RecipeDto>> UpdateRecipeAsync(UpdateRecipeDto dto, CancellationToken cancellationToken = default)
     {
-        var recipe = await recipeRepository.GetWithDetailsAsync(dto.Id, dto.ApplicationUserId);
+        var recipe = await recipeRepository.GetWithDetailsAsync(dto.Id, dto.ApplicationUserId, cancellationToken);
         if (recipe == null)
         {
             return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId,
@@ -411,7 +419,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 new Error { Message = "Recipe does not belong to current user", Key = ErrorKey.BadRequest });
         }
 
-        var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes);
+        var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes, cancellationToken);
         if (detailsError != null)
         {
             return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId, detailsError);
@@ -423,7 +431,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId, mediaError);
         }
 
-        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients);
+        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients, cancellationToken);
         if (!ingredients.IsSuccess)
         {
             return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId, ingredients.Errors.ToArray());
@@ -480,7 +488,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
             await SaveStepMediaAsync(newSteps, dto.Steps, recipe.Id, savedPaths);
             recipeRepository.AddSteps(newSteps);
-            await unitOfWork.CommitAsync();
+            await unitOfWork.CommitAsync(cancellationToken);
         }
         catch (Exception exception)
         {
@@ -499,7 +507,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             fileService.DeleteFile(path);
         }
 
-        var resultDto = ToRecipeDto(recipe, dto.ApplicationUserId);
+        var resultDto = ToFeedRecipeDto(recipe, dto.ApplicationUserId);
         await ingredientCache.IngredientsCreatedAsync(ingredients.Value!.Created);
         await readCache.UpdateListsAsync(new RecipeListMutation(before, ToListSnapshot(recipe, newSteps), resultDto), language => new RecipeDetailsDto
         {
@@ -540,16 +548,16 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                         ?? string.Empty
                 };
             }).ToArray()
-        });
+        }, cancellationToken);
         return new Result<RecipeDto>
         {
-            Value = resultDto
+            Value = ToRecipeDto(recipe)
         };
     }
 
-    public async Task<Result> DeleteRecipeAsync(Guid recipeId, Guid applicationUserId)
+    public async Task<Result> DeleteRecipeAsync(Guid recipeId, Guid applicationUserId, CancellationToken cancellationToken = default)
     {
-        var recipe = await recipeRepository.GetWithDetailsAsync(recipeId);
+        var recipe = await recipeRepository.GetWithDetailsAsync(recipeId, cancellationToken: cancellationToken);
         if (recipe == null)
         {
             operationLogger.LogWarning("Recipe deletion rejected for recipe {RecipeId} and user {UserId}: {ErrorKey}", recipeId, applicationUserId, ErrorKey.NotFound);
@@ -576,7 +584,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
 
         recipeRepository.Remove(recipe);
-        await unitOfWork.CommitAsync();
+        await unitOfWork.CommitAsync(cancellationToken);
         operationLogger.LogInformation("Recipe {RecipeId} deleted by user {UserId}", recipeId, applicationUserId);
 
         foreach (var path in paths)
@@ -584,16 +592,16 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             fileService.DeleteFile(path);
         }
 
-        await readCache.UpdateListsAsync(new RecipeListMutation(before, null, null));
+        await readCache.UpdateListsAsync(new RecipeListMutation(before, null, null), cancellationToken: cancellationToken);
         await commentCache.InvalidateAsync(recipeId);
         return new Result();
     }
 
-    public async Task<Result<RecipeLikeDto>> ToggleLikeAsync(ToggleLikeRecipeDto dto)
+    public async Task<Result<RecipeLikeDto>> ToggleLikeAsync(ToggleLikeRecipeDto dto, CancellationToken cancellationToken = default)
     {
         var isLiked = interactionsBuffer.Enabled
-            ? await interactionsBuffer.ToggleLikeAsync(dto.ApplicationUserId, dto.RecipeId)
-            : await recipeRepository.ToggleLikeAsync(dto.ApplicationUserId, dto.RecipeId);
+            ? await interactionsBuffer.ToggleLikeAsync(dto.ApplicationUserId, dto.RecipeId, cancellationToken)
+            : await recipeRepository.ToggleLikeAsync(dto.ApplicationUserId, dto.RecipeId, cancellationToken);
         if (isLiked == null)
         {
             return Reject<RecipeLikeDto>("toggle like", dto.RecipeId, dto.ApplicationUserId,
@@ -611,11 +619,11 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         };
     }
 
-    public async Task<Result<RecipeSaveDto>> ToggleSaveAsync(Guid recipeId, Guid userId)
+    public async Task<Result<RecipeSaveDto>> ToggleSaveAsync(Guid recipeId, Guid userId, CancellationToken cancellationToken = default)
     {
         if (interactionsBuffer.Enabled)
         {
-            var saved = await interactionsBuffer.ToggleSaveAsync(userId, recipeId);
+            var saved = await interactionsBuffer.ToggleSaveAsync(userId, recipeId, cancellationToken);
             if (saved == null)
             {
                 return Reject<RecipeSaveDto>("toggle save", recipeId, userId,
@@ -625,13 +633,13 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<RecipeSaveDto> { Value = saved };
         }
 
-        if (await recipeRepository.GetAsync(recipeId) == null)
+        if (await recipeRepository.GetAsync(cancellationToken, recipeId) == null)
         {
             return Reject<RecipeSaveDto>("toggle save", recipeId, userId,
                 new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
         }
 
-        var link = await recipeRepository.GetUserRecipeAsync(userId, recipeId);
+        var link = await recipeRepository.GetUserRecipeAsync(userId, recipeId, cancellationToken);
         if (link == null)
         {
             link = new ApplicationUserRecipe { ApplicationUserId = userId, RecipeId = recipeId };
@@ -640,17 +648,17 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
         link.IsSaved = !link.IsSaved;
         link.IsSavedAt = link.IsSaved ? DateTime.UtcNow : null;
-        await unitOfWork.CommitAsync();
+        await unitOfWork.CommitAsync(cancellationToken);
         operationLogger.LogInformation("Recipe {RecipeId} save state changed to {IsSaved} by user {UserId}", recipeId, link.IsSaved, userId);
 
         return new Result<RecipeSaveDto> { Value = new RecipeSaveDto(recipeId, link.IsSaved, link.IsSavedAt) };
     }
 
-    public async Task<Result<RecipeShareDto>> UpdateShareAsync(Guid recipeId, Guid userId)
+    public async Task<Result<RecipeShareDto>> UpdateShareAsync(Guid recipeId, Guid userId, CancellationToken cancellationToken = default)
     {
         if (interactionsBuffer.Enabled)
         {
-            var shared = await interactionsBuffer.UpdateShareAsync(userId, recipeId);
+            var shared = await interactionsBuffer.UpdateShareAsync(userId, recipeId, cancellationToken);
             if (shared == null)
             {
                 return Reject<RecipeShareDto>("share", recipeId, userId,
@@ -660,13 +668,13 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<RecipeShareDto> { Value = shared };
         }
 
-        if (await recipeRepository.GetAsync(recipeId) == null)
+        if (await recipeRepository.GetAsync(cancellationToken, recipeId) == null)
         {
             return Reject<RecipeShareDto>("share", recipeId, userId,
                 new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
         }
 
-        var link = await recipeRepository.GetUserRecipeAsync(userId, recipeId);
+        var link = await recipeRepository.GetUserRecipeAsync(userId, recipeId, cancellationToken);
         if (link == null)
         {
             link = new ApplicationUserRecipe { ApplicationUserId = userId, RecipeId = recipeId };
@@ -675,44 +683,44 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
         link.IsShared = true;
         link.IsSharedAt = DateTime.UtcNow;
-        await unitOfWork.CommitAsync();
+        await unitOfWork.CommitAsync(cancellationToken);
         operationLogger.LogInformation("Recipe {RecipeId} shared by user {UserId}", recipeId, userId);
 
         return new Result<RecipeShareDto> { Value = new RecipeShareDto(recipeId, link.IsShared, link.IsSharedAt.Value) };
     }
 
-    public async Task<Result<RecipeDto>> UpdateViewAsync(UpdateRecipeViewDto dto)
+    public async Task<Result<FeedRecipeDto>> UpdateViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default)
     {
         if (interactionsBuffer.Enabled)
         {
             if (!await interactionsBuffer.UpdateViewAsync(dto.ApplicationUserId, dto.RecipeId,
-                    businessLogicOptions.Value.RecipeViewUpdateIntervalMinutes))
-                return Reject<RecipeDto>("update view", dto.RecipeId, dto.ApplicationUserId,
+                    businessLogicOptions.Value.RecipeViewUpdateIntervalMinutes, cancellationToken))
+                return Reject<FeedRecipeDto>("update view", dto.RecipeId, dto.ApplicationUserId,
                     new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
 
             var cached = await readCache.GetAsync<Result<RecipeDetailsDto>>(
-                $"recipes:detail:{dto.RecipeId:N}:{dto.ApplicationUserId}:{dto.LanguageCode}");
+                $"recipes:detail:{dto.RecipeId:N}:{dto.ApplicationUserId}:{dto.LanguageCode}", cancellationToken);
             if (cached?.Value is { } details)
             {
-                var cachedRecipe = JsonSerializer.Deserialize<RecipeDto>(JsonSerializer.Serialize(details))!;
-                await interactionsBuffer.ApplyAsync([cachedRecipe], dto.ApplicationUserId);
-                return new Result<RecipeDto> { Value = cachedRecipe };
+                var cachedRecipe = JsonSerializer.Deserialize<FeedRecipeDto>(JsonSerializer.Serialize(details))!;
+                await interactionsBuffer.ApplyAsync([cachedRecipe], dto.ApplicationUserId, cancellationToken);
+                return new Result<FeedRecipeDto> { Value = cachedRecipe };
             }
 
-            var viewed = await recipeRepository.GetWithAuthorAsync(dto.RecipeId, dto.ApplicationUserId);
-            var result = ToRecipeDto(viewed!, dto.ApplicationUserId);
-            await interactionsBuffer.ApplyAsync([result], dto.ApplicationUserId);
-            return new Result<RecipeDto> { Value = result };
+            var viewed = await recipeRepository.GetWithAuthorAsync(dto.RecipeId, dto.ApplicationUserId, cancellationToken);
+            var result = ToFeedRecipeDto(viewed!, dto.ApplicationUserId);
+            await interactionsBuffer.ApplyAsync([result], dto.ApplicationUserId, cancellationToken);
+            return new Result<FeedRecipeDto> { Value = result };
         }
 
-        var recipe = await recipeRepository.GetAsync(dto.RecipeId);
+        var recipe = await recipeRepository.GetAsync(cancellationToken, dto.RecipeId);
         if (recipe == null)
         {
-            return Reject<RecipeDto>("update view", dto.RecipeId, dto.ApplicationUserId,
+            return Reject<FeedRecipeDto>("update view", dto.RecipeId, dto.ApplicationUserId,
                 new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
         }
 
-        var userRecipe = await recipeRepository.GetUserRecipeAsync(dto.ApplicationUserId, dto.RecipeId);
+        var userRecipe = await recipeRepository.GetUserRecipeAsync(dto.ApplicationUserId, dto.RecipeId, cancellationToken);
         var now = DateTime.UtcNow;
 
         if (userRecipe == null)
@@ -726,7 +734,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             };
             recipeRepository.AddUserRecipe(userRecipe);
             recipe.ViewCount += 1;
-            await unitOfWork.CommitAsync();
+            await unitOfWork.CommitAsync(cancellationToken);
         }
         else
         {
@@ -737,18 +745,18 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             {
                 recipe.ViewCount += 1;
                 userRecipe.ViewUpdatedAt = now;
-                await unitOfWork.CommitAsync();
+                await unitOfWork.CommitAsync(cancellationToken);
             }
         }
 
-        var viewedRecipe = await recipeRepository.GetWithAuthorAsync(recipe.Id, dto.ApplicationUserId);
-        return new Result<RecipeDto> { Value = ToRecipeDto(viewedRecipe!, dto.ApplicationUserId) };
+        var viewedRecipe = await recipeRepository.GetWithAuthorAsync(recipe.Id, dto.ApplicationUserId, cancellationToken);
+        return new Result<FeedRecipeDto> { Value = ToFeedRecipeDto(viewedRecipe!, dto.ApplicationUserId) };
     }
 
-    private RecipeDto ToRecipeDto(Recipe recipe, Guid? applicationUserId)
-    {
-        return mapper.Map<RecipeDto>(recipe, options => options.Items["ViewerId"] = applicationUserId);
-    }
+    private RecipeDto ToRecipeDto(Recipe recipe) => mapper.Map<RecipeDto>(recipe);
+
+    private FeedRecipeDto ToFeedRecipeDto(Recipe recipe, Guid? applicationUserId) =>
+        mapper.Map<FeedRecipeDto>(recipe, options => options.Items["ViewerId"] = applicationUserId);
 
     private Result<T> Reject<T>(string operation, Guid? recipeId, Guid userId, params Error[] errors)
     {
@@ -762,14 +770,14 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         steps.SelectMany(step => new[] { step.Name, step.Description }).ToArray(),
         recipe.RecipeIngredients.Select(link => link.IngredientId).ToArray(), recipe.LikeCount, recipe.CreationDate);
 
-    private async Task<Error?> ValidateRecipeDetailsAsync(Guid categoryId, int cookingTimeMinutes)
+    private async Task<Error?> ValidateRecipeDetailsAsync(Guid categoryId, int cookingTimeMinutes, CancellationToken cancellationToken)
     {
         if (cookingTimeMinutes <= 0)
         {
             return new Error { Message = "Cooking time must be greater than zero", Key = ErrorKey.BadRequest };
         }
 
-        if (categoryId == Guid.Empty || !await categoryRepository.ExistsAsync(categoryId))
+        if (categoryId == Guid.Empty || !await categoryRepository.ExistsAsync(categoryId, cancellationToken))
         {
             return new Error { Message = "Category not found", Key = ErrorKey.NotFound };
         }
@@ -814,7 +822,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
     }
 
-    private async Task<Result<ResolvedRecipeIngredients>> ResolveIngredientsAsync(RecipeIngredientInputDto[] selectedIngredients, NewIngredientDto[] newIngredients)
+    private async Task<Result<ResolvedRecipeIngredients>> ResolveIngredientsAsync(RecipeIngredientInputDto[] selectedIngredients, NewIngredientDto[] newIngredients, CancellationToken cancellationToken)
     {
         if (selectedIngredients.Any(ingredient => ingredient == null || ingredient.Id == Guid.Empty))
         {
@@ -850,7 +858,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<ResolvedRecipeIngredients> { Errors = [new Error { Message = "Invalid parent ingredient id", Key = ErrorKey.BadRequest }] };
         }
 
-        var existing = await ingredientRepository.GetByIdsWithTranslationsAsync(ids.Concat(parentIds).Distinct().ToArray());
+        var existing = await ingredientRepository.GetByIdsWithTranslationsAsync(ids.Concat(parentIds).Distinct().ToArray(), cancellationToken);
         var existingIds = existing.Select(ingredient => ingredient.Id).ToHashSet();
         if (!ids.IsSubsetOf(existingIds))
         {
@@ -881,7 +889,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
 
         var matched = await ingredientRepository.GetByNamesAsync(ingredientsToResolve
-            .Select(ingredient => ingredient.Name.ToLowerInvariant()).Distinct().ToArray());
+            .Select(ingredient => ingredient.Name.ToLowerInvariant()).Distinct().ToArray(), cancellationToken);
         var created = new List<Ingredient>();
         foreach (var input in ingredientsToResolve)
         {

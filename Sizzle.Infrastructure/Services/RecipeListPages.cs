@@ -33,7 +33,7 @@ internal static class RecipeListPages
             return pages.ToDictionary(page => page.Key, page => new PageResponse<RecipeDto>
             {
                 Data = page.Value.Data.Select(recipe => recipe.Id == mutation.After!.Id
-                    ? ForViewer(mutation.Recipe!, recipe, query.ApplicationUserId, origin) : recipe).ToArray(),
+                    ? PublicRecipe(mutation.Recipe!, origin) : recipe).ToArray(),
                 PageIndex = page.Value.PageIndex,
                 PageSize = page.Value.PageSize,
                 TotalSize = page.Value.TotalSize
@@ -55,11 +55,7 @@ internal static class RecipeListPages
         {
             var id = mutation.After!.Id;
             known.RemoveAll(recipe => recipe.Id == id);
-            if (previous == null && query.ApplicationUserId is Guid viewerId
-                && viewerId != mutation.Recipe!.UserId && mutation.FollowerIds == null) return [];
-            var replacement = previous == null && query.ApplicationUserId is Guid viewer
-                ? ForViewer(mutation.Recipe!, previous, viewer, origin, mutation.FollowerIds?.Contains(viewer) ?? false)
-                : ForViewer(mutation.Recipe!, previous, query.ApplicationUserId, origin);
+            var replacement = PublicRecipe(mutation.Recipe!, origin);
             var index = known.FindIndex(recipe => Compare(replacement, recipe) < 0);
             if (index < 0) known.Add(replacement);
             else known.Insert(index, replacement);
@@ -91,14 +87,12 @@ internal static class RecipeListPages
         return date != 0 ? date : left.Id.CompareTo(right.Id);
     }
 
-    internal static RecipeDto ForViewer(RecipeDto source, RecipeDto? previous, Guid? userId, string origin,
-        bool isFollowing = false) => new()
+    internal static RecipeDto PublicRecipe(RecipeDto source, string origin) => new()
     {
         Id = source.Id,
         UserId = source.UserId,
         UserName = source.UserName,
         UserImageUrl = Rebase(source.UserImageUrl, origin),
-        IsFollowed = previous?.IsFollowed ?? (userId == source.UserId ? source.IsFollowed : isFollowing),
         Name = source.Name,
         Description = source.Description,
         CookingTimeMinutes = source.CookingTimeMinutes,
@@ -106,7 +100,17 @@ internal static class RecipeListPages
         FileUrl = Rebase(source.FileUrl, origin),
         ViewCount = source.ViewCount,
         LikeCount = source.LikeCount,
-        CreationDate = source.CreationDate,
+        CreationDate = source.CreationDate
+    };
+
+    internal static FeedRecipeDto ForViewer(FeedRecipeDto source, FeedRecipeDto? previous, Guid? userId, string origin) => new()
+    {
+        Id = source.Id, UserId = source.UserId, UserName = source.UserName,
+        UserImageUrl = Rebase(source.UserImageUrl, origin),
+        IsFollowed = previous?.IsFollowed ?? (userId == source.UserId && source.IsFollowed),
+        Name = source.Name, Description = source.Description, CookingTimeMinutes = source.CookingTimeMinutes,
+        CategoryId = source.CategoryId, FileUrl = Rebase(source.FileUrl, origin),
+        ViewCount = source.ViewCount, LikeCount = source.LikeCount, CreationDate = source.CreationDate,
         IsLiked = previous?.IsLiked ?? (userId == source.UserId && source.IsLiked),
         IsSaved = previous?.IsSaved ?? (userId == source.UserId && source.IsSaved),
         IsSavedAt = previous?.IsSavedAt ?? (userId == source.UserId ? source.IsSavedAt : null)

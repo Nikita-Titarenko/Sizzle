@@ -12,13 +12,13 @@ namespace Sizzle.Application.Services.Comments;
 public class CommentService(ICommentRepository commentRepository, IRecipeRepository recipeRepository, IUnitOfWork unitOfWork,
     IMapper mapper, ICommentReadCache cache, ILogger<CommentService> logger) : ICommentService
 {
-    public async Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(GetCommentsByRecipeIdDto dto)
+    public async Task<Result<PageResponse<CommentDto>>> GetByRecipeIdAsync(GetCommentsByRecipeIdDto dto, CancellationToken cancellationToken = default)
     {
         var page = await cache.GetOrCreateAsync(dto.RecipeId, dto.PageIndex, dto.PageSize, async () =>
         {
-            if (!await recipeRepository.Exists(dto.RecipeId)) return null;
+            if (!await recipeRepository.Exists(cancellationToken, dto.RecipeId)) return null;
 
-            var comments = await commentRepository.GetByRecipeIdAsync(dto.RecipeId, dto.PageIndex, dto.PageSize);
+            var comments = await commentRepository.GetByRecipeIdAsync(dto.RecipeId, dto.PageIndex, dto.PageSize, cancellationToken);
             return new PageResponse<CommentDto>
             {
                 Data = comments.Data.Select(comment => mapper.Map<CommentDto>(comment)).ToList(),
@@ -35,7 +35,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         return new Result<PageResponse<CommentDto>> { Value = page };
     }
 
-    public async Task<Result<CommentDto>> CreateAsync(CreateCommentDto dto)
+    public async Task<Result<CommentDto>> CreateAsync(CreateCommentDto dto, CancellationToken cancellationToken = default)
     {
         var contentError = ValidateContent(dto.Content);
         if (contentError != null)
@@ -44,7 +44,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             return new Result<CommentDto> { Errors = [contentError] };
         }
 
-        if (!await recipeRepository.Exists(dto.RecipeId))
+        if (!await recipeRepository.Exists(cancellationToken, dto.RecipeId))
         {
             logger.LogWarning("Comment creation rejected: recipe {RecipeId} not found", dto.RecipeId);
             return new Result<CommentDto> { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
@@ -52,7 +52,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
 
         if (dto.ParentId.HasValue)
         {
-            var parent = await commentRepository.GetAsync(dto.ParentId.Value);
+            var parent = await commentRepository.GetAsync(cancellationToken, dto.ParentId.Value);
             if (parent == null)
             {
                 logger.LogWarning("Comment creation rejected: parent {ParentId} not found for recipe {RecipeId}", dto.ParentId, dto.RecipeId);
@@ -71,15 +71,15 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         comment.CreatedAt = DateTime.UtcNow;
 
         commentRepository.Add(comment);
-        await unitOfWork.CommitAsync();
+        await unitOfWork.CommitAsync(cancellationToken);
         logger.LogInformation("Comment {CommentId} created on recipe {RecipeId} by user {UserId}", comment.Id, dto.RecipeId, dto.UserId);
-        var userName = await commentRepository.GetUserNameAsync(dto.UserId);
+        var userName = await commentRepository.GetUserNameAsync(dto.UserId, cancellationToken);
         var created = mapper.Map<CommentDto>(comment, options => options.Items["UserName"] = userName);
         await cache.AddAsync(created);
         return new Result<CommentDto> { Value = created };
     }
 
-    public async Task<Result<CommentDto>> UpdateAsync(Guid commentId, Guid userId, string content)
+    public async Task<Result<CommentDto>> UpdateAsync(Guid commentId, Guid userId, string content, CancellationToken cancellationToken = default)
     {
         var contentError = ValidateContent(content);
         if (contentError != null)
@@ -88,7 +88,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
             return new Result<CommentDto> { Errors = [contentError] };
         }
 
-        var comment = await commentRepository.GetWithUserAsync(commentId);
+        var comment = await commentRepository.GetWithUserAsync(commentId, cancellationToken);
         if (comment == null)
         {
             logger.LogWarning("Comment update rejected: comment {CommentId} not found", commentId);
@@ -102,16 +102,16 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         }
 
         comment.Content = content.Trim();
-        await unitOfWork.CommitAsync();
+        await unitOfWork.CommitAsync(cancellationToken);
         logger.LogInformation("Comment {CommentId} updated by user {UserId}", commentId, userId);
         var updated = mapper.Map<CommentDto>(comment);
         await cache.UpdateAsync(updated);
         return new Result<CommentDto> { Value = updated };
     }
 
-    public async Task<Result> DeleteAsync(Guid commentId, Guid userId)
+    public async Task<Result> DeleteAsync(Guid commentId, Guid userId, CancellationToken cancellationToken = default)
     {
-        var comment = await commentRepository.GetAsync(commentId);
+        var comment = await commentRepository.GetAsync(cancellationToken, commentId);
         if (comment == null)
         {
             logger.LogWarning("Comment deletion rejected: comment {CommentId} not found", commentId);
@@ -125,7 +125,7 @@ public class CommentService(ICommentRepository commentRepository, IRecipeReposit
         }
 
         commentRepository.Remove(comment);
-        await unitOfWork.CommitAsync();
+        await unitOfWork.CommitAsync(cancellationToken);
         logger.LogInformation("Comment {CommentId} deleted by user {UserId}", commentId, userId);
         await cache.InvalidateAsync(comment.RecipeId);
         return new Result();

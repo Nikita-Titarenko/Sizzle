@@ -15,10 +15,10 @@ public class IngredientsController(IIngredientService ingredientService, IMapper
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<IngredientListItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<IEnumerable<IngredientListItemDto>>> GetAll([FromQuery] SearchPaginationRequestModel request)
+    public async Task<ActionResult<IEnumerable<IngredientListItemDto>>> GetAll([FromQuery] SearchPaginationRequestModel request, CancellationToken cancellationToken)
     {
         var ingredients = await ingredientService.GetAllAsync(mapper.Map(request,
-            new GetAllIngredientsDto { LanguageCode = GetLanguageCode() }));
+            new GetAllIngredientsDto { LanguageCode = GetLanguageCode() }), cancellationToken);
 
         return Ok(ingredients);
     }

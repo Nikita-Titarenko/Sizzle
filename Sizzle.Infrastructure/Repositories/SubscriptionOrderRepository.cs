@@ -7,32 +7,32 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public sealed class SubscriptionOrderRepository(ApplicationDbContext dbContext) : ISubscriptionOrderRepository
 {
-    public async Task AddAsync(SubscriptionOrder order)
+    public async Task AddAsync(SubscriptionOrder order, CancellationToken cancellationToken = default)
     {
-        await dbContext.SubscriptionOrders.AddAsync(order);
-        await dbContext.SaveChangesAsync();
+        await dbContext.SubscriptionOrders.AddAsync(order, cancellationToken);
+        await dbContext.SaveChangesAsync(cancellationToken);
     }
 
-    public Task<SubscriptionOrder?> GetAsync(Guid orderId)
+    public Task<SubscriptionOrder?> GetAsync(Guid orderId, CancellationToken cancellationToken = default)
     {
-        return dbContext.SubscriptionOrders.AsNoTracking().FirstOrDefaultAsync(order => order.Id == orderId);
+        return dbContext.SubscriptionOrders.AsNoTracking().FirstOrDefaultAsync(order => order.Id == orderId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<SubscriptionOrder>> GetPaidByUserAsync(Guid userId)
+    public async Task<IReadOnlyList<SubscriptionOrder>> GetPaidByUserAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return await dbContext.SubscriptionOrders.AsNoTracking()
             .Where(order => order.UserId == userId && order.IsPaid)
             .OrderByDescending(order => order.StartsAt)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<SubscriptionOrder?> ActivateAsync(Guid orderId, DateTime now)
+    public async Task<SubscriptionOrder?> ActivateAsync(Guid orderId, DateTime now, CancellationToken cancellationToken = default)
     {
         await using var transaction = dbContext.Database.IsRelational()
-            ? await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable)
+            ? await dbContext.Database.BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken)
             : null;
 
-        var order = await dbContext.SubscriptionOrders.FirstOrDefaultAsync(item => item.Id == orderId);
+        var order = await dbContext.SubscriptionOrders.FirstOrDefaultAsync(item => item.Id == orderId, cancellationToken);
         if (order == null || order.IsPaid)
         {
             return null;
@@ -47,10 +47,10 @@ public sealed class SubscriptionOrderRepository(ApplicationDbContext dbContext) 
             _ => throw new InvalidOperationException("Unknown subscription plan")
         };
         order.IsPaid = true;
-        await dbContext.SaveChangesAsync();
+        await dbContext.SaveChangesAsync(cancellationToken);
         if (transaction != null)
         {
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
         }
 
         return order;

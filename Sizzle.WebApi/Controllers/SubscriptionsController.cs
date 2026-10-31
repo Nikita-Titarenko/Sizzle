@@ -13,8 +13,9 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
     [HttpGet("plans")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<SubscriptionPlanDto>), StatusCodes.Status200OK)]
-    public ActionResult<IReadOnlyList<SubscriptionPlanDto>> GetPlans()
+    public ActionResult<IReadOnlyList<SubscriptionPlanDto>> GetPlans(CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         return Ok(subscriptions.GetPlans());
     }
 
@@ -23,9 +24,9 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
     [ProducesResponseType(typeof(SubscriptionCheckoutDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<SubscriptionCheckoutDto>> Checkout(int planId)
+    public async Task<ActionResult<SubscriptionCheckoutDto>> Checkout(int planId, CancellationToken cancellationToken)
     {
-        var result = await subscriptions.StartCheckoutAsync(GetUserId(), (SubscriptionPlan)planId);
+        var result = await subscriptions.StartCheckoutAsync(GetUserId(), (SubscriptionPlan)planId, cancellationToken);
         return result.IsSuccess ? Ok(result.Value) : HandleErrors(result);
     }
 
@@ -33,11 +34,11 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult> StripeWebhook()
+    public async Task<ActionResult> StripeWebhook(CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(Request.Body);
-        var payload = await reader.ReadToEndAsync();
-        var result = await subscriptions.ProcessWebhookAsync(payload, Request.Headers["Stripe-Signature"].ToString());
+        var payload = await reader.ReadToEndAsync(cancellationToken);
+        var result = await subscriptions.ProcessWebhookAsync(payload, Request.Headers["Stripe-Signature"].ToString(), cancellationToken);
         return result.IsSuccess ? Ok() : HandleErrors(result);
     }
 
@@ -45,8 +46,8 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
     [Authorize]
     [ProducesResponseType(typeof(SubscriptionStatusDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<SubscriptionStatusDto>> GetSubscription()
+    public async Task<ActionResult<SubscriptionStatusDto>> GetSubscription(CancellationToken cancellationToken)
     {
-        return Ok(await subscriptions.GetStatusAsync(GetUserId()));
+        return Ok(await subscriptions.GetStatusAsync(GetUserId(), cancellationToken));
     }
 }

@@ -4,5 +4,5 @@ namespace Sizzle.Application.Services.Categories;
 
 public interface ICategoryService
 {
-    Task<IReadOnlyList<CategoryDto>> GetAllAsync(string languageCode);
+    Task<IReadOnlyList<CategoryDto>> GetAllAsync(string languageCode, CancellationToken cancellationToken = default);
 }

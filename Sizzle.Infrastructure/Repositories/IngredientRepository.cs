@@ -7,25 +7,25 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class IngredientRepository(ApplicationDbContext dbContext) : Repository<Ingredient>(dbContext), IIngredientRepository
 {
-    public Task<List<Ingredient>> GetByIdsAsync(Guid[] ids)
+    public Task<List<Ingredient>> GetByIdsAsync(Guid[] ids, CancellationToken cancellationToken = default)
     {
-        return DbSet.WhereIdIn(ids, ingredient => ingredient.Id).ToListAsync();
+        return DbSet.WhereIdIn(ids, ingredient => ingredient.Id).ToListAsync(cancellationToken);
     }
 
-    public Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids)
+    public Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids, CancellationToken cancellationToken = default)
     {
         return DbSet.AsNoTracking().WhereIdIn(ids, ingredient => ingredient.Id)
-            .Include(ingredient => ingredient.Translations).ToListAsync();
+            .Include(ingredient => ingredient.Translations).ToListAsync(cancellationToken);
     }
 
-    public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames)
+    public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames, CancellationToken cancellationToken = default)
     {
         return DbSet.Include(i => i.Translations)
             .Where(i => i.Translations.Any(t => normalizedNames.Contains(t.Name.ToLower())))
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize, string languageCode)
+    public async Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize, string languageCode, CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking();
 
@@ -48,6 +48,6 @@ public class IngredientRepository(ApplicationDbContext dbContext) : Repository<I
                 .Take(pageSize.Value);
         }
 
-        return await query.Include(i => i.Translations).ToListAsync();
+        return await query.Include(i => i.Translations).ToListAsync(cancellationToken);
     }
 }

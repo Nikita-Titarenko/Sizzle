@@ -84,7 +84,7 @@ public sealed class GoogleAuthFlowService(
             return Failure(profile);
         }
 
-        var result = await userService.LoginWithGoogleAsync(profile.Value!);
+        var result = await userService.LoginWithGoogleAsync(profile.Value!, cancellationToken);
         if (!result.IsSuccess)
         {
             logger.LogWarning("Google callback rejected: user sign-in failed");

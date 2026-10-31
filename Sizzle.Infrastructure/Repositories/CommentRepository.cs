@@ -7,12 +7,12 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class CommentRepository(ApplicationDbContext dbContext) : Repository<Comment>(dbContext), ICommentRepository
 {
-    public async Task<PageResponse<Comment>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize)
+    public async Task<PageResponse<Comment>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
     {
         var query = DbSet.AsNoTracking()
             .Where(comment => comment.RecipeId == recipeId);
 
-        var totalSize = await query.CountAsync();
+        var totalSize = await query.CountAsync(cancellationToken);
         var offset = (long)pageIndex * pageSize;
         if (offset > int.MaxValue)
         {
@@ -30,7 +30,7 @@ public class CommentRepository(ApplicationDbContext dbContext) : Repository<Comm
             .ThenBy(comment => comment.Id)
             .Skip((int)offset)
             .Take(pageSize)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
 
         return new PageResponse<Comment>
         {
@@ -41,16 +41,16 @@ public class CommentRepository(ApplicationDbContext dbContext) : Repository<Comm
         };
     }
 
-    public Task<Comment?> GetWithUserAsync(Guid commentId)
+    public Task<Comment?> GetWithUserAsync(Guid commentId, CancellationToken cancellationToken = default)
     {
         return DbSet.Include(comment => comment.User)
-            .FirstOrDefaultAsync(comment => comment.Id == commentId);
+            .FirstOrDefaultAsync(comment => comment.Id == commentId, cancellationToken);
     }
 
-    public Task<string?> GetUserNameAsync(Guid userId)
+    public Task<string?> GetUserNameAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return DbContext.Users.Where(user => user.Id == userId)
             .Select(user => user.Name)
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(cancellationToken);
     }
 }

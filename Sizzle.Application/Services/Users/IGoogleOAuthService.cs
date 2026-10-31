@@ -11,5 +11,5 @@ public interface IGoogleOAuthService
 
     /// <summary>Verifies an ID token from native Google sign-in (e.g. Android Credential Manager)
     /// that was requested for this server's client ID.</summary>
-    Task<Result<GoogleUserDto>> ValidateIdTokenAsync(string idToken);
+    Task<Result<GoogleUserDto>> ValidateIdTokenAsync(string idToken, CancellationToken cancellationToken = default);
 }

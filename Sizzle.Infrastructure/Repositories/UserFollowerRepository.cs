@@ -6,42 +6,42 @@ namespace Sizzle.Infrastructure.Repositories;
 
 public class UserFollowerRepository(ApplicationDbContext dbContext) : IUserFollowerRepository
 {
-    public Task<bool> UserExistsAsync(Guid userId)
+    public Task<bool> UserExistsAsync(Guid userId, CancellationToken cancellationToken = default)
     {
-        return dbContext.Users.AnyAsync(user => user.Id == userId);
+        return dbContext.Users.AnyAsync(user => user.Id == userId, cancellationToken);
     }
 
-    public Task<UserFollower?> GetAsync(Guid followerId, Guid followingId)
+    public Task<UserFollower?> GetAsync(Guid followerId, Guid followingId, CancellationToken cancellationToken = default)
     {
-        return dbContext.UserFollowers.FindAsync(followerId, followingId).AsTask();
+        return dbContext.UserFollowers.FindAsync([followerId, followingId], cancellationToken).AsTask();
     }
 
-    public Task<List<Guid>> GetFollowerIdsAsync(Guid followingId)
+    public Task<List<Guid>> GetFollowerIdsAsync(Guid followingId, CancellationToken cancellationToken = default)
     {
         return dbContext.UserFollowers.AsNoTracking()
             .Where(follow => follow.FollowingId == followingId)
             .Select(follow => follow.FollowerId)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public Task<List<ApplicationUser>> GetFollowersAsync(Guid userId)
+    public Task<List<ApplicationUser>> GetFollowersAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return dbContext.UserFollowers.AsNoTracking()
             .Where(follow => follow.FollowingId == userId)
             .OrderByDescending(follow => follow.CreatedAt)
             .ThenBy(follow => follow.FollowerId)
             .Select(follow => follow.Follower)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
-    public Task<List<ApplicationUser>> GetFollowingAsync(Guid userId)
+    public Task<List<ApplicationUser>> GetFollowingAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return dbContext.UserFollowers.AsNoTracking()
             .Where(follow => follow.FollowerId == userId)
             .OrderByDescending(follow => follow.CreatedAt)
             .ThenBy(follow => follow.FollowingId)
             .Select(follow => follow.Following)
-            .ToListAsync();
+            .ToListAsync(cancellationToken);
     }
 
     public void Add(UserFollower follower)

@@ -98,7 +98,7 @@ public sealed class GoogleOAuthService(HttpClient httpClient, IOptions<GoogleOAu
         }
     }
 
-    public async Task<Result<GoogleUserDto>> ValidateIdTokenAsync(string idToken)
+    public async Task<Result<GoogleUserDto>> ValidateIdTokenAsync(string idToken, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(_options.ClientId))
         {
@@ -107,6 +107,7 @@ public sealed class GoogleOAuthService(HttpClient httpClient, IOptions<GoogleOAu
 
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
             {
                 Audience = [_options.ClientId]

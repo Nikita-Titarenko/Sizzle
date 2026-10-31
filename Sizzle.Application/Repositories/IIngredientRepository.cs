@@ -4,11 +4,11 @@ namespace Sizzle.Application.Repositories;
 
 public interface IIngredientRepository : IRepository<Ingredient>
 {
-    Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize, string languageCode);
+    Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize, string languageCode, CancellationToken cancellationToken = default);
 
-    Task<List<Ingredient>> GetByIdsAsync(Guid[] ids);
+    Task<List<Ingredient>> GetByIdsAsync(Guid[] ids, CancellationToken cancellationToken = default);
 
-    Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids);
+    Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids, CancellationToken cancellationToken = default);
 
-    Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames);
+    Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames, CancellationToken cancellationToken = default);
 }

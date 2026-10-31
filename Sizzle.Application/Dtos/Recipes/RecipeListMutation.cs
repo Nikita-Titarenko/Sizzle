@@ -11,5 +11,5 @@ public sealed record RecipeListSnapshot(
     int LikeCount,
     DateTime CreationDate);
 
-public sealed record RecipeListMutation(RecipeListSnapshot? Before, RecipeListSnapshot? After, RecipeDto? Recipe,
+public sealed record RecipeListMutation(RecipeListSnapshot? Before, RecipeListSnapshot? After, FeedRecipeDto? Recipe,
     IReadOnlyCollection<Guid>? FollowerIds = null);

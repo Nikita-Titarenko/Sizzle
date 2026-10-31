@@ -7,6 +7,7 @@ using Sizzle.Application.Options;
 using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Application.Services.Ingredients;
+using Sizzle.Application.Services.Categories;
 using Sizzle.Application.Services.Comments;
 using Sizzle.Application.Services.Recipes;
 using Sizzle.Application.Services.Subscriptions;
@@ -76,6 +77,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<IUserReadCache, UserReadCache>();
         services.AddScoped<ISubscriptionReadCache, SubscriptionReadCache>();
         services.AddScoped<IIngredientReadCache, IngredientReadCache>();
+        services.AddScoped<ICategoryReadCache, CategoryReadCache>();
         services.AddScoped<ICommentReadCache, CommentReadCache>();
         if (configuration.GetValue<bool>("Cache:Enabled"))
         {

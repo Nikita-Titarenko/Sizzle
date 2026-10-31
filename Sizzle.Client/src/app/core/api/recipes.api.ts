@@ -4,6 +4,7 @@ import { environment } from '../../../environments/environment';
 import {
   PageResponse,
   Recipe,
+  FeedRecipe,
   RecipeDetails,
   RecipeFormValue,
   RecipeLike,
@@ -20,7 +21,7 @@ export class RecipesApi {
   }
 
   getPersonalized(query: RecipeQuery) {
-    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/personalized`, { params: toParams(query) });
+    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/personalized`, { params: toParams(query) });
   }
 
   getMine(query: RecipeQuery) {
@@ -48,7 +49,7 @@ export class RecipesApi {
   }
 
   registerView(id: string) {
-    return this.http.post<Recipe>(`${this.baseUrl}/${id}/update-view`, null);
+    return this.http.post<FeedRecipe>(`${this.baseUrl}/${id}/update-view`, null);
   }
 }
 

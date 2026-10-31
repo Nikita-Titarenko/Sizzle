@@ -6,23 +6,23 @@ namespace Sizzle.Application.Repositories;
 
 public interface IRecipeRepository : IRepository<Recipe>
 {
-	Task<PageResponse<Recipe>> GetRecipesAsync(GetRecipesDto dto);
-	Task<ApplicationUser?> GetAuthorForMutationAsync(Guid authorId);
+	Task<PageResponse<Recipe>> GetRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
+	Task<ApplicationUser?> GetAuthorForMutationAsync(Guid authorId, CancellationToken cancellationToken = default);
 
-	Task<PageResponse<Recipe>> GetSavedRecipesAsync(GetRecipesDto dto);
-	Task<IReadOnlyList<(Guid Id, DateTime? SavedAt)>> GetSavedRecipeIdsAsync(GetRecipesDto dto, Guid[] pendingIds);
+	Task<PageResponse<Recipe>> GetSavedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
+	Task<IReadOnlyList<(Guid Id, DateTime? SavedAt)>> GetSavedRecipeIdsAsync(GetRecipesDto dto, Guid[] pendingIds, CancellationToken cancellationToken = default);
 
-	Task<IReadOnlyList<RecipeInteractionData>> GetRecentInteractionsAsync(Guid userId, int count);
+	Task<IReadOnlyList<RecipeInteractionData>> GetRecentInteractionsAsync(Guid userId, int count, CancellationToken cancellationToken = default);
 
-	Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationCandidatesAsync(GetRecipesDto dto);
+	Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationCandidatesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 
-	Task<IReadOnlyList<Recipe>> GetByIdsWithAuthorAsync(IReadOnlyCollection<Guid> ids, Guid userId);
+	Task<IReadOnlyList<Recipe>> GetByIdsWithAuthorAsync(IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken cancellationToken = default);
 
-	Task<Recipe?> GetWithDetailsAsync(Guid recipeId, Guid? userId = null);
+	Task<Recipe?> GetWithDetailsAsync(Guid recipeId, Guid? userId = null, CancellationToken cancellationToken = default);
 
-	Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId);
+	Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default);
 
-	Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId);
+	Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default);
 
 	void AddSteps(IEnumerable<RecipeStep> steps);
 
@@ -30,11 +30,11 @@ public interface IRecipeRepository : IRepository<Recipe>
 
 	void RemoveIngredients(IEnumerable<RecipeIngredient> ingredients);
 
-	Task<Recipe?> GetOwnedByUserAsync(Guid recipeId, Guid applicationUserId);
+	Task<Recipe?> GetOwnedByUserAsync(Guid recipeId, Guid applicationUserId, CancellationToken cancellationToken = default);
 
-	Task<ApplicationUserRecipe?> GetUserRecipeAsync(Guid applicationUserId, Guid recipeId);
+	Task<ApplicationUserRecipe?> GetUserRecipeAsync(Guid applicationUserId, Guid recipeId, CancellationToken cancellationToken = default);
 
-	Task<bool?> ToggleLikeAsync(Guid applicationUserId, Guid recipeId);
+	Task<bool?> ToggleLikeAsync(Guid applicationUserId, Guid recipeId, CancellationToken cancellationToken = default);
 
 	void AddUserRecipe(ApplicationUserRecipe userRecipe);
 }

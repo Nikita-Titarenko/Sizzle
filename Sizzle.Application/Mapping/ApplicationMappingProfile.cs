@@ -60,7 +60,9 @@ public class ApplicationMappingProfile : Profile
             .ForMember(destination => destination.UserId, options => options.MapFrom(source => source.ApplicationUserId))
             .ForMember(destination => destination.UserName, options => options.MapFrom(source => source.ApplicationUser == null ? string.Empty : source.ApplicationUser.Name))
             .ForMember(destination => destination.UserImageUrl, options => options.MapFrom<RecipeUserImageUrlResolver>())
-            .ForMember(destination => destination.FileUrl, options => options.MapFrom<RecipeFileUrlResolver>())
+            .ForMember(destination => destination.FileUrl, options => options.MapFrom<RecipeFileUrlResolver>());
+        CreateMap<Recipe, FeedRecipeDto>()
+            .IncludeBase<Recipe, RecipeDto>()
             .ForMember(destination => destination.IsFollowed, options => options.MapFrom((source, _, _, context) =>
                 ViewerId(context) is Guid viewerId && source.ApplicationUser?.Followers.Any(follow => follow.FollowerId == viewerId) == true))
             .ForMember(destination => destination.IsLiked, options => options.MapFrom((source, _, _, context) =>
@@ -70,7 +72,7 @@ public class ApplicationMappingProfile : Profile
             .ForMember(destination => destination.IsSavedAt, options => options.MapFrom((source, _, _, context) =>
                 ViewerId(context).HasValue ? source.ApplicationUserRecipes.FirstOrDefault(link => link.IsSaved)?.IsSavedAt : null));
         CreateMap<Recipe, RecipeDetailsDto>()
-            .IncludeBase<Recipe, RecipeDto>()
+            .IncludeBase<Recipe, FeedRecipeDto>()
             .ForMember(destination => destination.Steps, options => options.MapFrom<RecipeDetailsStepsResolver>())
             .ForMember(destination => destination.Ingredients, options => options.MapFrom<RecipeDetailsIngredientsResolver>());
     }

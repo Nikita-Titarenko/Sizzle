@@ -22,10 +22,10 @@ public class CommentsController(ICommentService commentService, IMapper mapper) 
     [ProducesResponseType(typeof(PageResponse<CommentDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<PageResponse<CommentDto>>> GetByRecipeId(Guid recipeId, [FromQuery] PaginationRequestModel request)
+    public async Task<ActionResult<PageResponse<CommentDto>>> GetByRecipeId(Guid recipeId, [FromQuery] PaginationRequestModel request, CancellationToken cancellationToken)
     {
         var result = await commentService.GetByRecipeIdAsync(mapper.Map(request,
-            new GetCommentsByRecipeIdDto { RecipeId = recipeId }));
+            new GetCommentsByRecipeIdDto { RecipeId = recipeId }), cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
@@ -41,10 +41,10 @@ public class CommentsController(ICommentService commentService, IMapper mapper) 
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CommentDto>> Create(Guid recipeId, CreateCommentRequestModel request)
+    public async Task<ActionResult<CommentDto>> Create(Guid recipeId, CreateCommentRequestModel request, CancellationToken cancellationToken)
     {
         var result = await commentService.CreateAsync(mapper.Map(request,
-            new CreateCommentDto { RecipeId = recipeId, UserId = GetUserId() }));
+            new CreateCommentDto { RecipeId = recipeId, UserId = GetUserId() }), cancellationToken);
 
         return !result.IsSuccess ? HandleErrors(result) : StatusCode(StatusCodes.Status201Created, result.Value);
     }
@@ -63,9 +63,9 @@ public class CommentsController(ICommentService commentService, IMapper mapper) 
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<CommentDto>> Update(Guid commentId, UpdateCommentRequestModel request)
+    public async Task<ActionResult<CommentDto>> Update(Guid commentId, UpdateCommentRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await commentService.UpdateAsync(commentId, GetUserId(), request.Content);
+        var result = await commentService.UpdateAsync(commentId, GetUserId(), request.Content, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
@@ -81,9 +81,9 @@ public class CommentsController(ICommentService commentService, IMapper mapper) 
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Delete(Guid commentId)
+    public async Task<ActionResult> Delete(Guid commentId, CancellationToken cancellationToken)
     {
-        var result = await commentService.DeleteAsync(commentId, GetUserId());
+        var result = await commentService.DeleteAsync(commentId, GetUserId(), cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 }

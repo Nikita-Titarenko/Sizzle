@@ -5,11 +5,11 @@ namespace Sizzle.Application.Services.Users;
 
 public interface IUserFollowerService
 {
-    Task<Result> FollowAsync(Guid followerId, Guid followingId);
+    Task<Result> FollowAsync(Guid followerId, Guid followingId, CancellationToken cancellationToken = default);
 
-    Task<Result> UnfollowAsync(Guid followerId, Guid followingId);
+    Task<Result> UnfollowAsync(Guid followerId, Guid followingId, CancellationToken cancellationToken = default);
 
-    Task<List<UserDto>> GetFollowersAsync(Guid userId);
+    Task<List<UserDto>> GetFollowersAsync(Guid userId, CancellationToken cancellationToken = default);
 
-    Task<List<UserDto>> GetFollowingAsync(Guid userId);
+    Task<List<UserDto>> GetFollowingAsync(Guid userId, CancellationToken cancellationToken = default);
 }

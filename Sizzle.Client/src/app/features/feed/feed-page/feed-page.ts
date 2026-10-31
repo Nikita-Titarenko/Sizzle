@@ -16,7 +16,7 @@ import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
-import { Category, IngredientChoice, Recipe } from '../../../core/models';
+import { Category, IngredientChoice, FeedRecipe } from '../../../core/models';
 import { Icon } from '../../../shared/components/icon/icon';
 import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
 import { CommentsDrawer } from '../comments-drawer/comments-drawer';
@@ -48,7 +48,7 @@ export class FeedPage {
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
 
-  readonly recipes = signal<Recipe[]>([]);
+  readonly recipes = signal<FeedRecipe[]>([]);
   readonly categories = signal<Category[]>([]);
   readonly categoryId = signal<string | null>(null);
   readonly selectedIngredients = signal<IngredientChoice[]>([]);
@@ -58,7 +58,7 @@ export class FeedPage {
   readonly error = signal('');
   readonly toast = signal('');
   readonly muted = signal(true);
-  readonly commentsFor = signal<Recipe | null>(null);
+  readonly commentsFor = signal<FeedRecipe | null>(null);
 
   private readonly total = signal<number | null>(null);
   private pageIndex = 0;
@@ -174,7 +174,7 @@ export class FeedPage {
     }
   }
 
-  toggleLike(recipe: Recipe): void {
+  toggleLike(recipe: FeedRecipe): void {
     if (!this.requireLogin()) {
       return;
     }
@@ -188,7 +188,7 @@ export class FeedPage {
     });
   }
 
-  toggleFollow(recipe: Recipe): void {
+  toggleFollow(recipe: FeedRecipe): void {
     if (!this.requireLogin()) {
       return;
     }
@@ -202,7 +202,7 @@ export class FeedPage {
     });
   }
 
-  async share(recipe: Recipe): Promise<void> {
+  async share(recipe: FeedRecipe): Promise<void> {
     const url = new URL(`/recipes/${recipe.id}`, location.origin).toString();
     if (navigator.share) {
       await navigator.share({ title: recipe.name, url }).catch(() => undefined);
@@ -252,7 +252,7 @@ export class FeedPage {
       });
   }
 
-  private patch(id: string, changes: Partial<Recipe>): void {
+  private patch(id: string, changes: Partial<FeedRecipe>): void {
     this.recipes.update((list) => list.map((r) => (r.id === id ? { ...r, ...changes } : r)));
   }
 

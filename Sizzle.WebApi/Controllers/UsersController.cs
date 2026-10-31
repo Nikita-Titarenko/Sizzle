@@ -30,9 +30,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult> Follow(Guid userId)
+    public async Task<ActionResult> Follow(Guid userId, CancellationToken cancellationToken)
     {
-        var result = await followerService.FollowAsync(GetUserId(), userId);
+        var result = await followerService.FollowAsync(GetUserId(), userId, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
@@ -46,9 +46,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> Unfollow(Guid userId)
+    public async Task<ActionResult> Unfollow(Guid userId, CancellationToken cancellationToken)
     {
-        var result = await followerService.UnfollowAsync(GetUserId(), userId);
+        var result = await followerService.UnfollowAsync(GetUserId(), userId, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
@@ -56,18 +56,18 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [Authorize]
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<UserDto>>> GetFollowers()
+    public async Task<ActionResult<List<UserDto>>> GetFollowers(CancellationToken cancellationToken)
     {
-        return Ok(await followerService.GetFollowersAsync(GetUserId()));
+        return Ok(await followerService.GetFollowersAsync(GetUserId(), cancellationToken));
     }
 
     [HttpGet("following")]
     [Authorize]
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult<List<UserDto>>> GetFollowing()
+    public async Task<ActionResult<List<UserDto>>> GetFollowing(CancellationToken cancellationToken)
     {
-        return Ok(await followerService.GetFollowingAsync(GetUserId()));
+        return Ok(await followerService.GetFollowingAsync(GetUserId(), cancellationToken));
     }
 
     /// <summary>Register a user and send a confirmation email.</summary>
@@ -80,9 +80,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(RegisterResultDto), StatusCodes.Status202Accepted)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<RegisterResultDto>> RegisterUser(RegisterUserRequestModel request)
+    public async Task<ActionResult<RegisterResultDto>> RegisterUser(RegisterUserRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await userService.RegisterUserAsync(mapper.Map<RegisterUserDto>(request));
+        var result = await userService.RegisterUserAsync(mapper.Map<RegisterUserDto>(request), cancellationToken);
 
         if (!result.IsSuccess)
         {
@@ -103,9 +103,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(ConfirmEmailResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<ConfirmEmailResultDto>> ConfirmEmail(EmailConfirmationRequestModel request)
+    public async Task<ActionResult<ConfirmEmailResultDto>> ConfirmEmail(EmailConfirmationRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await userService.ConfirmEmailAsync(mapper.Map<ConfirmEmailDto>(request));
+        var result = await userService.ConfirmEmailAsync(mapper.Map<ConfirmEmailDto>(request), cancellationToken);
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
@@ -120,9 +120,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> ResendConfirmEmail(ResendEmailConfirmationRequestModel request)
+    public async Task<ActionResult> ResendConfirmEmail(ResendEmailConfirmationRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await userService.ResendRegistrationEmailAsync(request.UserId);
+        var result = await userService.ResendRegistrationEmailAsync(request.UserId, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
@@ -136,9 +136,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<LoginResultDto>> Login(LoginRequestModel request)
+    public async Task<ActionResult<LoginResultDto>> Login(LoginRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await userService.LoginAsync(mapper.Map<LoginUserDto>(request));
+        var result = await userService.LoginAsync(mapper.Map<LoginUserDto>(request), cancellationToken);
 
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
@@ -147,7 +147,11 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     /// <remarks>Creates a short-lived state cookie to validate the Google callback.</remarks>
     [HttpGet("google-login")]
     [ProducesResponseType(StatusCodes.Status302Found)]
-    public IActionResult GoogleLogin() => googleAuthFlowService.Start(HttpContext);
+    public IActionResult GoogleLogin(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return googleAuthFlowService.Start(HttpContext);
+    }
 
     /// <summary>Complete Google sign-in and return an application JWT.</summary>
     /// <remarks>
@@ -170,15 +174,15 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [HttpPost("google-token")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<LoginResultDto>> GoogleToken(GoogleIdTokenRequestModel request)
+    public async Task<ActionResult<LoginResultDto>> GoogleToken(GoogleIdTokenRequestModel request, CancellationToken cancellationToken)
     {
-        var profile = await googleOAuthService.ValidateIdTokenAsync(request.IdToken);
+        var profile = await googleOAuthService.ValidateIdTokenAsync(request.IdToken, cancellationToken);
         if (!profile.IsSuccess)
         {
             return HandleErrors(profile);
         }
 
-        var result = await userService.LoginWithGoogleAsync(profile.Value!);
+        var result = await userService.LoginWithGoogleAsync(profile.Value!, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
@@ -193,9 +197,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
-    public async Task<ActionResult> RegisterDevice(DeviceTokenRequestModel request)
+    public async Task<ActionResult> RegisterDevice(DeviceTokenRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await deviceTokenService.RegisterAsync(GetUserId(), request.Token);
+        var result = await deviceTokenService.RegisterAsync(GetUserId(), request.Token, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
@@ -209,9 +213,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> UnregisterDevice([FromBody] DeviceTokenRequestModel request)
+    public async Task<ActionResult> UnregisterDevice([FromBody] DeviceTokenRequestModel request, CancellationToken cancellationToken)
     {
-        var result = await deviceTokenService.UnregisterAsync(GetUserId(), request.Token);
+        var result = await deviceTokenService.UnregisterAsync(GetUserId(), request.Token, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
@@ -220,9 +224,9 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [HttpGet("{userId:guid}")]
     [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<UserDto>> GetUser(Guid userId)
+    public async Task<ActionResult<UserDto>> GetUser(Guid userId, CancellationToken cancellationToken)
     {
-        var result = await userService.GetUserDtoAsync(userId);
+        var result = await userService.GetUserDtoAsync(userId, cancellationToken);
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
@@ -238,11 +242,11 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
-    public async Task<ActionResult> UpdateUserProfile([FromForm] UpdateUserProfileRequestModel request)
+    public async Task<ActionResult> UpdateUserProfile([FromForm] UpdateUserProfileRequestModel request, CancellationToken cancellationToken)
     {
         await using var stream = request.Icon?.OpenReadStream();
         var result = await userService.UpdateUserProfileAsync(GetUserId(), mapper.Map(request,
-            new UpdateUserProfileDto { Name = request.Name, Icon = stream }));
+            new UpdateUserProfileDto { Name = request.Name, Icon = stream }), cancellationToken);
 
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }

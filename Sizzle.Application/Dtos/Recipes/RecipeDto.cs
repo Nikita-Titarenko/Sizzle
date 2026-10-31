@@ -10,8 +10,6 @@ public class RecipeDto
 
     public string? UserImageUrl { get; init; }
 
-    public bool IsFollowed { get; init; }
-
     public string Name { get; init; } = string.Empty;
 
     public string Description { get; init; } = string.Empty;
@@ -27,10 +25,4 @@ public class RecipeDto
     public int LikeCount { get; set; }
 
     public DateTime CreationDate { get; init; }
-
-    public bool IsLiked { get; set; }
-
-    public bool IsSaved { get; set; }
-
-    public DateTime? IsSavedAt { get; set; }
 }

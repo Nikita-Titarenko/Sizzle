@@ -14,10 +14,10 @@ namespace Sizzle.Infrastructure.Services;
 
 public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCacheOptions> options, IHttpContextAccessor accessor, IConnectionMultiplexer? connection = null) : IRecipeReadCache
 {
-    private const string CachePrefix = "sizzle:recipes:cache:entries:v5:";
-    private const string RegistryKey = "sizzle:recipes:cache:list-registry:v5";
-    private const string LockKey = "sizzle:recipes:cache:list-lock:v5";
-    private const string RelatedRegistryKey = "sizzle:recipes:cache:related-registry:v5";
+    private const string CachePrefix = "sizzle:recipes:cache:entries:v6:";
+    private const string RegistryKey = "sizzle:recipes:cache:list-registry:v6";
+    private const string LockKey = "sizzle:recipes:cache:list-lock:v6";
+    private const string RelatedRegistryKey = "sizzle:recipes:cache:related-registry:v6";
     private readonly IDatabase? redis = connection?.GetDatabase();
     private readonly DistributedCacheEntryOptions entryOptions = new()
     {
@@ -161,7 +161,7 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                             var afterMatches = RecipeListPages.Matches(mutation.After, item.Query);
                             var data = item.Page.Data.Where(recipe => recipe.Id != mutation.After.Id).ToList();
                             if (afterMatches && item.Page.Data.Any(recipe => recipe.Id == mutation.After.Id))
-                                data.Add(RecipeListPages.ForViewer(mutation.Recipe!, item.Page.Data.First(recipe => recipe.Id == mutation.After.Id), item.Query.ApplicationUserId, item.Entry.Origin));
+                                data.Add(RecipeListPages.PublicRecipe(mutation.Recipe!, item.Entry.Origin));
                             page = new PageResponse<RecipeDto>
                             {
                                 Data = data.OrderByDescending(recipe => recipe.LikeCount)
@@ -200,27 +200,6 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
         try
         {
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
-            await redis!.SortedSetRemoveRangeByScoreAsync(RegistryKey, double.NegativeInfinity, now);
-            foreach (var member in await redis.SortedSetRangeByRankAsync(RegistryKey))
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var entry = JsonSerializer.Deserialize<ListEntry>((string)member!)!;
-                var query = JsonSerializer.Deserialize<GetRecipesDto>(entry.Key["recipes:list:".Length..])!;
-                if (query.ApplicationUserId != followerId) continue;
-
-                var bytes = await cache.GetAsync(entry.CacheKey, cancellationToken);
-                var remaining = await redis.KeyTimeToLiveAsync(entry.CacheKey);
-                if (bytes == null || remaining is not { Ticks: > 0 })
-                {
-                    await redis.SortedSetRemoveAsync(RegistryKey, member);
-                    continue;
-                }
-
-                var page = JsonNode.Parse(bytes)!;
-                if (!UpdateFollowing(page["Data"]!.AsArray(), followingId, isFollowing)) continue;
-                await WriteFollowAsync(entry.CacheKey, page, remaining.Value, cancellationToken);
-            }
-
             await redis.SortedSetRemoveRangeByScoreAsync(RelatedRegistryKey, double.NegativeInfinity, now);
             foreach (var member in await redis.SortedSetRangeByRankAsync(RelatedRegistryKey))
             {
@@ -332,7 +311,7 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
             }
             else if (entry.Key.StartsWith("recipes:personalized:feed:", StringComparison.Ordinal))
             {
-                var feed = JsonSerializer.Deserialize<PageResponse<RecipeDto>>(bytes)!;
+                var feed = JsonSerializer.Deserialize<PageResponse<FeedRecipeDto>>(bytes)!;
                 if (!feed.Data.Any(recipe => recipe.Id == mutation.After!.Id)) continue;
                 using var query = JsonDocument.Parse(entry.Key[entry.Key.IndexOf('{')..]);
                 var viewerId = query.RootElement.GetProperty("ApplicationUserId").GetGuid();
@@ -343,7 +322,7 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                 var recipes = feed.Data.Where(recipe => recipe.Id != mutation.After.Id || matches)
                     .Select(recipe => recipe.Id == mutation.After.Id
                         ? RecipeListPages.ForViewer(mutation.Recipe!, recipe, viewerId, origin) : recipe).ToArray();
-                await cache.SetAsync(entry.CacheKey, JsonSerializer.SerializeToUtf8Bytes(new PageResponse<RecipeDto>
+                await cache.SetAsync(entry.CacheKey, JsonSerializer.SerializeToUtf8Bytes(new PageResponse<FeedRecipeDto>
                 {
                     Data = recipes, TotalSize = feed.TotalSize - (matches ? 0 : 1),
                     PageIndex = feed.PageIndex, PageSize = feed.PageSize

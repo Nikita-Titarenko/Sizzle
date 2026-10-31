@@ -3,11 +3,14 @@ using Sizzle.Application.Repositories;
 
 namespace Sizzle.Application.Services.Categories;
 
-public class CategoryService(ICategoryRepository categoryRepository) : ICategoryService
+public class CategoryService(ICategoryRepository categoryRepository, ICategoryReadCache cache) : ICategoryService
 {
-    public async Task<IReadOnlyList<CategoryDto>> GetAllAsync(string languageCode)
+    public Task<IReadOnlyList<CategoryDto>> GetAllAsync(string languageCode, CancellationToken cancellationToken = default) =>
+        cache.GetOrCreateAsync(languageCode, token => GetAllCoreAsync(languageCode, token), cancellationToken);
+
+    private async Task<IReadOnlyList<CategoryDto>> GetAllCoreAsync(string languageCode, CancellationToken cancellationToken)
     {
-        var categories = await categoryRepository.GetAllAsync();
+        var categories = await categoryRepository.GetAllAsync(cancellationToken);
         return categories.Select(category => new CategoryDto
         {
             Id = category.Id,
