@@ -3,10 +3,11 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { LANGUAGES, Language, LanguageService } from '../../core/services/language.service';
 import { Icon } from '../../shared/components/icon/icon';
+import { TranslatePipe } from '../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-header',
-  imports: [Icon, RouterLink, RouterLinkActive],
+  imports: [TranslatePipe, Icon, RouterLink, RouterLinkActive],
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })

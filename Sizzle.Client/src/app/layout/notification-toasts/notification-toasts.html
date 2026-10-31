@@ -7,9 +7,13 @@
           (click)="notifications.dismiss(item.recipeId)"
         >
           <b>{{ item.authorName }}</b>
-          posted “{{ item.recipeName }}”
+          {{ 'notifications.posted' | t: { recipe: item.recipeName } }}
         </a>
-        <button class="link" aria-label="Dismiss" (click)="notifications.dismiss(item.recipeId)">
+        <button
+          class="link"
+          [attr.aria-label]="'notifications.dismiss' | t"
+          (click)="notifications.dismiss(item.recipeId)"
+        >
           <app-icon name="close" />
         </button>
       </div>

@@ -5,18 +5,22 @@
   </a>
   <nav class="nav">
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      For you
+      {{ 'nav.forYou' | t }}
     </a>
-    <a routerLink="/explore" routerLinkActive="active">Explore</a>
+    <a routerLink="/explore" routerLinkActive="active">{{ 'nav.explore' | t }}</a>
     @if (auth.isLoggedIn()) {
-      <a routerLink="/recipes/new" routerLinkActive="active">New recipe</a>
-      <a routerLink="/profile" routerLinkActive="active">Profile</a>
-      <button class="link" (click)="logout()">Log out</button>
+      <a routerLink="/recipes/new" routerLinkActive="active">{{ 'nav.newRecipe' | t }}</a>
+      <a routerLink="/profile" routerLinkActive="active">{{ 'nav.profile' | t }}</a>
+      <button class="link" (click)="logout()">{{ 'nav.logOut' | t }}</button>
     } @else {
-      <a routerLink="/login" routerLinkActive="active">Log in</a>
-      <a routerLink="/register" class="btn small">Sign up</a>
+      <a routerLink="/login" routerLinkActive="active">{{ 'nav.logIn' | t }}</a>
+      <a routerLink="/register" class="btn small">{{ 'nav.signUp' | t }}</a>
     }
-    <select class="language" aria-label="Content language" (change)="changeLanguage($event)">
+    <select
+      class="language"
+      [attr.aria-label]="'nav.language' | t"
+      (change)="changeLanguage($event)"
+    >
       @for (option of languages; track option.code) {
         <option [value]="option.code" [selected]="option.code === language.current()">
           {{ option.code.toUpperCase() }} · {{ option.label }}
