@@ -1,3 +1,5 @@
+import { TranslationKey } from '../i18n/translations';
+
 // Mirrors the API's FileService rules so users get feedback before uploading.
 export const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 export const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.avi', '.mkv'];
@@ -15,16 +17,22 @@ export function isVideoFile(file: File): boolean {
   return VIDEO_EXTENSIONS.includes(extensionOf(file.name));
 }
 
-/** Returns why the API would reject the file, or null when it is acceptable. */
-export function validateMedia(file: File, allowVideo: boolean): string | null {
+export interface MediaProblem {
+  key: TranslationKey;
+  params: { file: string };
+}
+
+/** Returns why the API would reject the file (as a message key), or null when it is acceptable. */
+export function validateMedia(file: File, allowVideo: boolean): MediaProblem | null {
   const extension = extensionOf(file.name);
+  const problem = (key: TranslationKey): MediaProblem => ({ key, params: { file: file.name } });
   if (IMAGE_EXTENSIONS.includes(extension)) {
-    return file.size <= MAX_IMAGE_BYTES ? null : `${file.name} is larger than 5 MB.`;
+    return file.size <= MAX_IMAGE_BYTES ? null : problem('media.imageTooLarge');
   }
   if (allowVideo && VIDEO_EXTENSIONS.includes(extension)) {
-    return file.size <= MAX_VIDEO_BYTES ? null : `${file.name} is larger than 100 MB.`;
+    return file.size <= MAX_VIDEO_BYTES ? null : problem('media.videoTooLarge');
   }
-  return `${file.name} is not a supported ${allowVideo ? 'image or video' : 'image'} format.`;
+  return problem(allowVideo ? 'media.unsupportedMedia' : 'media.unsupportedImage');
 }
 
 /** Value for an <input type="file"> accept attribute. */

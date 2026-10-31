@@ -1,4 +1,6 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject } from '@angular/core';
+import { ApiError } from '../models';
 import { Language, LanguageService } from '../services/language.service';
 import { en } from './en';
 import { TranslationKey, Translations } from './translations';
@@ -24,5 +26,25 @@ export class I18n {
     return params
       ? template.replace(/\{(\w+)\}/g, (match, name) => String(params[name] ?? match))
       : template;
+  }
+
+  /**
+   * Display text for a failed request. Validation errors come from the API as a list of
+   * `{ key, field, message }` and are shown as sent; everything else gets a local message.
+   */
+  error(err: unknown): string {
+    if (!(err instanceof HttpErrorResponse)) {
+      return this.t('errors.generic');
+    }
+    if (Array.isArray(err.error) && err.error.length) {
+      return err.error.map((e: ApiError) => e.message).join('. ');
+    }
+    if ([0, 502, 503, 504].includes(err.status)) {
+      return this.t('errors.unreachable');
+    }
+    if (typeof err.error === 'string' && err.error && !err.error.trimStart().startsWith('<')) {
+      return err.error;
+    }
+    return this.t('errors.requestFailed', { status: err.status });
   }
 }
