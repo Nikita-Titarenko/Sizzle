@@ -12,10 +12,22 @@ import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { Icon } from '../../../shared/components/icon/icon';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { Loader } from '../../../shared/components/loader/loader';
+import { StatusView } from '../../../shared/components/status-view/status-view';
 
 @Component({
   selector: 'app-recipe-detail',
-  imports: [TranslatePipe, Icon, UserAvatar, UnitLabelPipe, DatePipe, RouterLink, CommentSection],
+  imports: [
+    TranslatePipe,
+    Icon,
+    UserAvatar,
+    UnitLabelPipe,
+    DatePipe,
+    RouterLink,
+    CommentSection,
+    Loader,
+    StatusView,
+  ],
   templateUrl: './recipe-detail.html',
   styleUrl: './recipe-detail.scss',
 })

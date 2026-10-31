@@ -1,4 +1,5 @@
 // Design tokens. Components use these instead of raw colors, so the palette lives in one place.
+// Dark is the default theme; ThemeService sets data-theme="light" on <html> for the light one.
 :root {
   color-scheme: dark; // native controls, scrollbars and <select> popups follow the theme
 
@@ -25,9 +26,41 @@
   --danger: #ff5c5c;
   --danger-soft: rgb(255 92 92 / 0.14);
 
+  --success: #4ade80;
+
   --overlay: rgb(0 0 0 / 0.6);
+  --glass: rgb(20 20 23 / 0.85); // translucent bars over scrolling content
   --shadow: 0 16px 40px rgb(0 0 0 / 0.5);
 
   --radius: 14px;
   --header-height: 60px;
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #fffaf5;
+  --surface: #ffffff;
+  --surface-2: #fdf5ee;
+  --surface-3: #f4e9df;
+
+  --border: #eadfd4;
+  --border-strong: #d8c8b9;
+
+  --text: #2b2118;
+  --muted: #8a7b6e;
+
+  --accent: #e8590c;
+  --accent-hover: #d14d08;
+  --accent-dark: #c2410c;
+  --accent-soft: rgb(232 89 12 / 0.1);
+
+  --like: #e03150;
+  --danger: #c92a2a;
+  --danger-soft: rgb(201 42 42 / 0.08);
+  --success: #15803d;
+
+  --overlay: rgb(43 33 24 / 0.45);
+  --glass: rgb(255 255 255 / 0.85);
+  --shadow: 0 16px 40px rgb(43 33 24 / 0.12);
 }

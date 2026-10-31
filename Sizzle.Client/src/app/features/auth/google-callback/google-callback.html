@@ -1,9 +1,7 @@
-<div class="card auth-box">
-  @if (error()) {
-    <h2>{{ 'auth.google.failed' | t }}</h2>
-    <p class="error">{{ error() }}</p>
-    <a routerLink="/login">{{ 'auth.google.backToLogin' | t }}</a>
-  } @else {
-    <p>{{ 'auth.google.signingIn' | t }}</p>
-  }
-</div>
+@if (error()) {
+  <app-status-view [heading]="'auth.google.failed' | t" [message]="error()">
+    <a class="btn" routerLink="/login">{{ 'auth.google.backToLogin' | t }}</a>
+  </app-status-view>
+} @else {
+  <app-loader [label]="'auth.google.signingIn' | t" />
+}

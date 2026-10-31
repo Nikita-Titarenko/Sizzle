@@ -34,6 +34,12 @@
     width: 100%;
   }
 
+  &.large {
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 1rem;
+  }
+
   &.outline {
     background: transparent;
     color: var(--accent);
@@ -51,12 +57,6 @@
 
   &.danger {
     background: var(--danger);
-  }
-
-  &.google {
-    background: var(--surface-2);
-    color: var(--text);
-    border: 1px solid var(--border-strong);
   }
 }
 

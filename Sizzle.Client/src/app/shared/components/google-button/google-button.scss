@@ -1,0 +1,52 @@
+// Colors come from Google's branding guidelines: the light button on the light theme,
+// the dark one on the dark theme.
+.google-button {
+  --g-bg: #131314;
+  --g-border: #8e918f;
+  --g-text: #e3e3e3;
+  --g-hover: rgb(227 227 227 / 0.08);
+
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  width: 100%;
+  height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--g-border);
+  border-radius: 10px;
+  background: var(--g-bg);
+  color: var(--g-text);
+  font-family: Roboto, system-ui, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  transition:
+    background-color 0.15s,
+    box-shadow 0.15s;
+
+  &:hover {
+    background-image: linear-gradient(var(--g-hover), var(--g-hover));
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+:host-context([data-theme='light']) .google-button {
+  --g-bg: #fff;
+  --g-border: #747775;
+  --g-text: #1f1f1f;
+  --g-hover: rgb(31 31 31 / 0.06);
+}
+
+.logo {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}

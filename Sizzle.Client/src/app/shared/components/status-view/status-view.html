@@ -1,0 +1,35 @@
+@if (kind() === 'error') {
+  <!-- A burnt pan with smoke rising from it. -->
+  <svg class="art" viewBox="0 0 200 160" aria-hidden="true">
+    <circle class="glow" cx="96" cy="88" r="66" />
+    <g class="smoke">
+      <path d="M70 66c-8-8 8-14 0-24s6-16 0-24" />
+      <path d="M92 60c-8-8 8-14 0-24s6-16 0-24" />
+      <path d="M114 66c-8-8 8-14 0-24s6-16 0-24" />
+    </g>
+    <rect class="handle" x="140" y="90" width="48" height="11" rx="5.5" />
+    <path class="pan" d="M38 92h108v6a28 28 0 0 1-28 28H66a28 28 0 0 1-28-28z" />
+    <ellipse class="rim" cx="92" cy="92" rx="54" ry="9" />
+    <g class="face">
+      <path d="M72 103l7 7m0-7l-7 7M105 103l7 7m0-7l-7 7" />
+      <path d="M84 120q8-6 16 0" />
+    </g>
+  </svg>
+} @else {
+  <!-- An empty plate between a fork and a knife. -->
+  <svg class="art" viewBox="0 0 200 160" aria-hidden="true">
+    <circle class="glow" cx="100" cy="84" r="66" />
+    <path class="cutlery" d="M38 40v28a8 8 0 0 0 8 8v52M46 40v24M54 40v28a8 8 0 0 1-8 8" />
+    <path class="cutlery" d="M160 128V40c-10 6-14 20-14 38h14" />
+    <circle class="plate" cx="100" cy="84" r="42" />
+    <circle class="plate-inner" cx="100" cy="84" r="28" />
+  </svg>
+}
+
+<h2>{{ heading() }}</h2>
+@if (message()) {
+  <p>{{ message() }}</p>
+}
+<div class="actions">
+  <ng-content />
+</div>

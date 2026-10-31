@@ -30,10 +30,12 @@ const VIEW_DELAY_MS = 2000;
 
 /** Vertical, snap-scrolling recipe feed: one post per screen, like Shorts/Reels. */ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { Loader } from '../../../shared/components/loader/loader';
+import { StatusView } from '../../../shared/components/status-view/status-view';
 
 @Component({
   selector: 'app-feed-page',
-  imports: [TranslatePipe, FeedItem, CommentsDrawer, Icon, IngredientPicker],
+  imports: [TranslatePipe, FeedItem, CommentsDrawer, Icon, IngredientPicker, Loader, StatusView],
   templateUrl: './feed-page.html',
   styleUrl: './feed-page.scss',
   host: { '(document:keydown)': 'onKeydown($event)' },

@@ -1,23 +1,29 @@
-<div class="card auth-box">
-  <h2>{{ 'auth.login.title' | t }}</h2>
+<app-auth-layout>
+  <h1 class="auth-title">{{ 'auth.login.title' | t }}</h1>
+  <app-google-button [href]="googleLoginUrl" />
+  <div class="divider">{{ 'auth.or' | t }}</div>
   <form class="form" (ngSubmit)="submit()">
     <label>
       <span>{{ 'auth.email' | t }}</span>
-      <input type="email" name="email" [(ngModel)]="email" required />
+      <input type="email" name="email" autocomplete="email" [(ngModel)]="email" required />
     </label>
     <label>
       <span>{{ 'auth.password' | t }}</span>
-      <input type="password" name="password" [(ngModel)]="password" required />
+      <input
+        type="password"
+        name="password"
+        autocomplete="current-password"
+        [(ngModel)]="password"
+        required
+      />
     </label>
     @if (error()) {
-      <div class="error">{{ error() }}</div>
+      <div class="alert" role="alert">{{ error() }}</div>
     }
-    <button class="btn" [disabled]="busy()">{{ 'auth.login.submit' | t }}</button>
+    <button class="btn block large" [disabled]="busy()">{{ 'auth.login.submit' | t }}</button>
   </form>
-  <div class="divider">{{ 'auth.or' | t }}</div>
-  <a class="btn google block" [href]="googleLoginUrl">{{ 'auth.continueWithGoogle' | t }}</a>
-  <p class="muted">
+  <p class="auth-switch">
     {{ 'auth.login.noAccount' | t }}
     <a routerLink="/register">{{ 'auth.login.signUp' | t }}</a>
   </p>
-</div>
+</app-auth-layout>

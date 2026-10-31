@@ -1,5 +1,7 @@
 @if (error()) {
-  <p class="error">{{ error() }}</p>
+  <app-status-view [heading]="'errors.title' | t" [message]="error()">
+    <a class="btn outline" routerLink="/explore">{{ 'nav.explore' | t }}</a>
+  </app-status-view>
 }
 @if (recipe(); as r) {
   <article class="detail">
@@ -84,5 +86,5 @@
     <app-comment-section [recipeId]="r.id" />
   </article>
 } @else if (!error()) {
-  <p class="muted">{{ 'common.loading' | t }}</p>
+  <app-loader />
 }

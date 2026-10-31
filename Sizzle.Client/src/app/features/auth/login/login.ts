@@ -5,10 +5,12 @@ import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { AuthLayout } from '../auth-layout/auth-layout';
+import { GoogleButton } from '../../../shared/components/google-button/google-button';
 
 @Component({
   selector: 'app-login',
-  imports: [TranslatePipe, FormsModule, RouterLink],
+  imports: [TranslatePipe, FormsModule, RouterLink, AuthLayout, GoogleButton],
   templateUrl: './login.html',
 })
 export class Login {

@@ -10,6 +10,8 @@ export const uk: Translations = {
     signUp: 'Реєстрація',
     logOut: 'Вийти',
     language: 'Мова',
+    lightTheme: 'Увімкнути світлу тему',
+    darkTheme: 'Увімкнути темну тему',
   },
   notifications: {
     posted: 'опублікував(ла) «{recipe}»',
@@ -21,6 +23,13 @@ export const uk: Translations = {
     name: "Ім'я",
     or: 'або',
     continueWithGoogle: 'Продовжити з Google',
+    hero: {
+      title: 'Готуй. Ділись. Надихайся.',
+      subtitle: 'Рецепти від спільноти, яка любить їжу так само, як і ви.',
+      share: 'Публікуйте рецепти з фото та відео',
+      discover: 'Шукайте страви за інгредієнтами, які маєте',
+      follow: 'Підписуйтесь на кулінарів і не пропускайте нових рецептів',
+    },
     login: {
       title: 'Вхід',
       submit: 'Увійти',
@@ -221,6 +230,7 @@ export const uk: Translations = {
     following: 'ви стежите',
   },
   errors: {
+    title: 'Ой, щось підгоріло',
     generic: 'Щось пішло не так',
     unreachable: 'Сервер зараз недоступний. Спробуйте ще раз за хвилину.',
     requestFailed: 'Запит не вдався ({status})',
