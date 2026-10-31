@@ -8,7 +8,7 @@
   (click)="toggle()"
 >
   <app-icon name="globe" />
-  <span>{{ language.current().toUpperCase() }}</span>
+  <span class="current-code">{{ language.current().toUpperCase() }}</span>
   <app-icon class="chevron" [class.flipped]="open()" name="chevron-down" />
 </button>
 

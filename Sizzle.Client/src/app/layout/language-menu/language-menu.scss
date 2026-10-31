@@ -100,3 +100,15 @@
     translate: 0 -4px;
   }
 }
+
+// Phones: the globe alone is enough; the open menu still names both languages.
+@media (max-width: 520px) {
+  .current-code,
+  .chevron {
+    display: none;
+  }
+
+  .trigger {
+    padding: 6px;
+  }
+}
