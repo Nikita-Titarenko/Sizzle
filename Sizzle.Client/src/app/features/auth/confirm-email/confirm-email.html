@@ -1,20 +1,20 @@
-<div class="card auth-box">
-  <h2>{{ 'auth.confirm.title' | t }}</h2>
-  <p class="muted">{{ 'auth.confirm.intro' | t }}</p>
+<app-auth-layout>
+  <h1 class="auth-title">{{ 'auth.confirm.title' | t }}</h1>
+  <p class="auth-intro">{{ 'auth.confirm.intro' | t }}</p>
   <form class="form" (ngSubmit)="submit()">
     <label>
       <span>{{ 'auth.confirm.code' | t }}</span>
       <input name="code" [(ngModel)]="code" required autocomplete="one-time-code" />
     </label>
     @if (error()) {
-      <div class="error">{{ error() }}</div>
+      <div class="alert" role="alert">{{ error() }}</div>
     }
     @if (info()) {
       <div class="muted">{{ info() }}</div>
     }
-    <button class="btn" [disabled]="busy()">{{ 'auth.confirm.submit' | t }}</button>
+    <button class="btn block large" [disabled]="busy()">{{ 'auth.confirm.submit' | t }}</button>
   </form>
-  <p>
+  <p class="auth-switch">
     <button class="link" (click)="resend()">{{ 'auth.confirm.resend' | t }}</button>
   </p>
-</div>
+</app-auth-layout>

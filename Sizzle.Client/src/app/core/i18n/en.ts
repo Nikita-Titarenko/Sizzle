@@ -9,6 +9,8 @@ export const en = {
     signUp: 'Sign up',
     logOut: 'Log out',
     language: 'Language',
+    lightTheme: 'Switch to light theme',
+    darkTheme: 'Switch to dark theme',
   },
   notifications: {
     posted: 'posted “{recipe}”',
@@ -20,6 +22,13 @@ export const en = {
     name: 'Name',
     or: 'or',
     continueWithGoogle: 'Continue with Google',
+    hero: {
+      title: 'Cook. Share. Get inspired.',
+      subtitle: 'Recipes from a community that loves food as much as you do.',
+      share: 'Post your recipes with photos and videos',
+      discover: 'Find dishes by the ingredients you have',
+      follow: 'Follow cooks you like and never miss a new recipe',
+    },
     login: {
       title: 'Log in',
       submit: 'Log in',
@@ -219,6 +228,7 @@ export const en = {
     following: 'following',
   },
   errors: {
+    title: 'Oops, something burned',
     generic: 'Something went wrong',
     unreachable: 'The server is not reachable right now. Please try again in a moment.',
     requestFailed: 'Request failed ({status})',

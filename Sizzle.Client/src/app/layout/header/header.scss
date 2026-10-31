@@ -52,6 +52,28 @@
   }
 }
 
+.theme-toggle {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  background: none;
+  color: var(--text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    rotate 0.3s;
+
+  &:hover {
+    border-color: var(--border);
+    background: var(--surface-2);
+    rotate: 15deg;
+  }
+}
+
 @media (max-width: 640px) {
   .topbar {
     padding: 0 12px;

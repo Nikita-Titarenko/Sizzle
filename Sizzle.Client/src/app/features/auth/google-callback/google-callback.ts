@@ -8,10 +8,12 @@ import { AuthService } from '../../../core/auth/auth.service';
  * API's google-callback endpoint, which validates the state cookie and returns our JWT.
  */ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { Loader } from '../../../shared/components/loader/loader';
+import { StatusView } from '../../../shared/components/status-view/status-view';
 
 @Component({
   selector: 'app-google-callback',
-  imports: [TranslatePipe, RouterLink],
+  imports: [TranslatePipe, RouterLink, Loader, StatusView],
   templateUrl: './google-callback.html',
 })
 export class GoogleCallback implements OnInit {

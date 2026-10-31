@@ -1,5 +1,7 @@
-@if (error()) {
-  <p class="error">{{ error() }}</p>
+@if (error() && !user()) {
+  <app-status-view [heading]="'errors.title' | t" [message]="error()" />
+} @else if (error()) {
+  <p class="alert" role="alert">{{ error() }}</p>
 }
 @if (user(); as u) {
   <section class="card row header">
@@ -24,5 +26,9 @@
       [total]="page.totalSize"
       (change)="pageIndex.set($event)"
     />
+  } @else {
+    <app-loader />
   }
+} @else if (!error()) {
+  <app-loader />
 }

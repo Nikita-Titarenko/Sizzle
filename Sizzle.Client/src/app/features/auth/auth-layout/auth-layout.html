@@ -1,0 +1,35 @@
+<section class="form-side">
+  <div class="form-box">
+    <ng-content />
+  </div>
+</section>
+
+<aside class="hero" aria-hidden="true">
+  <div class="decor">
+    <app-icon class="d1" name="flame" />
+    <app-icon class="d2" name="utensils" />
+    <app-icon class="d3" name="heart" />
+    <app-icon class="d4" name="clock" />
+  </div>
+  <div class="hero-content">
+    <div class="emblem">
+      <img src="logo-mark.png" alt="" width="72" height="72" />
+    </div>
+    <h2>{{ 'auth.hero.title' | t }}</h2>
+    <p class="subtitle">{{ 'auth.hero.subtitle' | t }}</p>
+    <ul class="features">
+      <li>
+        <span class="bullet"><app-icon name="image" /></span>
+        {{ 'auth.hero.share' | t }}
+      </li>
+      <li>
+        <span class="bullet"><app-icon name="filter" /></span>
+        {{ 'auth.hero.discover' | t }}
+      </li>
+      <li>
+        <span class="bullet"><app-icon name="heart" /></span>
+        {{ 'auth.hero.follow' | t }}
+      </li>
+    </ul>
+  </div>
+</aside>

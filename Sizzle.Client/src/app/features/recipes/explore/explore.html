@@ -48,7 +48,11 @@
   }
 </div>
 
-@if (page(); as page) {
+@if (error()) {
+  <app-status-view [heading]="'errors.title' | t" [message]="error()">
+    <button type="button" class="btn" (click)="retry()">{{ 'common.tryAgain' | t }}</button>
+  </app-status-view>
+} @else if (page(); as page) {
   <app-recipe-grid [recipes]="page.data" [emptyText]="'explore.empty' | t" />
   <app-pager
     [pageIndex]="pageIndex()"
@@ -57,5 +61,5 @@
     (change)="goTo($event)"
   />
 } @else {
-  <p class="muted">{{ 'common.loading' | t }}</p>
+  <app-loader />
 }

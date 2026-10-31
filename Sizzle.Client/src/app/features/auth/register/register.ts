@@ -4,10 +4,12 @@ import { Router, RouterLink } from '@angular/router';
 import { UsersApi } from '../../../core/api/users.api';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { AuthLayout } from '../auth-layout/auth-layout';
+import { GoogleButton } from '../../../shared/components/google-button/google-button';
 
 @Component({
   selector: 'app-register',
-  imports: [TranslatePipe, FormsModule, RouterLink],
+  imports: [TranslatePipe, FormsModule, RouterLink, AuthLayout, GoogleButton],
   templateUrl: './register.html',
 })
 export class Register {

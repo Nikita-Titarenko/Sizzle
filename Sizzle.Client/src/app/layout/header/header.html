@@ -16,6 +16,15 @@
       <a routerLink="/login" routerLinkActive="active">{{ 'nav.logIn' | t }}</a>
       <a routerLink="/register" class="btn small">{{ 'nav.signUp' | t }}</a>
     }
+    <button
+      type="button"
+      class="theme-toggle"
+      [attr.aria-label]="(theme.current() === 'dark' ? 'nav.lightTheme' : 'nav.darkTheme') | t"
+      [attr.title]="(theme.current() === 'dark' ? 'nav.lightTheme' : 'nav.darkTheme') | t"
+      (click)="theme.toggle()"
+    >
+      <app-icon [name]="theme.current() === 'dark' ? 'sun' : 'moon'" />
+    </button>
     <app-language-menu />
   </nav>
 </header>

@@ -14,14 +14,17 @@ export const routes: Routes = [
   },
   {
     path: 'login',
+    data: { fullBleed: true },
     loadComponent: () => import('./features/auth/login/login').then((m) => m.Login),
   },
   {
     path: 'register',
+    data: { fullBleed: true },
     loadComponent: () => import('./features/auth/register/register').then((m) => m.Register),
   },
   {
     path: 'confirm-email/:userId',
+    data: { fullBleed: true },
     loadComponent: () =>
       import('./features/auth/confirm-email/confirm-email').then((m) => m.ConfirmEmail),
   },

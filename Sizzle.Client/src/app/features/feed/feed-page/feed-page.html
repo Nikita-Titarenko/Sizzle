@@ -97,23 +97,27 @@
     }
 
     @if (error()) {
-      <div class="status">
-        <p class="error">{{ error() }}</p>
-        <button type="button" class="btn small" (click)="retry()">
-          {{ 'common.tryAgain' | t }}
-        </button>
+      <div class="status" [class.end]="recipes().length > 0">
+        <app-status-view [heading]="'errors.title' | t" [message]="error()">
+          <button type="button" class="btn" (click)="retry()">
+            {{ 'common.tryAgain' | t }}
+          </button>
+        </app-status-view>
       </div>
     } @else if (loading()) {
-      <div class="status muted">{{ 'common.loading' | t }}</div>
+      <div class="status" [class.end]="recipes().length > 0">
+        <app-loader />
+      </div>
     } @else if (recipes().length === 0) {
-      <div class="status muted">
+      <div class="status">
         @if (hasFilters()) {
-          <p>{{ 'feed.noMatches' | t }}</p>
-          <button type="button" class="btn small outline" (click)="clearFilters()">
-            {{ 'feed.clearFilters' | t }}
-          </button>
+          <app-status-view kind="empty" [heading]="'feed.noMatches' | t">
+            <button type="button" class="btn outline" (click)="clearFilters()">
+              {{ 'feed.clearFilters' | t }}
+            </button>
+          </app-status-view>
         } @else {
-          <p>{{ 'feed.empty' | t }}</p>
+          <app-status-view kind="empty" [heading]="'feed.empty' | t" />
         }
       </div>
     } @else if (!hasMore()) {

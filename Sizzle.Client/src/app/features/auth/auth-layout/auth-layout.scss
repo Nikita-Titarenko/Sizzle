@@ -1,0 +1,157 @@
+:host {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  min-height: calc(100dvh - var(--header-height));
+}
+
+.form-side {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.form-box {
+  width: 100%;
+  max-width: 400px;
+}
+
+.hero {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 16px;
+  padding: 48px;
+  overflow: hidden;
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 20% 15%, rgb(255 255 255 / 0.22), transparent 45%),
+    radial-gradient(circle at 85% 90%, rgb(120 20 0 / 0.45), transparent 50%),
+    linear-gradient(145deg, #ff8a3d 0%, #ff6a2b 45%, #d9381e 100%);
+  color: #fff;
+}
+
+.decor app-icon {
+  position: absolute;
+  color: rgb(255 255 255 / 0.12);
+  animation: float 9s ease-in-out infinite;
+}
+
+.decor .d1 {
+  top: 8%;
+  left: 8%;
+  font-size: 7rem;
+  rotate: -12deg;
+}
+
+.decor .d2 {
+  right: 6%;
+  top: 14%;
+  font-size: 5rem;
+  rotate: 14deg;
+  animation-delay: -2s;
+}
+
+.decor .d3 {
+  bottom: 4%;
+  left: 40%;
+  font-size: 4.5rem;
+  rotate: 8deg;
+  animation-delay: -4s;
+}
+
+.decor .d4 {
+  right: 10%;
+  bottom: 8%;
+  font-size: 6.5rem;
+  rotate: -6deg;
+  animation-delay: -6s;
+}
+
+.hero-content {
+  position: relative;
+  max-width: 420px;
+}
+
+.emblem {
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  margin-bottom: 28px;
+  border: 1px solid rgb(255 255 255 / 0.35);
+  border-radius: 28px;
+  background: rgb(255 255 255 / 0.18);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 20px 40px rgb(80 10 0 / 0.3);
+
+  img {
+    width: 72px;
+    height: 72px;
+    filter: brightness(0) invert(1); // the emblem in white on the orange panel
+  }
+}
+
+h2 {
+  margin: 0 0 12px;
+  font-size: 2.4rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0 0 28px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  opacity: 0.9;
+}
+
+.features {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+  }
+}
+
+.bullet {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.2);
+}
+
+@keyframes float {
+  50% {
+    translate: 0 -12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .decor app-icon {
+    animation: none;
+  }
+}
+
+// Narrow screens: the form alone.
+@media (max-width: 860px) {
+  :host {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    display: none;
+  }
+}

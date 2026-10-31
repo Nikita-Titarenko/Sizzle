@@ -5,10 +5,11 @@ import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { AuthLayout } from '../auth-layout/auth-layout';
 
 @Component({
   selector: 'app-confirm-email',
-  imports: [TranslatePipe, FormsModule],
+  imports: [TranslatePipe, FormsModule, AuthLayout],
   templateUrl: './confirm-email.html',
 })
 export class ConfirmEmail {

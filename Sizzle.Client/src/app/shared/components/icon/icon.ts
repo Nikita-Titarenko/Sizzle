@@ -44,6 +44,11 @@ const ICONS = {
   'corner-down-right': ['M15 10l5 5-5 5', 'M4 4v7a4 4 0 0 0 4 4h12'],
   'chevron-up': ['M18 15l-6-6-6 6'],
   'chevron-down': ['M6 9l6 6 6-6'],
+  sun: [
+    'M12 7a5 5 0 1 0 0 10 5 5 0 0 0 0-10z',
+    'M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42',
+  ],
+  moon: ['M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z'],
 } as const;
 
 export type IconName = keyof typeof ICONS;

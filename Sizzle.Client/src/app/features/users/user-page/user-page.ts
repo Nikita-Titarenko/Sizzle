@@ -9,11 +9,13 @@ import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 const PAGE_SIZE = 9;
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
 import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { Loader } from '../../../shared/components/loader/loader';
+import { StatusView } from '../../../shared/components/status-view/status-view';
 import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-user-page',
-  imports: [TranslatePipe, UserAvatar, RecipeGrid, Pager],
+  imports: [TranslatePipe, UserAvatar, RecipeGrid, Pager, Loader, StatusView],
   templateUrl: './user-page.html',
   styleUrl: './user-page.scss',
 })
