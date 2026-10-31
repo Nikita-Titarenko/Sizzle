@@ -1,11 +1,11 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
 import { Category, IngredientChoice, IngredientUnit } from '../../../core/models';
 import { IngredientCatalog } from '../../../core/services/ingredient-catalog.service';
-import { errorMessage } from '../../../core/utils/error-message';
 import { Icon } from '../../../shared/components/icon/icon';
 import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
 import { MediaPicker } from '../../../shared/components/media-picker/media-picker';
@@ -38,17 +38,21 @@ const UNIT_BY_SHORT: Record<string, IngredientUnit> = {
   ml: 'Milliliters',
   pcs: 'Pieces',
 };
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-recipe-form',
-  imports: [FormsModule, IngredientPicker, MediaPicker, Icon, UnitLabelPipe],
+  imports: [TranslatePipe, FormsModule, IngredientPicker, MediaPicker, Icon, UnitLabelPipe],
   templateUrl: './recipe-form.html',
   styleUrl: './recipe-form.scss',
 })
 export class RecipeForm {
+  private readonly i18n = inject(I18n);
   private readonly catalogApi = inject(CatalogApi);
   private readonly recipesApi = inject(RecipesApi);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly ingredientCatalog = inject(IngredientCatalog);
 
   readonly id = input<string>();
@@ -80,14 +84,32 @@ export class RecipeForm {
     });
   }
 
-  canSubmit(): boolean {
-    return (
-      !!this.name.trim() &&
-      !!this.description.trim() &&
-      !!this.categoryId &&
-      this.cookingTimeMinutes > 0 &&
-      this.steps().every((s) => s.name.trim() && s.description.trim())
-    );
+  /** What is still missing before the recipe can be published, or null when it is complete. */
+  missingHint(): string | null {
+    if (!this.name.trim()) {
+      return this.i18n.t('editor.missing.name');
+    }
+    if (!this.description.trim()) {
+      return this.i18n.t('editor.missing.description');
+    }
+    if (!this.categoryId) {
+      return this.i18n.t('editor.missing.category');
+    }
+    if (!(this.cookingTimeMinutes > 0)) {
+      return this.i18n.t('editor.missing.time');
+    }
+    if (this.steps().some((s) => !s.name.trim() || !s.description.trim())) {
+      return this.i18n.t('editor.missing.steps');
+    }
+    return null;
+  }
+
+  adjustTime(delta: number): void {
+    this.cookingTimeMinutes = Math.max(1, (this.cookingTimeMinutes || 0) + delta);
+  }
+
+  cancel(): void {
+    this.location.back();
   }
 
   addIngredient(choice: IngredientChoice): void {
@@ -132,6 +154,9 @@ export class RecipeForm {
   }
 
   submit(): void {
+    if (this.missingHint()) {
+      return;
+    }
     const value = {
       name: this.name.trim(),
       description: this.description.trim(),
@@ -163,7 +188,7 @@ export class RecipeForm {
       },
       error: (err) => {
         this.busy.set(false);
-        this.error.set(errorMessage(err));
+        this.error.set(this.i18n.error(err));
       },
     });
   }
@@ -181,7 +206,7 @@ export class RecipeForm {
           recipe.steps.map((s) => ({ name: s.name, description: s.description, files: [] })),
         );
       },
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 }

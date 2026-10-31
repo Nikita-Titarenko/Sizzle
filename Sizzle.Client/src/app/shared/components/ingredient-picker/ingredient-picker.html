@@ -2,7 +2,7 @@
   <input
     type="search"
     autocomplete="off"
-    [placeholder]="placeholder()"
+    [placeholder]="placeholder() || ('ingredients.search' | t)"
     [ngModel]="term()"
     [ngModelOptions]="{ standalone: true }"
     (ngModelChange)="onTermChange($event)"
@@ -27,21 +27,23 @@
             }
             <span class="name">{{ row.choice.name }}</span>
             @if (row.hasChildren) {
-              <span class="kind">group</span>
+              <span class="kind">{{ 'ingredients.group' | t }}</span>
             }
             <span class="spacer"></span>
             @if (row.disabled) {
               <span class="added">
                 <app-icon name="check" />
-                added
+                {{ 'ingredients.added' | t }}
               </span>
             } @else {
-              <span class="muted unit">{{ row.choice.unit }}</span>
+              <span class="muted unit">{{ row.choice.unit | unitLabel }}</span>
             }
           </button>
         </li>
       } @empty {
-        <li class="empty muted">{{ loading() ? 'Searching…' : 'No ingredients found' }}</li>
+        <li class="empty muted">
+          {{ (loading() ? 'ingredients.searching' : 'ingredients.none') | t }}
+        </li>
       }
     </ul>
   }

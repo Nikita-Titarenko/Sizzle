@@ -5,7 +5,6 @@ import { UsersApi } from '../../../core/api/users.api';
 import { CurrentUserService } from '../../../core/services/current-user.service';
 import { PageResponse, Recipe, User } from '../../../core/models';
 import { acceptFor, validateMedia } from '../../../core/utils/media';
-import { errorMessage } from '../../../core/utils/error-message';
 import { Pager } from '../../../shared/components/pager/pager';
 import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 import { UserList } from '../../../shared/components/user-list/user-list';
@@ -13,14 +12,17 @@ import { UserList } from '../../../shared/components/user-list/user-list';
 const PAGE_SIZE = 9;
 import { Icon } from '../../../shared/components/icon/icon';
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-profile',
-  imports: [Icon, UserAvatar, FormsModule, RecipeGrid, Pager, UserList],
+  imports: [TranslatePipe, Icon, UserAvatar, FormsModule, RecipeGrid, Pager, UserList],
   templateUrl: './profile.html',
   styleUrl: './profile.scss',
 })
 export class Profile {
+  private readonly i18n = inject(I18n);
   private readonly recipesApi = inject(RecipesApi);
   private readonly usersApi = inject(UsersApi);
   protected readonly currentUser = inject(CurrentUserService);
@@ -59,7 +61,7 @@ export class Profile {
     }
     const problem = validateMedia(file, false);
     if (problem) {
-      this.error.set(problem);
+      this.error.set(this.i18n.t(problem.key, problem.params));
       return;
     }
     this.error.set('');
@@ -84,11 +86,11 @@ export class Profile {
     this.error.set('');
     this.usersApi.updateProfile(this.name.trim(), this.icon).subscribe({
       next: () => {
-        this.message.set('Profile saved.');
+        this.message.set(this.i18n.t('profile.saved'));
         this.setIcon(null);
         this.currentUser.refresh();
       },
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 }

@@ -17,7 +17,6 @@ import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Category, IngredientChoice, Recipe } from '../../../core/models';
-import { errorMessage } from '../../../core/utils/error-message';
 import { Icon } from '../../../shared/components/icon/icon';
 import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
 import { CommentsDrawer } from '../comments-drawer/comments-drawer';
@@ -29,15 +28,18 @@ const PREFETCH_DISTANCE = 3;
 /** A post counts as viewed after it has been on screen this long. */
 const VIEW_DELAY_MS = 2000;
 
-/** Vertical, snap-scrolling recipe feed: one post per screen, like Shorts/Reels. */
+/** Vertical, snap-scrolling recipe feed: one post per screen, like Shorts/Reels. */ import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
+
 @Component({
   selector: 'app-feed-page',
-  imports: [FeedItem, CommentsDrawer, Icon, IngredientPicker],
+  imports: [TranslatePipe, FeedItem, CommentsDrawer, Icon, IngredientPicker],
   templateUrl: './feed-page.html',
   styleUrl: './feed-page.scss',
   host: { '(document:keydown)': 'onKeydown($event)' },
 })
 export class FeedPage {
+  private readonly i18n = inject(I18n);
   private readonly recipesApi = inject(RecipesApi);
   private readonly catalogApi = inject(CatalogApi);
   private readonly usersApi = inject(UsersApi);
@@ -179,7 +181,7 @@ export class FeedPage {
       next: ({ isLiked }) => this.patch(recipe.id, { isLiked }),
       error: (err) => {
         this.patch(recipe.id, { isLiked: recipe.isLiked });
-        this.showToast(errorMessage(err));
+        this.showToast(this.i18n.error(err));
       },
     });
   }
@@ -194,7 +196,7 @@ export class FeedPage {
       : this.usersApi.unfollow(recipe.userId);
     request.subscribe({
       next: () => this.patchAuthor(recipe.userId, follow),
-      error: (err) => this.showToast(errorMessage(err)),
+      error: (err) => this.showToast(this.i18n.error(err)),
     });
   }
 
@@ -205,7 +207,7 @@ export class FeedPage {
       return;
     }
     await navigator.clipboard.writeText(url);
-    this.showToast('Link copied');
+    this.showToast(this.i18n.t('feed.linkCopied'));
   }
 
   /** Starts the feed over from the top with the current filters. */
@@ -243,7 +245,7 @@ export class FeedPage {
         },
         error: (err) => {
           this.loading.set(false);
-          this.error.set(errorMessage(err));
+          this.error.set(this.i18n.error(err));
         },
       });
   }

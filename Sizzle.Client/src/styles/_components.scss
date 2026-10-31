@@ -18,7 +18,7 @@
   padding: 6px 14px;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: #fff;
+  background: var(--surface-2);
   font: inherit;
   font-size: 0.85rem;
   cursor: pointer;
@@ -26,7 +26,7 @@
   &.on {
     background: var(--accent);
     border-color: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
   }
 }
 
@@ -37,7 +37,7 @@
   gap: 4px;
   padding: 4px 4px 4px 12px;
   border-radius: 999px;
-  background: #fff1e6;
+  background: var(--accent-soft);
   color: var(--accent-dark);
   font-size: 0.85rem;
   font-weight: 600;
@@ -57,7 +57,62 @@
     cursor: pointer;
 
     &:hover {
-      background: rgb(0 0 0 / 0.08);
+      background: var(--surface-3);
     }
+  }
+}
+
+// Large rounded section, e.g. the parts of the recipe editor.
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+}
+
+// Round, borderless button holding a single icon (remove, close).
+.icon-button {
+  display: inline-flex;
+  padding: 7px;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+}
+
+// Full-width dashed "add another" button.
+.add-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 12px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+    color: var(--accent-dark);
   }
 }

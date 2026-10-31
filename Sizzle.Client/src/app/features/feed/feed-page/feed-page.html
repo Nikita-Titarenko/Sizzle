@@ -1,5 +1,5 @@
 <div class="feed-page">
-  <nav class="filters" aria-label="Filters">
+  <nav class="filters" [attr.aria-label]="'feed.filters' | t">
     <button
       type="button"
       class="chip ingredient-toggle"
@@ -8,7 +8,7 @@
       (click)="ingredientPanelOpen.set(!ingredientPanelOpen())"
     >
       <app-icon name="filter" />
-      Ingredients
+      {{ 'feed.ingredients' | t }}
       @if (selectedIngredients().length) {
         <span class="count">{{ selectedIngredients().length }}</span>
       }
@@ -20,7 +20,7 @@
       [class.on]="categoryId() === null"
       (click)="selectCategory(null)"
     >
-      For you
+      {{ 'feed.forYou' | t }}
     </button>
     @for (category of categories(); track category.id) {
       <button
@@ -35,20 +35,20 @@
   </nav>
 
   @if (ingredientPanelOpen()) {
-    <section class="ingredient-panel" aria-label="Filter by ingredients">
+    <section class="ingredient-panel" [attr.aria-label]="'feed.ingredientFilter' | t">
       <header class="panel-header">
-        <b>Recipes with these ingredients</b>
+        <b>{{ 'feed.ingredientPanelTitle' | t }}</b>
         <button
           type="button"
           class="icon-button"
-          aria-label="Close ingredient filter"
+          [attr.aria-label]="'feed.closeIngredientFilter' | t"
           (click)="ingredientPanelOpen.set(false)"
         >
           <app-icon name="close" />
         </button>
       </header>
       <app-ingredient-picker
-        placeholder="Search an ingredient, e.g. tomato…"
+        [placeholder]="'feed.ingredientSearch' | t"
         [excludeIds]="selectedIngredientIds()"
         (picked)="addIngredientFilter($event)"
       />
@@ -62,17 +62,19 @@
               {{ ingredient.name }}
               <button
                 type="button"
-                [attr.aria-label]="'Remove ' + ingredient.name"
+                [attr.aria-label]="'common.remove' | t: { name: ingredient.name }"
                 (click)="removeIngredientFilter(ingredient.id)"
               >
                 <app-icon name="close" />
               </button>
             </span>
           }
-          <button type="button" class="link" (click)="clearIngredientFilter()">Clear all</button>
+          <button type="button" class="link" (click)="clearIngredientFilter()">
+            {{ 'common.clearAll' | t }}
+          </button>
         </div>
       } @else {
-        <p class="muted">Pick one or more ingredients to see recipes that use them.</p>
+        <p class="muted">{{ 'feed.ingredientHint' | t }}</p>
       }
     </section>
   }
@@ -97,30 +99,35 @@
     @if (error()) {
       <div class="status">
         <p class="error">{{ error() }}</p>
-        <button type="button" class="btn small" (click)="retry()">Try again</button>
+        <button type="button" class="btn small" (click)="retry()">
+          {{ 'common.tryAgain' | t }}
+        </button>
       </div>
     } @else if (loading()) {
-      <div class="status muted">Loading…</div>
+      <div class="status muted">{{ 'common.loading' | t }}</div>
     } @else if (recipes().length === 0) {
       <div class="status muted">
         @if (hasFilters()) {
-          <p>No recipes match these filters.</p>
+          <p>{{ 'feed.noMatches' | t }}</p>
           <button type="button" class="btn small outline" (click)="clearFilters()">
-            Clear filters
+            {{ 'feed.clearFilters' | t }}
           </button>
         } @else {
-          <p>No recipes here yet.</p>
+          <p>{{ 'feed.empty' | t }}</p>
         }
       </div>
     } @else if (!hasMore()) {
-      <div class="status end muted">You're all caught up 🎉</div>
+      <div class="status end muted">
+        <app-icon name="check" />
+        {{ 'feed.caughtUp' | t }}
+      </div>
     }
   </div>
 
   <div class="stepper">
     <button
       type="button"
-      aria-label="Previous recipe"
+      [attr.aria-label]="'feed.previous' | t"
       [disabled]="activeIndex() === 0"
       (click)="scrollBy(-1)"
     >
@@ -128,7 +135,7 @@
     </button>
     <button
       type="button"
-      aria-label="Next recipe"
+      [attr.aria-label]="'feed.next' | t"
       [disabled]="activeIndex() >= recipes().length - 1"
       (click)="scrollBy(1)"
     >

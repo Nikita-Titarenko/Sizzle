@@ -7,73 +7,116 @@
   (change)="onSelected($event)"
 />
 
-@if (previews().length || currentUrl()) {
+@if (layout() === 'portrait') {
   <div
-    class="previews"
-    [class.single]="!multiple()"
+    class="portrait"
     [class.dragging]="dragging()"
     (dragover)="onDragOver($event)"
     (dragleave)="dragging.set(false)"
     (drop)="onDrop($event)"
   >
-    @for (preview of previews(); track preview.url) {
-      <figure class="thumb">
-        @if (preview.isVideo) {
-          <video [src]="preview.url" muted playsinline preload="metadata"></video>
-          <span class="badge"><app-icon name="play" filled /></span>
-        } @else {
-          <img [src]="preview.url" [alt]="preview.file.name" />
-        }
-        <button
-          type="button"
-          class="remove"
-          [attr.aria-label]="'Remove ' + preview.file.name"
-          (click)="remove(preview.file)"
-        >
-          <app-icon name="close" />
-        </button>
-        <figcaption>{{ preview.file.name }}</figcaption>
-      </figure>
-    } @empty {
-      <figure class="thumb current">
-        @if (currentIsVideo()) {
-          <video [src]="currentUrl()" muted playsinline preload="metadata"></video>
-        } @else {
-          <img [src]="currentUrl()" alt="Current media" />
-        }
-        <figcaption>Current</figcaption>
-      </figure>
+    @if (previews()[0]; as preview) {
+      @if (preview.isVideo) {
+        <video [src]="preview.url" muted loop autoplay playsinline></video>
+      } @else {
+        <img [src]="preview.url" [alt]="preview.file.name" />
+      }
+    } @else if (currentUrl()) {
+      @if (currentIsVideo()) {
+        <video [src]="currentUrl()" muted loop autoplay playsinline></video>
+      } @else {
+        <img [src]="currentUrl()" [alt]="'media.currentAlt' | t" />
+      }
+    } @else {
+      <button type="button" class="portrait-empty" (click)="browse()">
+        <span class="dropzone-icon"><app-icon name="image" /></span>
+        <b>{{ 'media.addCover' | t }}</b>
+        <span class="muted">{{ 'media.coverHint' | t }}</span>
+        <span class="portrait-hint">{{ hint() || (defaultHint() | t) }}</span>
+      </button>
     }
 
-    <button type="button" class="thumb add" (click)="browse()">
-      <app-icon [name]="multiple() ? 'plus' : 'upload'" />
-      <span>{{ multiple() ? 'Add more' : 'Replace' }}</span>
-    </button>
+    @if (previews().length || currentUrl()) {
+      <div class="portrait-actions">
+        <button type="button" class="pill" (click)="browse()">
+          <app-icon name="upload" />
+          {{ 'media.replace' | t }}
+        </button>
+        @if (previews()[0]; as preview) {
+          <button
+            type="button"
+            class="pill round"
+            [attr.aria-label]="'media.removeCover' | t"
+            (click)="remove(preview.file)"
+          >
+            <app-icon name="close" />
+          </button>
+        }
+      </div>
+    }
   </div>
 } @else {
-  <button
-    type="button"
-    class="dropzone"
-    [class.dragging]="dragging()"
-    (click)="browse()"
-    (dragover)="onDragOver($event)"
-    (dragleave)="dragging.set(false)"
-    (drop)="onDrop($event)"
-  >
-    <span class="dropzone-icon"><app-icon name="image" /></span>
-    <span class="dropzone-title">
-      <b>Click to upload</b>
-      or drag and drop
-    </span>
-    <span class="muted">
-      {{
-        hint() ||
-          (allowVideo()
-            ? 'JPG, PNG, WEBP, GIF up to 5 MB · MP4, WEBM, MOV up to 100 MB'
-            : 'JPG, PNG, WEBP, GIF up to 5 MB')
-      }}
-    </span>
-  </button>
+  @if (previews().length || currentUrl()) {
+    <div
+      class="previews"
+      [class.single]="!multiple()"
+      [class.dragging]="dragging()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="dragging.set(false)"
+      (drop)="onDrop($event)"
+    >
+      @for (preview of previews(); track preview.url) {
+        <figure class="thumb">
+          @if (preview.isVideo) {
+            <video [src]="preview.url" muted playsinline preload="metadata"></video>
+            <span class="badge"><app-icon name="play" filled /></span>
+          } @else {
+            <img [src]="preview.url" [alt]="preview.file.name" />
+          }
+          <button
+            type="button"
+            class="remove"
+            [attr.aria-label]="'common.remove' | t: { name: preview.file.name }"
+            (click)="remove(preview.file)"
+          >
+            <app-icon name="close" />
+          </button>
+          <figcaption>{{ preview.file.name }}</figcaption>
+        </figure>
+      } @empty {
+        <figure class="thumb current">
+          @if (currentIsVideo()) {
+            <video [src]="currentUrl()" muted playsinline preload="metadata"></video>
+          } @else {
+            <img [src]="currentUrl()" [alt]="'media.currentAlt' | t" />
+          }
+          <figcaption>{{ 'media.current' | t }}</figcaption>
+        </figure>
+      }
+
+      <button type="button" class="thumb add" (click)="browse()">
+        <app-icon [name]="multiple() ? 'plus' : 'upload'" />
+        <span>{{ (multiple() ? 'media.addMore' : 'media.replace') | t }}</span>
+      </button>
+    </div>
+  } @else {
+    <button
+      type="button"
+      class="dropzone"
+      [class.dragging]="dragging()"
+      (click)="browse()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="dragging.set(false)"
+      (drop)="onDrop($event)"
+    >
+      <span class="dropzone-icon"><app-icon name="image" /></span>
+      <span class="dropzone-title">
+        <b>{{ 'media.clickToUpload' | t }}</b>
+        {{ 'media.orDrag' | t }}
+      </span>
+      <span class="muted">{{ hint() || (defaultHint() | t) }}</span>
+    </button>
+  }
 }
 
 @if (error()) {

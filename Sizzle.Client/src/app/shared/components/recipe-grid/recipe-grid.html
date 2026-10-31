@@ -2,6 +2,6 @@
   @for (recipe of recipes(); track recipe.id) {
     <app-recipe-card [recipe]="recipe" />
   } @empty {
-    <p class="muted">{{ emptyText() }}</p>
+    <p class="muted">{{ emptyText() || ('common.noRecipes' | t) }}</p>
   }
 </div>

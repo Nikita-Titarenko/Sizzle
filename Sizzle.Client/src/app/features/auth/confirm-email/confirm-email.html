@@ -1,9 +1,9 @@
 <div class="card auth-box">
-  <h2>Confirm your email</h2>
-  <p class="muted">We sent a confirmation code to your email. Enter it below.</p>
+  <h2>{{ 'auth.confirm.title' | t }}</h2>
+  <p class="muted">{{ 'auth.confirm.intro' | t }}</p>
   <form class="form" (ngSubmit)="submit()">
     <label>
-      <span>Code</span>
+      <span>{{ 'auth.confirm.code' | t }}</span>
       <input name="code" [(ngModel)]="code" required autocomplete="one-time-code" />
     </label>
     @if (error()) {
@@ -12,7 +12,9 @@
     @if (info()) {
       <div class="muted">{{ info() }}</div>
     }
-    <button class="btn" [disabled]="busy()">Confirm</button>
+    <button class="btn" [disabled]="busy()">{{ 'auth.confirm.submit' | t }}</button>
   </form>
-  <p><button class="link" (click)="resend()">Send the code again</button></p>
+  <p>
+    <button class="link" (click)="resend()">{{ 'auth.confirm.resend' | t }}</button>
+  </p>
 </div>

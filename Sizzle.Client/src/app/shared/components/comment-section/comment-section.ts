@@ -4,18 +4,20 @@ import { RouterLink } from '@angular/router';
 import { CommentsApi } from '../../../core/api/comments.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { Comment } from '../../../core/models';
-import { errorMessage } from '../../../core/utils/error-message';
 import { CommentItem } from '../comment-item/comment-item';
 
 const PAGE_SIZE = 20;
+import { TranslatePipe } from '../../pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-comment-section',
-  imports: [FormsModule, RouterLink, CommentItem],
+  imports: [TranslatePipe, FormsModule, RouterLink, CommentItem],
   templateUrl: './comment-section.html',
   styleUrl: './comment-section.scss',
 })
 export class CommentSection implements OnInit {
+  private readonly i18n = inject(I18n);
   private readonly commentsApi = inject(CommentsApi);
   protected readonly auth = inject(AuthService);
 
@@ -50,7 +52,7 @@ export class CommentSection implements OnInit {
           this.draft = '';
         }
       },
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 
@@ -59,12 +61,12 @@ export class CommentSection implements OnInit {
       next: (updated) => {
         this.comments.update((list) => list.map((c) => (c.id === updated.id ? updated : c)));
       },
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 
   remove(comment: Comment): void {
-    if (!confirm('Delete this comment?')) {
+    if (!confirm(this.i18n.t('comments.confirmDelete'))) {
       return;
     }
     this.commentsApi.delete(comment.id).subscribe({
@@ -74,7 +76,7 @@ export class CommentSection implements OnInit {
         );
         this.total.update((n) => n - 1);
       },
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 
@@ -88,7 +90,7 @@ export class CommentSection implements OnInit {
           return [...list, ...page.data.filter((c) => !known.has(c.id))];
         });
       },
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 }

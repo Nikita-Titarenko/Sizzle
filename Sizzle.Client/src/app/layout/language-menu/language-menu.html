@@ -1,0 +1,43 @@
+<button
+  #trigger
+  type="button"
+  class="trigger"
+  aria-haspopup="listbox"
+  [attr.aria-expanded]="open()"
+  [attr.aria-label]="'nav.language' | t"
+  (click)="toggle()"
+>
+  <app-icon name="globe" />
+  <span class="current-code">{{ language.current().toUpperCase() }}</span>
+  <app-icon class="chevron" [class.flipped]="open()" name="chevron-down" />
+</button>
+
+@if (open()) {
+  <ul
+    class="menu"
+    role="listbox"
+    [attr.aria-label]="'nav.language' | t"
+    (keydown)="onListKeydown($event)"
+  >
+    @for (option of languages; track option.code) {
+      <li role="presentation">
+        <button
+          #option
+          type="button"
+          class="option"
+          role="option"
+          [class.selected]="option.code === language.current()"
+          [attr.aria-selected]="option.code === language.current()"
+          [attr.lang]="option.code"
+          (click)="choose(option.code)"
+        >
+          <span class="code">{{ option.code.toUpperCase() }}</span>
+          <span class="label">{{ option.label }}</span>
+          @if (option.code === language.current()) {
+            <app-icon class="check" name="check" />
+          }
+        </button>
+      </li>
+    }
+  </ul>
+}

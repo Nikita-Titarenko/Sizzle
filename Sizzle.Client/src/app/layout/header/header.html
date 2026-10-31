@@ -1,17 +1,21 @@
 <header class="topbar">
-  <a routerLink="/" class="brand">🔥 Sizzle</a>
+  <a routerLink="/" class="brand" aria-label="Sizzle">
+    <img class="brand-mark" src="logo-mark.png" alt="" width="36" height="36" />
+    <span class="brand-name">Sizzle</span>
+  </a>
   <nav class="nav">
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-      For you
+      {{ 'nav.forYou' | t }}
     </a>
-    <a routerLink="/explore" routerLinkActive="active">Explore</a>
+    <a routerLink="/explore" routerLinkActive="active">{{ 'nav.explore' | t }}</a>
     @if (auth.isLoggedIn()) {
-      <a routerLink="/recipes/new" routerLinkActive="active">New recipe</a>
-      <a routerLink="/profile" routerLinkActive="active">Profile</a>
-      <button class="link" (click)="logout()">Log out</button>
+      <a routerLink="/recipes/new" routerLinkActive="active">{{ 'nav.newRecipe' | t }}</a>
+      <a routerLink="/profile" routerLinkActive="active">{{ 'nav.profile' | t }}</a>
+      <button class="link" (click)="logout()">{{ 'nav.logOut' | t }}</button>
     } @else {
-      <a routerLink="/login" routerLinkActive="active">Log in</a>
-      <a routerLink="/register" class="btn small">Sign up</a>
+      <a routerLink="/login" routerLinkActive="active">{{ 'nav.logIn' | t }}</a>
+      <a routerLink="/register" class="btn small">{{ 'nav.signUp' | t }}</a>
     }
+    <app-language-menu />
   </nav>
 </header>

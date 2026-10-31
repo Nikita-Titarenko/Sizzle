@@ -1,0 +1,85 @@
+name: UI
+
+# Runs on every push and pull request that touches the Angular client.
+on:
+  push:
+    paths:
+      - 'Sizzle.Client/**'
+      - '.github/workflows/ui.yml'
+  pull_request:
+    paths:
+      - 'Sizzle.Client/**'
+      - '.github/workflows/ui.yml'
+
+# A newer push to the same branch or PR makes older runs pointless.
+concurrency:
+  group: ui-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: Sizzle.Client
+
+jobs:
+  checks:
+    name: Format, test and build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: Sizzle.Client/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check formatting
+        run: npm run format:check
+
+      # The github-actions reporter annotates failing tests directly on the PR diff.
+      - name: Unit tests
+        run: npm run test:ci -- --reporters=default --reporters=github-actions
+
+      # Production build: catches template type errors, missing translation keys and
+      # bundle size budgets that the dev server does not enforce.
+      - name: Production build
+        run: npx ng build --configuration production
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sizzle-client-dist
+          path: Sizzle.Client/dist/Sizzle.Client/browser
+          retention-days: 7
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build image
+        run: docker build -t sizzle-client:ci .
+
+      # Validates nginx.conf inside the real image (proxy rules, SPA fallback).
+      - name: Check nginx config
+        run: docker run --rm sizzle-client:ci nginx -t
+
+      - name: Serve the app
+        run: |
+          docker run -d --name sizzle-client -p 8080:80 sizzle-client:ci
+          for i in $(seq 1 20); do curl -fs http://localhost:8080/ > /dev/null && break; sleep 1; done
+          # Index and a deep link must both return the Angular app (SPA fallback).
+          curl -fs http://localhost:8080/ | grep -q '<app-root'
+          curl -fs http://localhost:8080/recipes/new | grep -q '<app-root'
+
+      - name: Container logs
+        if: failure()
+        run: docker logs sizzle-client

@@ -3,20 +3,22 @@ import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
 import { PageResponse, Recipe, User } from '../../../core/models';
-import { errorMessage } from '../../../core/utils/error-message';
 import { Pager } from '../../../shared/components/pager/pager';
 import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 
 const PAGE_SIZE = 9;
 import { UserAvatar } from '../../../shared/components/user-avatar/user-avatar';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
 
 @Component({
   selector: 'app-user-page',
-  imports: [UserAvatar, RecipeGrid, Pager],
+  imports: [TranslatePipe, UserAvatar, RecipeGrid, Pager],
   templateUrl: './user-page.html',
   styleUrl: './user-page.scss',
 })
 export class UserPage {
+  private readonly i18n = inject(I18n);
   private readonly recipesApi = inject(RecipesApi);
   private readonly usersApi = inject(UsersApi);
   protected readonly auth = inject(AuthService);
@@ -37,7 +39,7 @@ export class UserPage {
       this.error.set('');
       this.usersApi.getUser(id).subscribe({
         next: (user) => this.user.set(user),
-        error: (err) => this.error.set(errorMessage(err)),
+        error: (err) => this.error.set(this.i18n.error(err)),
       });
       if (this.auth.isLoggedIn()) {
         this.usersApi
@@ -58,7 +60,7 @@ export class UserPage {
       : this.usersApi.follow(this.id());
     request.subscribe({
       next: () => this.followed.update((v) => !v),
-      error: (err) => this.error.set(errorMessage(err)),
+      error: (err) => this.error.set(this.i18n.error(err)),
     });
   }
 }

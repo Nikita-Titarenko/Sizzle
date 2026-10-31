@@ -1,9 +1,9 @@
 <section class="hero">
-  <h1>Explore recipes</h1>
+  <h1>{{ 'explore.title' | t }}</h1>
   <input
     class="search"
     type="search"
-    placeholder="Search recipes…"
+    [placeholder]="'explore.search' | t"
     [ngModel]="search()"
     (ngModelChange)="onSearch($event)"
   />
@@ -11,7 +11,7 @@
 
 <div class="ingredient-filter">
   <app-ingredient-picker
-    placeholder="Filter by ingredient…"
+    [placeholder]="'explore.ingredientFilter' | t"
     [excludeIds]="ingredientIds()"
     (picked)="addIngredient($event)"
   />
@@ -25,7 +25,7 @@
           {{ ingredient.name }}
           <button
             type="button"
-            [attr.aria-label]="'Remove ' + ingredient.name"
+            [attr.aria-label]="'common.remove' | t: { name: ingredient.name }"
             (click)="removeIngredient(ingredient.id)"
           >
             <app-icon name="close" />
@@ -49,7 +49,7 @@
 </div>
 
 @if (page(); as page) {
-  <app-recipe-grid [recipes]="page.data" emptyText="Nothing found. Try another search." />
+  <app-recipe-grid [recipes]="page.data" [emptyText]="'explore.empty' | t" />
   <app-pager
     [pageIndex]="pageIndex()"
     [pageSize]="pageSize"
@@ -57,5 +57,5 @@
     (change)="goTo($event)"
   />
 } @else {
-  <p class="muted">Loading…</p>
+  <p class="muted">{{ 'common.loading' | t }}</p>
 }

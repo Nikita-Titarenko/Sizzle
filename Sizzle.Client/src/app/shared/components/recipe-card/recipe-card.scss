@@ -8,7 +8,8 @@
 }
 
 .recipe-card:hover {
-  box-shadow: 0 6px 20px rgb(0 0 0 / 0.08);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow);
 }
 
 .cover-link {
@@ -30,7 +31,13 @@ h3 a {
   display: flex;
   align-items: center;
   justify-content: center;
+  color: var(--muted);
   font-size: 3rem;
+  opacity: 0.6;
+}
+
+.liked {
+  color: var(--like);
 }
 
 .body {

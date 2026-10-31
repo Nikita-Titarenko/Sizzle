@@ -14,7 +14,7 @@
     } @else if (recipe().fileUrl) {
       <img class="cover" [src]="recipe().fileUrl" [alt]="recipe().name" loading="lazy" />
     } @else {
-      <div class="cover placeholder">🍳</div>
+      <div class="cover placeholder"><app-icon name="utensils" /></div>
     }
   </a>
   <div class="body">
@@ -23,10 +23,18 @@
     </h3>
     <p class="muted desc">{{ recipe().description }}</p>
     <div class="row muted meta">
-      <span>⏱ {{ recipe().cookingTimeMinutes }} min</span>
-      <span>👁 {{ recipe().viewCount }}</span>
+      <span class="meta-item">
+        <app-icon name="clock" />
+        {{ 'common.minutes' | t: { count: recipe().cookingTimeMinutes } }}
+      </span>
+      <span class="meta-item">
+        <app-icon name="eye" />
+        {{ recipe().viewCount }}
+      </span>
       @if (recipe().isLiked) {
-        <span>❤️</span>
+        <span class="meta-item liked" [attr.aria-label]="'card.liked' | t">
+          <app-icon name="heart" filled />
+        </span>
       }
       <span class="spacer"></span>
       <span>{{ recipe().creationDate | date: 'mediumDate' }}</span>
@@ -35,7 +43,7 @@
       <app-user-avatar [name]="recipe().userName" [imageUrl]="recipe().userImageUrl" />
       <span>{{ recipe().userName }}</span>
       @if (recipe().isFollowed) {
-        <span class="muted">· following</span>
+        <span class="muted">· {{ 'card.following' | t }}</span>
       }
     </a>
   </div>

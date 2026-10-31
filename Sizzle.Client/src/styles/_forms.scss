@@ -16,17 +16,29 @@
 input,
 textarea,
 select {
-  padding: 9px 12px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #fff;
+  border-radius: 10px;
+  background: var(--surface-2);
   color: var(--text);
   font: inherit;
   font-weight: 400; // labels are bold, the controls inside them are not
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+
+  &::placeholder {
+    color: var(--muted);
+  }
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
 
   &:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: -1px;
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 }
 
@@ -40,4 +52,11 @@ textarea {
 .field-label {
   font-size: 0.9rem;
   font-weight: 600;
+}
+
+// Fallback for native <select> popups: some browsers (Firefox on Linux) draw them with
+// system colors unless the options are styled explicitly.
+option {
+  background: var(--surface-2);
+  color: var(--text);
 }

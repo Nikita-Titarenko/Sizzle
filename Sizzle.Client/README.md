@@ -35,6 +35,24 @@ npm start
 
 `ng serve` uses the same port (4200), so stop the client container first: `docker compose stop sizzle-client`. The dev server proxies the same paths to `http://localhost:8080` (see `proxy.conf.json`), so the API does not need CORS.
 
+## Tests and checks
+
+```bash
+npm test              # unit tests in watch mode (Vitest)
+npm run test:ci       # single run, as in CI
+npm run format:check  # Prettier; `npm run format` fixes it
+```
+
+Unit tests cover the contracts that break silently: translation keys and placeholders, the
+multipart field names the API binds (`Steps[0].Files`, ...), the `Accept-Language` header,
+file limits mirrored from the API, the ingredient tree, JWT handling and the recipe editor's
+validation.
+
+GitHub Actions (`.github/workflows/ui.yml`) runs on every push and pull request that touches
+`Sizzle.Client/`: formatting, unit tests (failures are annotated on the PR), a production build
+with bundle budgets, and a Docker job that builds the image, validates `nginx.conf` and checks
+that deep links are served by the SPA.
+
 ## Google sign-in
 
 1. Copy `Sizzle.WebApi/appsettings.Secrets.example.json` to `Sizzle.WebApi/appsettings.Secrets.json` (git-ignored) and paste the Google client secret.

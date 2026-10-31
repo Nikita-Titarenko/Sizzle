@@ -1,15 +1,24 @@
-import { Pipe, PipeTransform } from '@angular/core';
+import { Pipe, PipeTransform, inject } from '@angular/core';
+import { I18n } from '../../core/i18n/i18n.service';
+import { TranslationKey } from '../../core/i18n/translations';
 
-const SHORT_UNITS: Record<string, string> = {
-  Grams: 'g',
-  Milliliters: 'ml',
-  Pieces: 'pcs',
+/** Unit names the API uses: short ones on catalog items, enum names when creating ingredients. */
+const SHORT_UNITS: Record<string, TranslationKey> = {
+  g: 'units.g',
+  Grams: 'units.g',
+  ml: 'units.ml',
+  Milliliters: 'units.ml',
+  pcs: 'units.pcs',
+  Pieces: 'units.pcs',
 };
 
-/** Shortens ingredient units ("Grams" → "g"). Units the API already abbreviates pass through. */
+/** Shows a unit in its short, localized form ("Grams" or "g" → "g" / "г"). */
 @Pipe({ name: 'unitLabel' })
 export class UnitLabelPipe implements PipeTransform {
+  private readonly i18n = inject(I18n);
+
   transform(unit: string): string {
-    return SHORT_UNITS[unit] ?? unit;
+    const key = SHORT_UNITS[unit];
+    return key ? this.i18n.t(key) : unit;
   }
 }

@@ -3,11 +3,16 @@
   class="drawer"
   role="dialog"
   aria-modal="true"
-  [attr.aria-label]="'Comments on ' + recipe().name"
+  [attr.aria-label]="'feed.comments.title' | t: { recipe: recipe().name }"
 >
   <header class="drawer-header">
     <b>{{ recipe().name }}</b>
-    <button type="button" class="close" aria-label="Close comments" (click)="closed.emit()">
+    <button
+      type="button"
+      class="close"
+      [attr.aria-label]="'feed.comments.close' | t"
+      (click)="closed.emit()"
+    >
       <app-icon name="close" />
     </button>
   </header>

@@ -17,10 +17,10 @@
   padding: 6px;
   overflow-y: auto;
   list-style: none;
-  background: #fff;
+  background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
+  box-shadow: var(--shadow);
 }
 
 .option {
@@ -39,7 +39,7 @@
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: #fff1e6;
+    background: var(--accent-soft);
   }
 
   &:disabled {
