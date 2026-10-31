@@ -1,20 +1,24 @@
 <section class="card">
-  <h2>Comments ({{ total() }})</h2>
+  <h2>{{ 'comments.title' | t: { count: total() } }}</h2>
 
   @if (auth.isLoggedIn()) {
     <form class="form" (ngSubmit)="post(null, draft)">
       <textarea
         name="draft"
         [(ngModel)]="draft"
-        placeholder="Share your thoughts…"
+        [placeholder]="'comments.placeholder' | t"
         maxlength="2000"
       ></textarea>
-      <div><button class="btn small" [disabled]="!draft.trim()">Post</button></div>
+      <div>
+        <button class="btn small" [disabled]="!draft.trim()">
+          {{ 'comments.post' | t }}
+        </button>
+      </div>
     </form>
   } @else {
     <p class="muted">
-      <a routerLink="/login">Log in</a>
-      to leave a comment.
+      <a routerLink="/login">{{ 'comments.logIn' | t }}</a>
+      {{ 'comments.toComment' | t }}
     </p>
   }
   @if (error()) {
@@ -41,10 +45,12 @@
       }
     </div>
   } @empty {
-    <p class="muted">No comments yet.</p>
+    <p class="muted">{{ 'comments.empty' | t }}</p>
   }
 
   @if (comments().length < total()) {
-    <button class="btn small outline" (click)="loadMore()">Load more</button>
+    <button class="btn small outline" (click)="loadMore()">
+      {{ 'comments.loadMore' | t }}
+    </button>
   }
 </section>

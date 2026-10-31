@@ -2,14 +2,15 @@ import { Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { User } from '../../../core/models';
 import { UserAvatar } from '../user-avatar/user-avatar';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-user-list',
-  imports: [UserAvatar, RouterLink],
+  imports: [TranslatePipe, UserAvatar, RouterLink],
   templateUrl: './user-list.html',
   styleUrl: './user-list.scss',
 })
 export class UserList {
   readonly users = input.required<User[]>();
-  readonly emptyText = input('Nobody here yet.');
+  readonly emptyText = input('');
 }

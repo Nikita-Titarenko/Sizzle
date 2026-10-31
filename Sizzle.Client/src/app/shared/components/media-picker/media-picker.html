@@ -25,14 +25,14 @@
       @if (currentIsVideo()) {
         <video [src]="currentUrl()" muted loop autoplay playsinline></video>
       } @else {
-        <img [src]="currentUrl()" alt="Current cover" />
+        <img [src]="currentUrl()" [alt]="'media.currentAlt' | t" />
       }
     } @else {
       <button type="button" class="portrait-empty" (click)="browse()">
         <span class="dropzone-icon"><app-icon name="image" /></span>
-        <b>Add a cover</b>
-        <span class="muted">Click or drop a photo or video</span>
-        <span class="portrait-hint">{{ hint() || defaultHint() }}</span>
+        <b>{{ 'media.addCover' | t }}</b>
+        <span class="muted">{{ 'media.coverHint' | t }}</span>
+        <span class="portrait-hint">{{ hint() || (defaultHint() | t) }}</span>
       </button>
     }
 
@@ -40,13 +40,13 @@
       <div class="portrait-actions">
         <button type="button" class="pill" (click)="browse()">
           <app-icon name="upload" />
-          Replace
+          {{ 'media.replace' | t }}
         </button>
         @if (previews()[0]; as preview) {
           <button
             type="button"
             class="pill round"
-            aria-label="Remove cover"
+            [attr.aria-label]="'media.removeCover' | t"
             (click)="remove(preview.file)"
           >
             <app-icon name="close" />
@@ -76,7 +76,7 @@
           <button
             type="button"
             class="remove"
-            [attr.aria-label]="'Remove ' + preview.file.name"
+            [attr.aria-label]="'common.remove' | t: { name: preview.file.name }"
             (click)="remove(preview.file)"
           >
             <app-icon name="close" />
@@ -88,15 +88,15 @@
           @if (currentIsVideo()) {
             <video [src]="currentUrl()" muted playsinline preload="metadata"></video>
           } @else {
-            <img [src]="currentUrl()" alt="Current media" />
+            <img [src]="currentUrl()" [alt]="'media.currentAlt' | t" />
           }
-          <figcaption>Current</figcaption>
+          <figcaption>{{ 'media.current' | t }}</figcaption>
         </figure>
       }
 
       <button type="button" class="thumb add" (click)="browse()">
         <app-icon [name]="multiple() ? 'plus' : 'upload'" />
-        <span>{{ multiple() ? 'Add more' : 'Replace' }}</span>
+        <span>{{ (multiple() ? 'media.addMore' : 'media.replace') | t }}</span>
       </button>
     </div>
   } @else {
@@ -111,10 +111,10 @@
     >
       <span class="dropzone-icon"><app-icon name="image" /></span>
       <span class="dropzone-title">
-        <b>Click to upload</b>
-        or drag and drop
+        <b>{{ 'media.clickToUpload' | t }}</b>
+        {{ 'media.orDrag' | t }}
       </span>
-      <span class="muted">{{ hint() || defaultHint() }}</span>
+      <span class="muted">{{ hint() || (defaultHint() | t) }}</span>
     </button>
   }
 }

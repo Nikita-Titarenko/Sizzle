@@ -3,14 +3,16 @@
     <button
       class="btn small outline"
       [disabled]="pageIndex() === 0"
+      [attr.aria-label]="'pager.previous' | t"
       (click)="change.emit(pageIndex() - 1)"
     >
       ←
     </button>
-    <span class="muted">Page {{ pageIndex() + 1 }} of {{ pages() }}</span>
+    <span class="muted">{{ 'pager.page' | t: { page: pageIndex() + 1, pages: pages() } }}</span>
     <button
       class="btn small outline"
       [disabled]="pageIndex() + 1 >= pages()"
+      [attr.aria-label]="'pager.next' | t"
       (click)="change.emit(pageIndex() + 1)"
     >
       →

@@ -5,10 +5,11 @@ import { isVideoUrl } from '../../../core/utils/media';
 import { Recipe } from '../../../core/models';
 import { UserAvatar } from '../user-avatar/user-avatar';
 import { Icon } from '../icon/icon';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-recipe-card',
-  imports: [Icon, UserAvatar, RouterLink, DatePipe],
+  imports: [TranslatePipe, Icon, UserAvatar, RouterLink, DatePipe],
   templateUrl: './recipe-card.html',
   styleUrl: './recipe-card.scss',
 })

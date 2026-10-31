@@ -11,8 +11,10 @@
     <form class="form" (ngSubmit)="submitEdit()">
       <textarea name="edit" [(ngModel)]="editText" maxlength="2000"></textarea>
       <div class="row">
-        <button class="btn small" [disabled]="!editText.trim()">Save</button>
-        <button type="button" class="link" (click)="mode.set('view')">Cancel</button>
+        <button class="btn small" [disabled]="!editText.trim()">{{ 'common.save' | t }}</button>
+        <button type="button" class="link" (click)="mode.set('view')">
+          {{ 'common.cancel' | t }}
+        </button>
       </div>
     </form>
   } @else {
@@ -21,11 +23,11 @@
 
   <div class="row actions">
     @if (canReply()) {
-      <button class="link" (click)="toggleReply()">Reply</button>
+      <button class="link" (click)="toggleReply()">{{ 'common.reply' | t }}</button>
     }
     @if (canModify()) {
-      <button class="link" (click)="startEdit()">Edit</button>
-      <button class="link" (click)="deleted.emit()">Delete</button>
+      <button class="link" (click)="startEdit()">{{ 'common.edit' | t }}</button>
+      <button class="link" (click)="deleted.emit()">{{ 'common.delete' | t }}</button>
     }
   </div>
 
@@ -34,10 +36,12 @@
       <textarea
         name="reply"
         [(ngModel)]="replyText"
-        placeholder="Write a reply…"
+        [placeholder]="'comments.replyPlaceholder' | t"
         maxlength="2000"
       ></textarea>
-      <div><button class="btn small" [disabled]="!replyText.trim()">Reply</button></div>
+      <div>
+        <button class="btn small" [disabled]="!replyText.trim()">{{ 'common.reply' | t }}</button>
+      </div>
     </form>
   }
 </div>

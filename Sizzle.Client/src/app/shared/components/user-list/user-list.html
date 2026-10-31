@@ -7,6 +7,6 @@
       </a>
     </li>
   } @empty {
-    <li class="muted">{{ emptyText() }}</li>
+    <li class="muted">{{ emptyText() || ('common.nobody' | t) }}</li>
   }
 </ul>

@@ -11,6 +11,7 @@ import {
 import { FormsModule } from '@angular/forms';
 import { Ingredient, IngredientChoice } from '../../../core/models';
 import { IngredientCatalog } from '../../../core/services/ingredient-catalog.service';
+import { UnitLabelPipe } from '../../pipes/unit-label.pipe';
 import { Icon } from '../icon/icon';
 
 interface Row {
@@ -27,10 +28,11 @@ const MAX_ROWS = 80;
  * Searchable dropdown of catalog ingredients shown as a tree: parents with their
  * variants indented underneath. With `rootsOnly`, only top-level ingredients are
  * offered (the API allows a new ingredient's parent to be a top-level one only).
- */
+ */ import { TranslatePipe } from '../../pipes/translate.pipe';
+
 @Component({
   selector: 'app-ingredient-picker',
-  imports: [FormsModule, Icon],
+  imports: [TranslatePipe, FormsModule, Icon, UnitLabelPipe],
   templateUrl: './ingredient-picker.html',
   styleUrl: './ingredient-picker.scss',
   host: { '(document:click)': 'onDocumentClick($event)' },
@@ -42,7 +44,8 @@ export class IngredientPicker {
   /** Ids already chosen; they stay visible for context but cannot be picked again. */
   readonly excludeIds = input<string[]>([]);
   readonly rootsOnly = input(false, { transform: booleanAttribute });
-  readonly placeholder = input('Search ingredients…');
+  /** Defaults to a generic "Search ingredients…". */
+  readonly placeholder = input('');
   readonly picked = output<IngredientChoice>();
 
   readonly term = signal('');

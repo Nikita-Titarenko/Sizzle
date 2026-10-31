@@ -1,7 +1,9 @@
 import { Component, computed, input, output } from '@angular/core';
+import { TranslatePipe } from '../../pipes/translate.pipe';
 
 @Component({
   selector: 'app-pager',
+  imports: [TranslatePipe],
   templateUrl: './pager.html',
   styleUrl: './pager.scss',
 })

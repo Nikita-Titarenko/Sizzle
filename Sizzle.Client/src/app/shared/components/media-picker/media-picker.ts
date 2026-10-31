@@ -8,8 +8,10 @@ import {
   model,
   signal,
   viewChild,
+  inject,
 } from '@angular/core';
 import { acceptFor, isVideoFile, isVideoUrl, validateMedia } from '../../../core/utils/media';
+import { TranslationKey } from '../../../core/i18n/translations';
 import { Icon } from '../icon/icon';
 
 interface Preview {
@@ -22,14 +24,17 @@ interface Preview {
  * Styled replacement for <input type="file">: drop zone, drag & drop, thumbnails and
  * per-file removal. Bind the selection with [(files)]. Files are checked against the
  * API's format and size limits before they are accepted.
- */
+ */ import { TranslatePipe } from '../../pipes/translate.pipe';
+import { I18n } from '../../../core/i18n/i18n.service';
+
 @Component({
   selector: 'app-media-picker',
-  imports: [Icon],
+  imports: [TranslatePipe, Icon],
   templateUrl: './media-picker.html',
   styleUrl: './media-picker.scss',
 })
 export class MediaPicker {
+  private readonly i18n = inject(I18n);
   readonly files = model<File[]>([]);
   readonly multiple = input(false, { transform: booleanAttribute });
   readonly allowVideo = input(false, { transform: booleanAttribute });
@@ -39,10 +44,8 @@ export class MediaPicker {
   /** `portrait` renders a single 9:16 cover slot that matches the feed; `grid` shows thumbnails. */
   readonly layout = input<'grid' | 'portrait'>('grid');
 
-  readonly defaultHint = computed(() =>
-    this.allowVideo()
-      ? 'JPG, PNG, WEBP, GIF up to 5 MB · MP4, WEBM, MOV up to 100 MB'
-      : 'JPG, PNG, WEBP, GIF up to 5 MB',
+  readonly defaultHint = computed<TranslationKey>(() =>
+    this.allowVideo() ? 'media.hintMedia' : 'media.hintImages',
   );
   readonly accept = computed(() => acceptFor(this.allowVideo()));
   readonly dragging = signal(false);
@@ -95,7 +98,7 @@ export class MediaPicker {
     const accepted = selected.filter((file) => {
       const problem = validateMedia(file, this.allowVideo());
       if (problem) {
-        errors.push(problem);
+        errors.push(this.i18n.t(problem.key, problem.params));
       }
       return !problem;
     });
