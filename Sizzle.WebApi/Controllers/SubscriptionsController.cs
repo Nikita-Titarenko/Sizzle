@@ -10,6 +10,7 @@ namespace Sizzle.WebApi.Controllers;
 [Route("api/[controller]")]
 public sealed class SubscriptionsController(ISubscriptionService subscriptions) : BaseController
 {
+    /// <summary>Get the available subscription plans and their prices.</summary>
     [HttpGet("plans")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(IReadOnlyList<SubscriptionPlanDto>), StatusCodes.Status200OK)]
@@ -19,6 +20,12 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
         return Ok(subscriptions.GetPlans());
     }
 
+    /// <summary>Start checkout for a subscription plan.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.BadRequest — the plan does not exist.</para>
+    /// <para>ErrorKey.NotFound — the current user does not exist.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpPost("{planId:int}/checkout")]
     [Authorize]
     [ProducesResponseType(typeof(SubscriptionCheckoutDto), StatusCodes.Status200OK)]
@@ -30,6 +37,8 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
         return result.IsSuccess ? Ok(result.Value) : HandleErrors(result);
     }
 
+    /// <summary>Process a Stripe payment webhook and activate a paid subscription.</summary>
+    /// <remarks>ErrorKey.BadRequest — invalid Stripe signature, payload, order, or payment details.</remarks>
     [HttpPost("stripe/webhook")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -42,6 +51,8 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions) 
         return result.IsSuccess ? Ok() : HandleErrors(result);
     }
 
+    /// <summary>Get the current user's subscription status and payment history.</summary>
+    /// <remarks>ErrorKey.Incorrect — missing or invalid JWT (401).</remarks>
     [HttpGet]
     [Authorize]
     [ProducesResponseType(typeof(SubscriptionStatusDto), StatusCodes.Status200OK)]

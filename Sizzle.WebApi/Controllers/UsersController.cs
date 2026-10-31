@@ -52,6 +52,8 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    /// <summary>Get the current user's followers.</summary>
+    /// <remarks>ErrorKey.Incorrect — missing or invalid JWT (401).</remarks>
     [HttpGet("followers")]
     [Authorize]
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
@@ -61,6 +63,8 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         return Ok(await followerService.GetFollowersAsync(GetUserId(), cancellationToken));
     }
 
+    /// <summary>Get the users followed by the current user.</summary>
+    /// <remarks>ErrorKey.Incorrect — missing or invalid JWT (401).</remarks>
     [HttpGet("following")]
     [Authorize]
     [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]

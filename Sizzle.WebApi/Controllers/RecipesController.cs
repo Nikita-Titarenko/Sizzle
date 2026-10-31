@@ -29,6 +29,8 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper) : B
         return Ok(page);
     }
 
+    /// <summary>Get personalized recipes for the current user, or a public recipe page for anonymous visitors.</summary>
+    /// <remarks>ErrorKey.BadRequest — invalid pagination parameters.</remarks>
     [HttpGet("personalized")]
     [ProducesResponseType(typeof(PageResponse<FeedRecipeDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
@@ -75,6 +77,11 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper) : B
         return Ok(page);
     }
 
+    /// <summary>Get the current user's saved recipes with filters.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.BadRequest — invalid pagination parameters.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpGet("saved")]
     [Authorize]
     [ProducesResponseType(typeof(PageResponse<FeedRecipeDto>), StatusCodes.Status200OK)]
@@ -188,6 +195,11 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper) : B
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    /// <summary>Save or unsave a recipe for the current user.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the recipe does not exist.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpPost("{recipeId:guid}/toggle-save")]
     [Authorize]
     [ProducesResponseType(typeof(RecipeSaveDto), StatusCodes.Status200OK)]
@@ -199,6 +211,11 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper) : B
         return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
     }
 
+    /// <summary>Record that the current user shared a recipe.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the recipe does not exist.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
     [HttpPost("{recipeId:guid}/update-share")]
     [Authorize]
     [ProducesResponseType(typeof(RecipeShareDto), StatusCodes.Status200OK)]
