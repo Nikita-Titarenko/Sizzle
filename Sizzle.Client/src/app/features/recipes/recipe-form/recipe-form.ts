@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
@@ -49,6 +50,7 @@ export class RecipeForm {
   private readonly catalogApi = inject(CatalogApi);
   private readonly recipesApi = inject(RecipesApi);
   private readonly router = inject(Router);
+  private readonly location = inject(Location);
   private readonly ingredientCatalog = inject(IngredientCatalog);
 
   readonly id = input<string>();
@@ -80,14 +82,32 @@ export class RecipeForm {
     });
   }
 
-  canSubmit(): boolean {
-    return (
-      !!this.name.trim() &&
-      !!this.description.trim() &&
-      !!this.categoryId &&
-      this.cookingTimeMinutes > 0 &&
-      this.steps().every((s) => s.name.trim() && s.description.trim())
-    );
+  /** What is still missing before the recipe can be published, or null when it is complete. */
+  missingHint(): string | null {
+    if (!this.name.trim()) {
+      return 'Give your recipe a name';
+    }
+    if (!this.description.trim()) {
+      return 'Add a short description';
+    }
+    if (!this.categoryId) {
+      return 'Choose a category';
+    }
+    if (!(this.cookingTimeMinutes > 0)) {
+      return 'Set the cooking time';
+    }
+    if (this.steps().some((s) => !s.name.trim() || !s.description.trim())) {
+      return 'Fill in a title and description for every step';
+    }
+    return null;
+  }
+
+  adjustTime(delta: number): void {
+    this.cookingTimeMinutes = Math.max(1, (this.cookingTimeMinutes || 0) + delta);
+  }
+
+  cancel(): void {
+    this.location.back();
   }
 
   addIngredient(choice: IngredientChoice): void {
@@ -132,6 +152,9 @@ export class RecipeForm {
   }
 
   submit(): void {
+    if (this.missingHint()) {
+      return;
+    }
     const value = {
       name: this.name.trim(),
       description: this.description.trim(),
