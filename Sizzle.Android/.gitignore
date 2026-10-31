@@ -1,0 +1,13 @@
+.gradle/
+build/
+local.properties
+.idea/
+*.iml
+.kotlin/
+captures/
+.externalNativeBuild/
+.cxx/
+app/google-services.json
+
+# The root .gitignore (Visual Studio) ignores debug/ folders; this is the Android debug source set.
+!app/src/debug/
