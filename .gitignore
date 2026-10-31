@@ -362,9 +362,6 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-# Keep .github ignored except for CI workflows
-.github/*
-!.github/workflows/
 Sizzle.WebApi/wwwroot/uploads/
 # Local secrets (copy appsettings.Secrets.example.json)
 appsettings.Secrets.json
