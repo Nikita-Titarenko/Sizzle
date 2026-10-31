@@ -30,6 +30,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<UserFollower> UserFollowers { get; set; }
 
+    public DbSet<DeviceToken> DeviceTokens { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -87,6 +89,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<UserFollower>()
             .HasIndex(follow => follow.FollowingId);
+
+        builder.Entity<DeviceToken>()
+            .HasKey(device => device.Token);
+
+        builder.Entity<DeviceToken>()
+            .Property(device => device.Token)
+            .HasMaxLength(512);
+
+        builder.Entity<DeviceToken>()
+            .HasOne(device => device.User)
+            .WithMany()
+            .HasForeignKey(device => device.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<RecipeIngredient>()
             .HasKey(ri => new { ri.RecipeId, ri.IngredientId });

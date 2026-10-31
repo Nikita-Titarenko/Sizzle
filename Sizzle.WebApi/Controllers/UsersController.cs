@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sizzle.Application.Dtos.Users;
+using Sizzle.Application.Services.Devices;
 using Sizzle.Application.Services.Users;
 using Sizzle.Domain.Common;
+using Sizzle.WebApi.Requests.Devices;
 using Sizzle.WebApi.Requests.Users;
 using Sizzle.WebApi.Services;
 
@@ -10,7 +12,8 @@ namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
 public class UsersController(IUserService userService, IUserFollowerService followerService,
-    IGoogleAuthFlowService googleAuthFlowService) : BaseController
+    IGoogleAuthFlowService googleAuthFlowService, IGoogleOAuthService googleOAuthService,
+    IDeviceTokenService deviceTokenService) : BaseController
 {
     /// <summary>Follow a user.</summary>
     /// <remarks>
@@ -170,6 +173,59 @@ public class UsersController(IUserService userService, IUserFollowerService foll
         [FromQuery] string? code, [FromQuery] string? state, [FromQuery] string? error,
         CancellationToken cancellationToken)
         => googleAuthFlowService.CompleteAsync(HttpContext, code, state, error, cancellationToken);
+
+    /// <summary>Sign in with a Google ID token from a native app (Android Credential Manager) and return an application JWT.</summary>
+    /// <remarks>
+    /// <para>The ID token must be issued for this server's Google client ID (GoogleOAuth:ClientId).</para>
+    /// <para>ErrorKey.BadRequest — the token is invalid, expired, issued for another client, or the email is not verified.</para>
+    /// </remarks>
+    [HttpPost("google-token")]
+    [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<LoginResultDto>> GoogleToken(GoogleIdTokenRequestModel request)
+    {
+        var profile = await googleOAuthService.ValidateIdTokenAsync(request.IdToken);
+        if (!profile.IsSuccess)
+        {
+            return HandleErrors(profile);
+        }
+
+        var result = await userService.LoginWithGoogleAsync(profile.Value!);
+        return !result.IsSuccess ? HandleErrors(result) : Ok(result.Value);
+    }
+
+    /// <summary>Register this device's push notification token (Firebase Cloud Messaging) for the current user.</summary>
+    /// <remarks>
+    /// <para>Calling it again with the same token is safe; a token registered by another account moves to this one.</para>
+    /// <para>ErrorKey.BadRequest — the token is empty or too long.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
+    [HttpPost("devices")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult> RegisterDevice(DeviceTokenRequestModel request)
+    {
+        var result = await deviceTokenService.RegisterAsync(GetUserId(), request.Token);
+        return !result.IsSuccess ? HandleErrors(result) : NoContent();
+    }
+
+    /// <summary>Stop push notifications to this device (call before signing out).</summary>
+    /// <remarks>
+    /// <para>ErrorKey.NotFound — the token is not registered for the current user.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
+    [HttpDelete("devices")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> UnregisterDevice([FromBody] DeviceTokenRequestModel request)
+    {
+        var result = await deviceTokenService.UnregisterAsync(GetUserId(), request.Token);
+        return !result.IsSuccess ? HandleErrors(result) : NoContent();
+    }
 
     /// <summary>Get a user's profile.</summary>
     /// <remarks>ErrorKey.NotFound — the user does not exist.</remarks>

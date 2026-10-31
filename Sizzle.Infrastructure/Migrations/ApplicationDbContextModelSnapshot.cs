@@ -299,6 +299,25 @@ namespace Sizzle.Infrastructure.Migrations
                     b.ToTable("Comments");
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.DeviceToken", b =>
+                {
+                    b.Property<string>("Token")
+                        .HasMaxLength(512)
+                        .HasColumnType("varchar(512)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Token");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("DeviceTokens");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.Ingredient", b =>
                 {
                     b.Property<Guid>("Id")
@@ -562,6 +581,17 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Navigation("Parent");
 
                     b.Navigation("Recipe");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Sizzle.Domain.Entities.DeviceToken", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("User");
                 });

@@ -98,6 +98,35 @@ public sealed class GoogleOAuthService(HttpClient httpClient, IOptions<GoogleOAu
         }
     }
 
+    public async Task<Result<GoogleUserDto>> ValidateIdTokenAsync(string idToken)
+    {
+        if (string.IsNullOrWhiteSpace(_options.ClientId))
+        {
+            throw new InvalidOperationException("GoogleOAuth:ClientId must be configured.");
+        }
+
+        try
+        {
+            var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, new GoogleJsonWebSignature.ValidationSettings
+            {
+                Audience = [_options.ClientId]
+            });
+            if (!payload.EmailVerified || string.IsNullOrWhiteSpace(payload.Subject) || string.IsNullOrWhiteSpace(payload.Email))
+            {
+                return InvalidGoogleLogin();
+            }
+
+            return new Result<GoogleUserDto>
+            {
+                Value = new GoogleUserDto(payload.Subject, payload.Email, payload.Name ?? payload.Email)
+            };
+        }
+        catch (InvalidJwtException)
+        {
+            return InvalidGoogleLogin();
+        }
+    }
+
     private void ValidateOptions()
     {
         if (string.IsNullOrWhiteSpace(_options.ClientId)
