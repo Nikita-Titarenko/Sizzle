@@ -53,3 +53,10 @@ textarea {
   font-size: 0.9rem;
   font-weight: 600;
 }
+
+// Fallback for native <select> popups: some browsers (Firefox on Linux) draw them with
+// system colors unless the options are styled explicitly.
+option {
+  background: var(--surface-2);
+  color: var(--text);
+}
