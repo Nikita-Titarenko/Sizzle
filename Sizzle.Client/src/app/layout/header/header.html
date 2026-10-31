@@ -16,16 +16,6 @@
       <a routerLink="/login" routerLinkActive="active">{{ 'nav.logIn' | t }}</a>
       <a routerLink="/register" class="btn small">{{ 'nav.signUp' | t }}</a>
     }
-    <select
-      class="language"
-      [attr.aria-label]="'nav.language' | t"
-      (change)="changeLanguage($event)"
-    >
-      @for (option of languages; track option.code) {
-        <option [value]="option.code" [selected]="option.code === language.current()">
-          {{ option.code.toUpperCase() }} · {{ option.label }}
-        </option>
-      }
-    </select>
+    <app-language-menu />
   </nav>
 </header>
