@@ -36,7 +36,14 @@ export class MediaPicker {
   /** Already uploaded media shown until the user picks a replacement (edit forms). */
   readonly currentUrl = input<string | null>(null);
   readonly hint = input('');
+  /** `portrait` renders a single 9:16 cover slot that matches the feed; `grid` shows thumbnails. */
+  readonly layout = input<'grid' | 'portrait'>('grid');
 
+  readonly defaultHint = computed(() =>
+    this.allowVideo()
+      ? 'JPG, PNG, WEBP, GIF up to 5 MB · MP4, WEBM, MOV up to 100 MB'
+      : 'JPG, PNG, WEBP, GIF up to 5 MB',
+  );
   readonly accept = computed(() => acceptFor(this.allowVideo()));
   readonly dragging = signal(false);
   readonly error = signal('');
