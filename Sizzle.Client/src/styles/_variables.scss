@@ -1,12 +1,33 @@
+// Design tokens. Components use these instead of raw colors, so the palette lives in one place.
 :root {
-  --bg: #fffaf5;
-  --card: #ffffff;
-  --text: #2b2118;
-  --muted: #8a7b6e;
-  --accent: #e8590c;
-  --accent-dark: #c2410c;
-  --border: #eadfd4;
-  --danger: #c92a2a;
-  --radius: 12px;
+  color-scheme: dark; // native controls, scrollbars and <select> popups follow the theme
+
+  // Surfaces, from the page background up to raised elements.
+  --bg: #0b0b0d;
+  --surface: #141417;
+  --surface-2: #1c1c21;
+  --surface-3: #26262d;
+  --card: var(--surface);
+
+  --border: #2a2a31;
+  --border-strong: #3b3b44;
+
+  --text: #f4f4f5;
+  --muted: #9b9ba6;
+
+  --accent: #ff6a2b;
+  --accent-hover: #ff8148;
+  --accent-dark: #ff8a57; // accent used for text and links, readable on dark surfaces
+  --accent-soft: rgb(255 106 43 / 0.14);
+  --on-accent: #fff;
+
+  --like: #ff3b5c;
+  --danger: #ff5c5c;
+  --danger-soft: rgb(255 92 92 / 0.14);
+
+  --overlay: rgb(0 0 0 / 0.6);
+  --shadow: 0 16px 40px rgb(0 0 0 / 0.5);
+
+  --radius: 14px;
   --header-height: 60px;
 }

@@ -7,7 +7,7 @@
   border: none;
   border-radius: 8px;
   background: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-family: inherit;
   font-size: 0.95rem;
   font-weight: 600;
@@ -15,7 +15,7 @@
   cursor: pointer;
 
   &:hover {
-    background: var(--accent-dark);
+    background: var(--accent-hover);
     text-decoration: none;
   }
 
@@ -40,14 +40,23 @@
     border: 1px solid var(--accent);
   }
 
+  &.ghost {
+    background: transparent;
+    color: var(--text);
+
+    &:hover {
+      background: var(--surface-3);
+    }
+  }
+
   &.danger {
     background: var(--danger);
   }
 
   &.google {
-    background: #fff;
+    background: var(--surface-2);
     color: var(--text);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
   }
 }
 

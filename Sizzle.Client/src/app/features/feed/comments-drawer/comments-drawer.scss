@@ -2,7 +2,7 @@
   position: fixed;
   inset: 0;
   z-index: 30;
-  background: rgb(0 0 0 / 0.35);
+  background: var(--overlay);
   animation: fade 0.2s ease-out;
 }
 
@@ -16,7 +16,8 @@
   flex-direction: column;
   width: min(420px, 100vw);
   background: var(--bg);
-  box-shadow: -8px 0 24px rgb(0 0 0 / 0.15);
+  box-shadow: var(--shadow);
+  border-left: 1px solid var(--border);
   animation: slide-in 0.25s ease-out;
 }
 

@@ -32,8 +32,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius: 999px;
-  background: #fff;
-  color: var(--accent-dark);
+  background: var(--on-accent);
+  color: var(--accent);
   font-size: 0.7rem;
   font-weight: 700;
 }
@@ -59,7 +59,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--card);
-  box-shadow: 0 12px 32px rgb(0 0 0 / 0.15);
+  box-shadow: var(--shadow);
 
   p {
     margin: 0;
@@ -70,20 +70,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.icon-button {
-  display: inline-flex;
-  padding: 6px;
-  border: none;
-  border-radius: 50%;
-  background: none;
-  color: var(--muted);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--border);
-  }
 }
 
 .selected {
@@ -134,7 +120,7 @@
     padding: 12px;
     border: none;
     border-radius: 50%;
-    background: #f1ebe5;
+    background: var(--surface-2);
     color: var(--text);
     font-size: 1.4rem;
     cursor: pointer;

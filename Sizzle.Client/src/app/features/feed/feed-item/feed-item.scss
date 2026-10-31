@@ -61,7 +61,7 @@
 
 .burst {
   font-size: 6rem;
-  color: #ff3b5c;
+  color: var(--like);
   animation: burst 0.7s ease-out forwards;
 }
 
@@ -205,7 +205,7 @@
   }
 
   &.liked .bubble {
-    color: #ff3b5c;
+    color: var(--like);
   }
 }
 
@@ -216,7 +216,7 @@
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  background: #f1ebe5;
+  background: var(--surface-2);
   font-size: 1.35rem;
   transition: transform 0.15s;
 
