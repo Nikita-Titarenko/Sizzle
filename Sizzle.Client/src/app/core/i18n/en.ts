@@ -225,6 +225,7 @@ export const en = {
   },
   card: {
     liked: 'Liked',
+    likes: 'Likes: {count}',
     following: 'following',
   },
   errors: {

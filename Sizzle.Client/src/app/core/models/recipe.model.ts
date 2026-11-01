@@ -11,12 +11,14 @@ export interface Recipe {
   categoryId: string;
   fileUrl: string | null;
   viewCount: number;
+  likeCount: number;
   creationDate: string;
 }
 
 export interface FeedRecipe extends Recipe {
   isFollowed: boolean;
   isLiked: boolean;
+  isSaved: boolean;
 }
 
 export interface RecipeStep {
@@ -41,6 +43,11 @@ export interface RecipeDetails extends FeedRecipe {
 export interface RecipeLike {
   recipeId: string;
   isLiked: boolean;
+}
+
+export interface RecipeSave {
+  recipeId: string;
+  isSaved: boolean;
 }
 
 export interface RecipeQuery {

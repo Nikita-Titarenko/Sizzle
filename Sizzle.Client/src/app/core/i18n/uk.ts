@@ -227,6 +227,7 @@ export const uk: Translations = {
   },
   card: {
     liked: 'Вподобано',
+    likes: 'Вподобань: {count}',
     following: 'ви стежите',
   },
   errors: {

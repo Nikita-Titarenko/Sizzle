@@ -31,6 +31,10 @@
         <app-icon name="eye" />
         {{ recipe().viewCount }}
       </span>
+      <span class="meta-item" [attr.aria-label]="'card.likes' | t: { count: recipe().likeCount }">
+        <app-icon name="heart" />
+        {{ recipe().likeCount }}
+      </span>
       <span class="spacer"></span>
       <span>{{ recipe().creationDate | date: 'mediumDate' }}</span>
     </div>

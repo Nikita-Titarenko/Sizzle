@@ -72,10 +72,11 @@
       class="action"
       [class.liked]="recipe().isLiked"
       [attr.aria-pressed]="recipe().isLiked"
+      [attr.aria-label]="(recipe().isLiked ? 'feed.item.liked' : 'feed.item.like') | t"
       (click)="liked.emit()"
     >
       <span class="bubble"><app-icon name="heart" [filled]="recipe().isLiked" /></span>
-      <span class="label">{{ (recipe().isLiked ? 'feed.item.liked' : 'feed.item.like') | t }}</span>
+      <span class="label">{{ recipe().likeCount }}</span>
     </button>
     <button type="button" class="action" (click)="commentsOpened.emit()">
       <span class="bubble"><app-icon name="comment" /></span>
