@@ -117,6 +117,10 @@ export const en = {
   recipe: {
     like: 'Like',
     liked: 'Liked',
+    save: 'Save',
+    unsave: 'Remove from saved',
+    share: 'Share',
+    linkCopied: 'Link copied',
     ingredients: 'Ingredients',
     steps: 'Steps',
     confirmDelete: 'Delete “{name}”?',

@@ -118,6 +118,10 @@ export const uk: Translations = {
   recipe: {
     like: 'Подобається',
     liked: 'Вподобано',
+    save: 'Зберегти',
+    unsave: 'Прибрати зі збережених',
+    share: 'Поділитися',
+    linkCopied: 'Посилання скопійовано',
     ingredients: 'Інгредієнти',
     steps: 'Кроки',
     confirmDelete: 'Видалити «{name}»?',

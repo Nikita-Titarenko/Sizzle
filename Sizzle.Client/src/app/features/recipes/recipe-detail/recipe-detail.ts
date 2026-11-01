@@ -41,6 +41,7 @@ export class RecipeDetail {
   readonly id = input.required<string>();
   readonly recipe = signal<RecipeDetails | null>(null);
   readonly error = signal('');
+  readonly notice = signal('');
 
   readonly isOwner = computed(
     () => !!this.recipe() && this.recipe()!.userId === this.auth.userId(),
@@ -69,9 +70,41 @@ export class RecipeDetail {
       return;
     }
     this.recipesApi.toggleLike(r.id).subscribe({
-      next: ({ isLiked }) => this.recipe.set({ ...r, isLiked }),
+      next: ({ isLiked }) => {
+        const likeCount = isLiked === r.isLiked ? r.likeCount : Math.max(0, r.likeCount + (isLiked ? 1 : -1));
+        this.recipe.set({ ...r, isLiked, likeCount });
+      },
       error: (err) => this.error.set(this.i18n.error(err)),
     });
+  }
+
+  toggleSave(): void {
+    const r = this.recipe();
+    if (!r) {
+      return;
+    }
+    this.recipesApi.toggleSave(r.id).subscribe({
+      next: ({ isSaved }) => this.recipe.set({ ...r, isSaved }),
+      error: (err) => this.error.set(this.i18n.error(err)),
+    });
+  }
+
+  async share(): Promise<void> {
+    const r = this.recipe();
+    if (!r) {
+      return;
+    }
+    // Shares feed the personalized recommendations.
+    if (this.auth.isLoggedIn()) {
+      this.recipesApi.registerShare(r.id).subscribe({ error: () => undefined });
+    }
+    const url = new URL(`/recipes/${r.id}`, location.origin).toString();
+    if (navigator.share) {
+      await navigator.share({ title: r.name, url }).catch(() => undefined);
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    this.notice.set(this.i18n.t('recipe.linkCopied'));
   }
 
   toggleFollow(): void {
