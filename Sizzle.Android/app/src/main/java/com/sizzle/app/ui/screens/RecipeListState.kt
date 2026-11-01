@@ -9,6 +9,7 @@ import com.sizzle.app.data.api.failure
 import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.PageResponse
 import com.sizzle.app.data.model.Recipe
+import com.sizzle.app.ui.withLike
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -68,10 +69,12 @@ class RecipeListState(
 
     fun apply(event: RecipeEvent) {
         recipes = when (event) {
-            is RecipeEvent.Liked -> recipes.map { if (it.id == event.recipeId) it.copy(isLiked = event.isLiked) else it }
-            is RecipeEvent.Followed -> recipes.map { if (it.userId == event.userId) it.copy(isFollowed = event.isFollowed) else it }
+            is RecipeEvent.Liked -> recipes.map {
+                if (it.id == event.recipeId) it.copy(likeCount = it.likeCount.withLike(event.isLiked)) else it
+            }
             is RecipeEvent.Deleted -> recipes.filter { it.id != event.recipeId }
-            RecipeEvent.Saved -> recipes
+            // List items carry no per-user state.
+            is RecipeEvent.Followed, is RecipeEvent.Bookmarked, RecipeEvent.Saved -> recipes
         }
     }
 

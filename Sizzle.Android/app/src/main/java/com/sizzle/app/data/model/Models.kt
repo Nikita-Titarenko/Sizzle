@@ -50,8 +50,26 @@ enum class IngredientUnit(val short: String) {
     }
 }
 
+/** A recipe in a list (explore, profiles, saved). Lists are cached for everyone, so they carry no per-user state. */
 @Serializable
 data class Recipe(
+    val id: String,
+    val userId: String,
+    val userName: String = "",
+    val userImageUrl: String? = null,
+    val name: String = "",
+    val description: String = "",
+    val cookingTimeMinutes: Int = 0,
+    val categoryId: String = "",
+    val fileUrl: String? = null,
+    val viewCount: Int = 0,
+    val likeCount: Int = 0,
+    val creationDate: String = "",
+)
+
+/** A recipe in the personalized feed, with the signed-in user's like, follow and save state. */
+@Serializable
+data class FeedRecipe(
     val id: String,
     val userId: String,
     val userName: String = "",
@@ -63,8 +81,10 @@ data class Recipe(
     val categoryId: String = "",
     val fileUrl: String? = null,
     val viewCount: Int = 0,
+    val likeCount: Int = 0,
     val creationDate: String = "",
     val isLiked: Boolean = false,
+    val isSaved: Boolean = false,
 )
 
 @Serializable
@@ -96,14 +116,22 @@ data class RecipeDetails(
     val categoryId: String = "",
     val fileUrl: String? = null,
     val viewCount: Int = 0,
+    val likeCount: Int = 0,
     val creationDate: String = "",
     val isLiked: Boolean = false,
+    val isSaved: Boolean = false,
     val steps: List<RecipeStep> = emptyList(),
     val ingredients: List<RecipeIngredient> = emptyList(),
 )
 
 @Serializable
 data class RecipeLike(val recipeId: String, val isLiked: Boolean)
+
+@Serializable
+data class RecipeSave(val recipeId: String, val isSaved: Boolean)
+
+@Serializable
+data class RecipeShare(val recipeId: String, val isShared: Boolean = true)
 
 @Serializable
 data class Comment(
@@ -121,6 +149,7 @@ data class Comment(
 data class User(
     val id: String,
     val name: String = "",
+    val description: String = "",
     val email: String = "",
     val imageUrl: String? = null,
 )

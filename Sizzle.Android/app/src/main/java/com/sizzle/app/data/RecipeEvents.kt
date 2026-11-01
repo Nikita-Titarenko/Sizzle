@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.SharedFlow
 sealed interface RecipeEvent {
     data class Liked(val recipeId: String, val isLiked: Boolean) : RecipeEvent
     data class Followed(val userId: String, val isFollowed: Boolean) : RecipeEvent
+    /** A recipe was added to or removed from the user's saved recipes (bookmark). */
+    data class Bookmarked(val recipeId: String, val isSaved: Boolean) : RecipeEvent
     data class Deleted(val recipeId: String) : RecipeEvent
     /** A recipe was created or edited: lists should reload. */
     data object Saved : RecipeEvent

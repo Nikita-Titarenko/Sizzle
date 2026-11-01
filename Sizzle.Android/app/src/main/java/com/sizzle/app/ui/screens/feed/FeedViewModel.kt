@@ -11,8 +11,9 @@ import com.sizzle.app.data.api.ApiFailure
 import com.sizzle.app.data.api.failure
 import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.Category
+import com.sizzle.app.ui.withLike
 import com.sizzle.app.data.model.IngredientChoice
-import com.sizzle.app.data.model.Recipe
+import com.sizzle.app.data.model.FeedRecipe
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -31,7 +32,7 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
         private set
     var ingredients by mutableStateOf<List<IngredientChoice>>(emptyList())
         private set
-    var recipes by mutableStateOf<List<Recipe>>(emptyList())
+    var recipes by mutableStateOf<List<FeedRecipe>>(emptyList())
         private set
     var loading by mutableStateOf(false)
         private set
@@ -61,10 +62,13 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             container.recipeEvents.events.collect { event ->
                 when (event) {
-                    is RecipeEvent.Liked -> patch(event.recipeId) { it.copy(isLiked = event.isLiked) }
+                    is RecipeEvent.Liked -> patch(event.recipeId) {
+                        if (it.isLiked == event.isLiked) it else it.copy(isLiked = event.isLiked, likeCount = it.likeCount.withLike(event.isLiked))
+                    }
                     is RecipeEvent.Followed -> recipes = recipes.map {
                         if (it.userId == event.userId) it.copy(isFollowed = event.isFollowed) else it
                     }
+                    is RecipeEvent.Bookmarked -> patch(event.recipeId) { it.copy(isSaved = event.isSaved) }
                     is RecipeEvent.Deleted -> recipes = recipes.filter { it.id != event.recipeId }
                     RecipeEvent.Saved -> Unit
                 }
@@ -112,23 +116,26 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     /** Counts a view once the post stayed on screen for a moment (signed-in users only). */
-    fun registerView(recipe: Recipe) {
+    fun registerView(recipe: FeedRecipe) {
         if (container.session.userId == null || !viewed.add(recipe.id)) return
         viewModelScope.launch { runApi { container.api.registerView(recipe.id) } }
     }
 
-    fun toggleLike(recipe: Recipe) {
+    fun toggleLike(recipe: FeedRecipe) {
         viewModelScope.launch {
             runApi { container.api.toggleLike(recipe.id) }
-                .onSuccess {
-                    patch(recipe.id) { r -> r.copy(isLiked = it.isLiked) }
-                    container.recipeEvents.emit(RecipeEvent.Liked(recipe.id, it.isLiked))
-                }
+                .onSuccess { container.recipeEvents.emit(RecipeEvent.Liked(recipe.id, it.isLiked)) }
                 .onFailure { toast = it as ApiFailure }
         }
     }
 
-    fun toggleFollow(recipe: Recipe) {
+    /** Tells the server about a share, so recommendations can use it (signed-in users only). */
+    fun registerShare(recipe: FeedRecipe) {
+        if (container.session.userId == null) return
+        viewModelScope.launch { runApi { container.api.registerShare(recipe.id) } }
+    }
+
+    fun toggleFollow(recipe: FeedRecipe) {
         viewModelScope.launch {
             val follow = !recipe.isFollowed
             runApi { if (follow) container.api.follow(recipe.userId) else container.api.unfollow(recipe.userId) }
@@ -160,7 +167,7 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
         val category = categoryId
         loadJob = viewModelScope.launch {
             val result = runApi {
-                container.api.getRecipes(
+                container.api.getPersonalizedRecipes(
                     pageIndex = pageIndex,
                     pageSize = PAGE_SIZE,
                     categoryIds = listOfNotNull(category),
@@ -178,7 +185,7 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    private fun patch(id: String, change: (Recipe) -> Recipe) {
+    private fun patch(id: String, change: (FeedRecipe) -> FeedRecipe) {
         recipes = recipes.map { if (it.id == id) change(it) else it }
     }
 }

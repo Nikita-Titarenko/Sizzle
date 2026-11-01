@@ -37,3 +37,6 @@ fun unitLabel(unit: String): String = when (unit) {
     "pcs" -> stringResource(R.string.units_pcs)
     else -> unit
 }
+
+/** The like count after a like (+1) or unlike (-1), since toggle-like returns only the new state. */
+fun Int.withLike(isLiked: Boolean): Int = if (isLiked) this + 1 else (this - 1).coerceAtLeast(0)
