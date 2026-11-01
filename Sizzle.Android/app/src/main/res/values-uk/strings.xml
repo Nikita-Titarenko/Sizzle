@@ -127,6 +127,7 @@
     <string name="editor_missing_steps">Заповніть назву й опис кожного кроку</string>
     <string name="profile_change_photo">Змінити фото</string>
     <string name="profile_name">Ім’я</string>
+    <string name="profile_description">Про себе</string>
     <string name="profile_save">Зберегти профіль</string>
     <string name="profile_saved">Профіль збережено.</string>
     <string name="profile_following">Ви стежите (%1$d)</string>
@@ -134,7 +135,9 @@
     <string name="profile_no_following">Ви ще ні за ким не стежите.</string>
     <string name="profile_no_followers">Підписників поки немає.</string>
     <string name="profile_my_recipes">Мої рецепти</string>
+    <string name="profile_saved_recipes">Збережені</string>
     <string name="profile_no_recipes">Ви ще не опублікували жодного рецепта.</string>
+    <string name="profile_no_saved">Тут з’являться рецепти, які ви збережете.</string>
     <string name="user_recipes">Рецепти</string>
     <string name="comments_title">Коментарі (%1$d)</string>
     <string name="comments_placeholder">Поділіться думками…</string>
