@@ -21,7 +21,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
@@ -81,6 +83,7 @@ import com.sizzle.app.ui.navigation.Navigator
 import com.sizzle.app.ui.shareRecipe
 import com.sizzle.app.ui.theme.Sizzle
 import com.sizzle.app.ui.unitLabel
+import com.sizzle.app.ui.withLike
 import kotlinx.coroutines.launch
 
 class RecipeViewModel(private val container: AppContainer, private val id: String) : ViewModel() {
@@ -93,18 +96,24 @@ class RecipeViewModel(private val container: AppContainer, private val id: Strin
     var actionFailure by mutableStateOf<ApiFailure?>(null)
         private set
 
+    private var viewRegistered = false
+
     init {
         load()
-        if (container.session.userId != null) {
-            viewModelScope.launch { runApi { container.api.registerView(id) } }
-        }
     }
 
     fun load() {
         failure = null
         viewModelScope.launch {
             val result = runApi { container.api.getRecipe(id) }
-            result.onSuccess { recipe = it }
+            result.onSuccess {
+                recipe = it
+                // Only an existing recipe counts a view (signed-in users only).
+                if (!viewRegistered && container.session.userId != null) {
+                    viewRegistered = true
+                    runApi { container.api.registerView(id) }
+                }
+            }
             failure = result.failure
         }
     }
@@ -113,11 +122,30 @@ class RecipeViewModel(private val container: AppContainer, private val id: Strin
         viewModelScope.launch {
             val result = runApi { container.api.toggleLike(id) }
             result.onSuccess {
-                recipe = recipe?.copy(isLiked = it.isLiked)
+                recipe = recipe?.let { r ->
+                    if (r.isLiked == it.isLiked) r else r.copy(isLiked = it.isLiked, likeCount = r.likeCount.withLike(it.isLiked))
+                }
                 container.recipeEvents.emit(RecipeEvent.Liked(id, it.isLiked))
             }
             actionFailure = result.failure
         }
+    }
+
+    fun toggleSave() {
+        viewModelScope.launch {
+            val result = runApi { container.api.toggleSave(id) }
+            result.onSuccess {
+                recipe = recipe?.copy(isSaved = it.isSaved)
+                container.recipeEvents.emit(RecipeEvent.Bookmarked(id, it.isSaved))
+            }
+            actionFailure = result.failure
+        }
+    }
+
+    /** Tells the server about a share, so recommendations can use it (signed-in users only). */
+    fun registerShare() {
+        if (container.session.userId == null) return
+        viewModelScope.launch { runApi { container.api.registerShare(id) } }
     }
 
     fun toggleFollow() {
@@ -165,8 +193,20 @@ fun RecipeScreen(id: String, navigator: Navigator) {
                     IconButton(onClick = navigator::back) { Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.nav_back)) }
                 },
                 actions = {
+                    if (recipe != null && userId != null) {
+                        IconButton(onClick = vm::toggleSave) {
+                            Icon(
+                                if (recipe.isSaved) Icons.Filled.Bookmark else Icons.Outlined.BookmarkBorder,
+                                stringResource(if (recipe.isSaved) R.string.recipe_unsave else R.string.recipe_save),
+                                tint = if (recipe.isSaved) Sizzle.colors.accent else Sizzle.colors.text,
+                            )
+                        }
+                    }
                     if (recipe != null) {
-                        IconButton(onClick = { shareRecipe(context, recipe.id, recipe.name) }) {
+                        IconButton(onClick = {
+                            vm.registerShare()
+                            shareRecipe(context, recipe.id, recipe.name)
+                        }) {
                             Icon(Icons.Outlined.Share, stringResource(R.string.feed_share))
                         }
                     }
@@ -234,6 +274,7 @@ fun RecipeScreen(id: String, navigator: Navigator) {
                         Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
                             MetaItem(Icons.Outlined.Schedule, stringResource(R.string.common_minutes, recipe.cookingTimeMinutes))
                             MetaItem(Icons.Outlined.RemoveRedEye, recipe.viewCount.toString())
+                            MetaItem(Icons.Outlined.FavoriteBorder, recipe.likeCount.toString())
                             MetaItem(Icons.Outlined.CalendarToday, formatDate(recipe.creationDate))
                         }
                     }

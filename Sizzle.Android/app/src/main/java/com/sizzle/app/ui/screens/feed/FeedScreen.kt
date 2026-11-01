@@ -83,7 +83,7 @@ import com.sizzle.app.R
 import com.sizzle.app.data.MediaFiles
 import com.sizzle.app.data.api.ApiClient
 import com.sizzle.app.data.api.message
-import com.sizzle.app.data.model.Recipe
+import com.sizzle.app.data.model.FeedRecipe
 import com.sizzle.app.ui.appViewModel
 import com.sizzle.app.ui.currentUserId
 import com.sizzle.app.ui.components.CommentsViewModel
@@ -111,7 +111,7 @@ fun FeedScreen(navigator: Navigator) {
     val userId = currentUserId()
     val signedIn = userId != null
     var ingredientSheet by rememberSaveable { mutableStateOf(false) }
-    var commentsFor by remember { mutableStateOf<Recipe?>(null) }
+    var commentsFor by remember { mutableStateOf<FeedRecipe?>(null) }
 
     val recipes = vm.recipes
     // One extra page at the end for the loading / error / empty / caught-up state.
@@ -147,7 +147,10 @@ fun FeedScreen(navigator: Navigator) {
                     onLike = { requireLogin { vm.toggleLike(recipe) } },
                     onFollow = { requireLogin { vm.toggleFollow(recipe) } },
                     onComments = { commentsFor = recipe },
-                    onShare = { shareRecipe(context, recipe.id, recipe.name) },
+                    onShare = {
+                        vm.registerShare(recipe)
+                        shareRecipe(context, recipe.id, recipe.name)
+                    },
                     onOpen = { navigator.recipe(recipe.id) },
                     onAuthor = { navigator.user(recipe.userId) },
                 )
@@ -246,7 +249,7 @@ private fun FilterBar(vm: FeedViewModel, onIngredients: () -> Unit, modifier: Mo
 
 @Composable
 private fun FeedItem(
-    recipe: Recipe,
+    recipe: FeedRecipe,
     active: Boolean,
     categoryName: String?,
     canFollow: Boolean,
@@ -378,7 +381,7 @@ private fun FeedItem(
         ) {
             RailAction(
                 if (recipe.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                stringResource(if (recipe.isLiked) R.string.feed_liked else R.string.feed_like),
+                recipe.likeCount.toString(),
                 tint = if (recipe.isLiked) Sizzle.colors.like else Color.White,
                 onClick = {
                     haptics.performHapticFeedback(HapticFeedbackType.LongPress)
@@ -469,7 +472,7 @@ private fun IngredientSheet(vm: FeedViewModel, onDismiss: () -> Unit) {
 }
 
 @Composable
-private fun CommentsSheet(recipe: Recipe, navigator: Navigator, onDismiss: () -> Unit) {
+private fun CommentsSheet(recipe: FeedRecipe, navigator: Navigator, onDismiss: () -> Unit) {
     val vm = appViewModel(key = "comments-${recipe.id}") { CommentsViewModel(it, recipe.id) }
     val userId = currentUserId()
     ModalBottomSheet(onDismissRequest = onDismiss, containerColor = Sizzle.colors.surface) {

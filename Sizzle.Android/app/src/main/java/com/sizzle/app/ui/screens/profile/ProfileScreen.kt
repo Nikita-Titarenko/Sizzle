@@ -91,6 +91,7 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
     var following by mutableStateOf<List<User>>(emptyList())
         private set
     var name by mutableStateOf("")
+    var description by mutableStateOf("")
     var icon by mutableStateOf<PickedMedia?>(null)
     var saving by mutableStateOf(false)
         private set
@@ -104,6 +105,9 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
     val recipes = RecipeListState(viewModelScope, pageSize = 9) { pageIndex, pageSize ->
         container.api.getMyRecipes(pageIndex, pageSize)
     }
+    val savedRecipes = RecipeListState(viewModelScope, pageSize = 9) { pageIndex, pageSize ->
+        container.api.getSavedRecipes(pageIndex, pageSize)
+    }
 
     init {
         refresh()
@@ -112,7 +116,11 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
                 when (event) {
                     RecipeEvent.Saved -> recipes.reset()
                     is RecipeEvent.Followed -> loadPeople()
-                    else -> recipes.apply(event)
+                    is RecipeEvent.Bookmarked -> savedRecipes.reset(pullToRefresh = savedRecipes.loaded)
+                    else -> {
+                        recipes.apply(event)
+                        savedRecipes.apply(event)
+                    }
                 }
             }
         }
@@ -122,6 +130,7 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
         loadUser()
         loadPeople()
         recipes.reset(pullToRefresh = recipes.loaded)
+        savedRecipes.reset(pullToRefresh = savedRecipes.loaded)
     }
 
     fun pickIcon(media: PickedMedia) {
@@ -140,6 +149,7 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             val parts = buildList {
                 add(MediaFiles.field("Name", name.trim()))
+                add(MediaFiles.field("Description", description.trim()))
                 icon?.let { add(MediaFiles.part(container.appContext, "Icon", it)) }
             }
             val result = runApi { container.api.updateProfile(parts) }
@@ -168,6 +178,7 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
             val result = runApi { container.api.getUser(id) }
             result.onSuccess {
                 if (user == null || name.isBlank()) name = it.name
+                if (user == null) description = it.description
                 user = it
             }
             if (user == null) failure = result.failure
@@ -218,8 +229,10 @@ private fun SignedInProfile(vm: ProfileViewModel, navigator: Navigator) {
     val pickIcon = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) vm.pickIcon(MediaFiles.describe(context, uri))
     }
-    val emptyText = stringResource(R.string.profile_no_recipes)
+    val mineEmptyText = stringResource(R.string.profile_no_recipes)
+    val savedEmptyText = stringResource(R.string.profile_no_saved)
     var peopleTab by rememberSaveable { mutableIntStateOf(0) }
+    var recipesTab by rememberSaveable { mutableIntStateOf(0) }
 
     PullToRefreshBox(
         isRefreshing = vm.recipes.refreshing,
@@ -274,6 +287,16 @@ private fun SignedInProfile(vm: ProfileViewModel, navigator: Navigator) {
                         shape = FieldShape,
                         colors = sizzleFieldColors(),
                     )
+                    OutlinedTextField(
+                        value = vm.description,
+                        onValueChange = { vm.description = it },
+                        label = { Text(stringResource(R.string.profile_description)) },
+                        minLines = 2,
+                        maxLines = 5,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = FieldShape,
+                        colors = sizzleFieldColors(),
+                    )
                     vm.problem?.let { AlertBox(it) }
                     failure?.let { AlertBox(it.message()) }
                     if (vm.saved) Text(stringResource(R.string.profile_saved), color = Sizzle.colors.success)
@@ -309,9 +332,18 @@ private fun SignedInProfile(vm: ProfileViewModel, navigator: Navigator) {
             }
             item(span = { GridItemSpan(maxLineSpan) }) { SettingsCard(showNotifications = true) }
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(stringResource(R.string.profile_my_recipes), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(top = 8.dp))
+                TabRow(
+                    selectedTabIndex = recipesTab,
+                    containerColor = Sizzle.colors.background,
+                    contentColor = Sizzle.colors.accent,
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Tab(recipesTab == 0, { recipesTab = 0 }, text = { Text(stringResource(R.string.profile_my_recipes)) })
+                    Tab(recipesTab == 1, { recipesTab = 1 }, text = { Text(stringResource(R.string.profile_saved_recipes)) })
+                }
             }
-            val list = vm.recipes
+            val list = if (recipesTab == 0) vm.recipes else vm.savedRecipes
+            val emptyText = if (recipesTab == 0) mineEmptyText else savedEmptyText
             if (!list.loaded) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     list.failure?.let { ErrorView(it, list::retry) } ?: Loader()

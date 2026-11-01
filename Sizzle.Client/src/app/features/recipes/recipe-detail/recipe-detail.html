@@ -18,7 +18,25 @@
           <app-icon name="heart" [filled]="r.isLiked" />
           {{ (r.isLiked ? 'recipe.liked' : 'recipe.like') | t }}
         </button>
+        <button
+          class="btn small"
+          [class.outline]="!r.isSaved"
+          [attr.aria-pressed]="r.isSaved"
+          [attr.aria-label]="(r.isSaved ? 'recipe.unsave' : 'recipe.save') | t"
+          [title]="(r.isSaved ? 'recipe.unsave' : 'recipe.save') | t"
+          (click)="toggleSave()"
+        >
+          <app-icon name="bookmark" [filled]="r.isSaved" />
+        </button>
       }
+      <button
+        class="btn small outline"
+        [attr.aria-label]="'recipe.share' | t"
+        [title]="'recipe.share' | t"
+        (click)="share()"
+      >
+        <app-icon name="share" />
+      </button>
       @if (isOwner()) {
         <a class="btn small outline" [routerLink]="['/recipes', r.id, 'edit']">
           {{ 'common.edit' | t }}
@@ -44,8 +62,15 @@
         <app-icon name="eye" />
         {{ r.viewCount }}
       </span>
+      <span class="meta-item" [attr.aria-label]="'card.likes' | t: { count: r.likeCount }">
+        <app-icon name="heart" />
+        {{ r.likeCount }}
+      </span>
       <span>{{ r.creationDate | date: 'mediumDate' }}</span>
     </div>
+    @if (notice()) {
+      <p class="muted" role="status">{{ notice() }}</p>
+    }
     <p class="description">{{ r.description }}</p>
 
     <div class="columns">

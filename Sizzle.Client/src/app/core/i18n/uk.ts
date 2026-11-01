@@ -118,6 +118,10 @@ export const uk: Translations = {
   recipe: {
     like: 'Подобається',
     liked: 'Вподобано',
+    save: 'Зберегти',
+    unsave: 'Прибрати зі збережених',
+    share: 'Поділитися',
+    linkCopied: 'Посилання скопійовано',
     ingredients: 'Інгредієнти',
     steps: 'Кроки',
     confirmDelete: 'Видалити «{name}»?',
@@ -172,6 +176,8 @@ export const uk: Translations = {
     choosePhotoAgain: 'Обрати інше',
     changePhotoLabel: 'Змінити фото профілю',
     name: 'Ім’я',
+    description: 'Про себе',
+    descriptionPlaceholder: 'Кілька слів про себе та свою кухню',
     save: 'Зберегти профіль',
     saved: 'Профіль збережено.',
     following: 'Ви стежите ({count})',
@@ -180,6 +186,8 @@ export const uk: Translations = {
     noFollowers: 'Підписників поки немає.',
     myRecipes: 'Мої рецепти',
     noRecipes: 'Ви ще не опублікували жодного рецепта.',
+    savedRecipes: 'Збережені',
+    noSaved: 'Тут з’являться рецепти, які ви збережете.',
   },
   user: {
     unfollow: 'Не стежити',
@@ -227,6 +235,7 @@ export const uk: Translations = {
   },
   card: {
     liked: 'Вподобано',
+    likes: 'Вподобань: {count}',
     following: 'ви стежите',
   },
   errors: {

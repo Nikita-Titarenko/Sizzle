@@ -88,6 +88,8 @@
     <string name="explore_empty">Nothing found. Try another search.</string>
     <string name="recipe_like">Like</string>
     <string name="recipe_liked">Liked</string>
+    <string name="recipe_save">Save</string>
+    <string name="recipe_unsave">Remove from saved</string>
     <string name="recipe_ingredients">Ingredients</string>
     <string name="recipe_steps">Steps</string>
     <string name="recipe_confirm_delete">Delete “%1$s”?</string>
@@ -127,6 +129,7 @@
     <string name="editor_missing_steps">Fill in a title and description for every step</string>
     <string name="profile_change_photo">Change photo</string>
     <string name="profile_name">Name</string>
+    <string name="profile_description">About you</string>
     <string name="profile_save">Save profile</string>
     <string name="profile_saved">Profile saved.</string>
     <string name="profile_following">Following (%1$d)</string>
@@ -134,7 +137,9 @@
     <string name="profile_no_following">You don\'t follow anyone yet.</string>
     <string name="profile_no_followers">No followers yet.</string>
     <string name="profile_my_recipes">My recipes</string>
+    <string name="profile_saved_recipes">Saved</string>
     <string name="profile_no_recipes">You haven\'t posted any recipes yet.</string>
+    <string name="profile_no_saved">Recipes you save will show up here.</string>
     <string name="user_recipes">Recipes</string>
     <string name="comments_title">Comments (%1$d)</string>
     <string name="comments_placeholder">Share your thoughts…</string>

@@ -178,11 +178,15 @@ export class FeedPage {
     if (!this.requireLogin()) {
       return;
     }
-    this.patch(recipe.id, { isLiked: !recipe.isLiked });
+    const likeCount = (isLiked: boolean) =>
+      isLiked === recipe.isLiked
+        ? recipe.likeCount
+        : Math.max(0, recipe.likeCount + (isLiked ? 1 : -1));
+    this.patch(recipe.id, { isLiked: !recipe.isLiked, likeCount: likeCount(!recipe.isLiked) });
     this.recipesApi.toggleLike(recipe.id).subscribe({
-      next: ({ isLiked }) => this.patch(recipe.id, { isLiked }),
+      next: ({ isLiked }) => this.patch(recipe.id, { isLiked, likeCount: likeCount(isLiked) }),
       error: (err) => {
-        this.patch(recipe.id, { isLiked: recipe.isLiked });
+        this.patch(recipe.id, { isLiked: recipe.isLiked, likeCount: recipe.likeCount });
         this.showToast(this.i18n.error(err));
       },
     });
@@ -203,6 +207,10 @@ export class FeedPage {
   }
 
   async share(recipe: FeedRecipe): Promise<void> {
+    // Shares feed the personalized recommendations.
+    if (this.auth.isLoggedIn()) {
+      this.recipesApi.registerShare(recipe.id).subscribe({ error: () => undefined });
+    }
     const url = new URL(`/recipes/${recipe.id}`, location.origin).toString();
     if (navigator.share) {
       await navigator.share({ title: recipe.name, url }).catch(() => undefined);

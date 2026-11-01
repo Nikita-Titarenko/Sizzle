@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.RemoveRedEye
 import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Icon
@@ -57,10 +57,8 @@ fun RecipeCard(recipe: Recipe, onOpen: () -> Unit, onAuthor: () -> Unit, modifie
                 MetaItem(Icons.Outlined.Schedule, stringResource(R.string.common_minutes, recipe.cookingTimeMinutes))
                 Spacer(Modifier.width(10.dp))
                 MetaItem(Icons.Outlined.RemoveRedEye, recipe.viewCount.toString())
-                if (recipe.isLiked) {
-                    Spacer(Modifier.width(10.dp))
-                    Icon(Icons.Filled.Favorite, stringResource(R.string.feed_liked), tint = c.like, modifier = Modifier.size(14.dp))
-                }
+                Spacer(Modifier.width(10.dp))
+                MetaItem(Icons.Outlined.FavoriteBorder, recipe.likeCount.toString())
             }
             Row(
                 Modifier.clip(RoundedCornerShape(8.dp)).clickable(onClick = onAuthor),

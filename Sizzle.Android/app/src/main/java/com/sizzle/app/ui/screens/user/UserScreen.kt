@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -133,6 +134,9 @@ fun UserScreen(id: String, navigator: Navigator) {
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     UserAvatar(user.name, user.imageUrl, size = 96.dp)
                     Text(user.name, style = MaterialTheme.typography.headlineSmall)
+                    if (user.description.isNotBlank()) {
+                        Text(user.description, color = Sizzle.colors.muted, textAlign = TextAlign.Center)
+                    }
                     if (signedIn) {
                         FollowButton(vm.followed, vm::toggleFollow)
                     }

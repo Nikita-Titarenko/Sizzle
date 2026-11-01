@@ -8,6 +8,7 @@ import {
   RecipeDetails,
   RecipeFormValue,
   RecipeLike,
+  RecipeSave,
   RecipeQuery,
 } from '../models';
 
@@ -21,11 +22,19 @@ export class RecipesApi {
   }
 
   getPersonalized(query: RecipeQuery) {
-    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/personalized`, { params: toParams(query) });
+    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/personalized`, {
+      params: toParams(query),
+    });
   }
 
   getMine(query: RecipeQuery) {
     return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/mine`, { params: toParams(query) });
+  }
+
+  getSaved(query: RecipeQuery) {
+    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/saved`, {
+      params: toParams(query),
+    });
   }
 
   getById(id: string) {
@@ -46,6 +55,15 @@ export class RecipesApi {
 
   toggleLike(id: string) {
     return this.http.post<RecipeLike>(`${this.baseUrl}/${id}/toggle-like`, null);
+  }
+
+  toggleSave(id: string) {
+    return this.http.post<RecipeSave>(`${this.baseUrl}/${id}/toggle-save`, null);
+  }
+
+  /** Records a share; the personalized feed learns from views, likes and shares. */
+  registerShare(id: string) {
+    return this.http.post<unknown>(`${this.baseUrl}/${id}/update-share`, null);
   }
 
   registerView(id: string) {

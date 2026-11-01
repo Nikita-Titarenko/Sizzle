@@ -6,6 +6,7 @@ import com.sizzle.app.data.model.ConfirmEmailRequest
 import com.sizzle.app.data.model.ConfirmEmailResult
 import com.sizzle.app.data.model.CreateCommentRequest
 import com.sizzle.app.data.model.DeviceTokenRequest
+import com.sizzle.app.data.model.FeedRecipe
 import com.sizzle.app.data.model.GoogleTokenRequest
 import com.sizzle.app.data.model.Ingredient
 import com.sizzle.app.data.model.LoginRequest
@@ -14,6 +15,8 @@ import com.sizzle.app.data.model.PageResponse
 import com.sizzle.app.data.model.Recipe
 import com.sizzle.app.data.model.RecipeDetails
 import com.sizzle.app.data.model.RecipeLike
+import com.sizzle.app.data.model.RecipeSave
+import com.sizzle.app.data.model.RecipeShare
 import com.sizzle.app.data.model.RegisterRequest
 import com.sizzle.app.data.model.RegisterResult
 import com.sizzle.app.data.model.UpdateCommentRequest
@@ -58,6 +61,21 @@ interface SizzleApi {
         @Query("IngredientIds") ingredientIds: List<String> = emptyList(),
     ): PageResponse<Recipe>
 
+    /** The feed: recommendations for the signed-in user, or the public list for guests. */
+    @GET("api/recipes/personalized")
+    suspend fun getPersonalizedRecipes(
+        @Query("PageIndex") pageIndex: Int,
+        @Query("PageSize") pageSize: Int,
+        @Query("CategoryIds") categoryIds: List<String> = emptyList(),
+        @Query("IngredientIds") ingredientIds: List<String> = emptyList(),
+    ): PageResponse<FeedRecipe>
+
+    @GET("api/recipes/saved")
+    suspend fun getSavedRecipes(
+        @Query("PageIndex") pageIndex: Int,
+        @Query("PageSize") pageSize: Int,
+    ): PageResponse<Recipe>
+
     @GET("api/recipes/mine")
     suspend fun getMyRecipes(
         @Query("PageIndex") pageIndex: Int,
@@ -81,8 +99,15 @@ interface SizzleApi {
     @POST("api/recipes/{id}/toggle-like")
     suspend fun toggleLike(@Path("id") id: String): RecipeLike
 
+    @POST("api/recipes/{id}/toggle-save")
+    suspend fun toggleSave(@Path("id") id: String): RecipeSave
+
+    /** Records a share; the personalized feed learns from views, likes and shares. */
+    @POST("api/recipes/{id}/update-share")
+    suspend fun registerShare(@Path("id") id: String): RecipeShare
+
     @POST("api/recipes/{id}/update-view")
-    suspend fun registerView(@Path("id") id: String): Recipe
+    suspend fun registerView(@Path("id") id: String): FeedRecipe
 
     // Comments
 
