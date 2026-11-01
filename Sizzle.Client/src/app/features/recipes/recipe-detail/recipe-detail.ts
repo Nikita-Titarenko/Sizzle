@@ -71,7 +71,8 @@ export class RecipeDetail {
     }
     this.recipesApi.toggleLike(r.id).subscribe({
       next: ({ isLiked }) => {
-        const likeCount = isLiked === r.isLiked ? r.likeCount : Math.max(0, r.likeCount + (isLiked ? 1 : -1));
+        const likeCount =
+          isLiked === r.isLiked ? r.likeCount : Math.max(0, r.likeCount + (isLiked ? 1 : -1));
         this.recipe.set({ ...r, isLiked, likeCount });
       },
       error: (err) => this.error.set(this.i18n.error(err)),

@@ -51,7 +51,8 @@ export class Profile {
     });
     effect((onCleanup) => {
       const query = { pageIndex: this.pageIndex(), pageSize: PAGE_SIZE };
-      const request = this.tab() === 'mine' ? this.recipesApi.getMine(query) : this.recipesApi.getSaved(query);
+      const request =
+        this.tab() === 'mine' ? this.recipesApi.getMine(query) : this.recipesApi.getSaved(query);
       const sub = request.subscribe((page) => this.page.set(page));
       onCleanup(() => sub.unsubscribe());
     });

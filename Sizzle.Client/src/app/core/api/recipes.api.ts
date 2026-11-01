@@ -22,7 +22,9 @@ export class RecipesApi {
   }
 
   getPersonalized(query: RecipeQuery) {
-    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/personalized`, { params: toParams(query) });
+    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/personalized`, {
+      params: toParams(query),
+    });
   }
 
   getMine(query: RecipeQuery) {
@@ -30,7 +32,9 @@ export class RecipesApi {
   }
 
   getSaved(query: RecipeQuery) {
-    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/saved`, { params: toParams(query) });
+    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/saved`, {
+      params: toParams(query),
+    });
   }
 
   getById(id: string) {

@@ -179,7 +179,9 @@ export class FeedPage {
       return;
     }
     const likeCount = (isLiked: boolean) =>
-      isLiked === recipe.isLiked ? recipe.likeCount : Math.max(0, recipe.likeCount + (isLiked ? 1 : -1));
+      isLiked === recipe.isLiked
+        ? recipe.likeCount
+        : Math.max(0, recipe.likeCount + (isLiked ? 1 : -1));
     this.patch(recipe.id, { isLiked: !recipe.isLiked, likeCount: likeCount(!recipe.isLiked) });
     this.recipesApi.toggleLike(recipe.id).subscribe({
       next: ({ isLiked }) => this.patch(recipe.id, { isLiked, likeCount: likeCount(isLiked) }),
