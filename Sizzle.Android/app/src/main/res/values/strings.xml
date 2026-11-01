@@ -88,6 +88,8 @@
     <string name="explore_empty">Nothing found. Try another search.</string>
     <string name="recipe_like">Like</string>
     <string name="recipe_liked">Liked</string>
+    <string name="recipe_save">Save</string>
+    <string name="recipe_unsave">Remove from saved</string>
     <string name="recipe_ingredients">Ingredients</string>
     <string name="recipe_steps">Steps</string>
     <string name="recipe_confirm_delete">Delete “%1$s”?</string>

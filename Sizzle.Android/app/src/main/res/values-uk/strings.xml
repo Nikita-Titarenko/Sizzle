@@ -86,6 +86,8 @@
     <string name="explore_empty">Нічого не знайдено. Спробуйте інший запит.</string>
     <string name="recipe_like">Подобається</string>
     <string name="recipe_liked">Вподобано</string>
+    <string name="recipe_save">Зберегти</string>
+    <string name="recipe_unsave">Прибрати зі збережених</string>
     <string name="recipe_ingredients">Інгредієнти</string>
     <string name="recipe_steps">Кроки</string>
     <string name="recipe_confirm_delete">Видалити «%1$s»?</string>
