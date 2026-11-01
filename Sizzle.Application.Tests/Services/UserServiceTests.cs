@@ -385,6 +385,21 @@ public class UserServiceTests
     }
 
     [Fact]
+    public async Task UpdateUserProfileAsync_EmptyDescriptionClearsIt()
+    {
+        var user = new ApplicationUser { Id = Guid.NewGuid(), Description = "Original" };
+        users.FindByIdAsync(user.Id.ToString()).Returns(user);
+        users.UpdateAsync(user).Returns(IdentityResult.Success);
+        mapper.Map<UserDto>(user).Returns(new UserDto { Id = user.Id, Name = "Chef", Email = "chef@example.test" });
+
+        var result = await CreateService().UpdateUserProfileAsync(user.Id,
+            new UpdateUserProfileDto { Name = "Chef", Description = string.Empty });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal(string.Empty, user.Description);
+    }
+
+    [Fact]
     public async Task RegisterUserAsync_CanceledTokenSkipsIdentityAndEmail()
     {
         using var source = new CancellationTokenSource();
