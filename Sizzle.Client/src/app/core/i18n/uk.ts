@@ -176,6 +176,8 @@ export const uk: Translations = {
     choosePhotoAgain: 'Обрати інше',
     changePhotoLabel: 'Змінити фото профілю',
     name: 'Ім’я',
+    description: 'Про себе',
+    descriptionPlaceholder: 'Кілька слів про себе та свою кухню',
     save: 'Зберегти профіль',
     saved: 'Профіль збережено.',
     following: 'Ви стежите ({count})',
@@ -184,6 +186,8 @@ export const uk: Translations = {
     noFollowers: 'Підписників поки немає.',
     myRecipes: 'Мої рецепти',
     noRecipes: 'Ви ще не опублікували жодного рецепта.',
+    savedRecipes: 'Збережені',
+    noSaved: 'Тут з’являться рецепти, які ви збережете.',
   },
   user: {
     unfollow: 'Не стежити',

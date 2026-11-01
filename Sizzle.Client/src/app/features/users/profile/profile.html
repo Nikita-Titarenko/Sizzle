@@ -41,6 +41,15 @@
           <span>{{ 'profile.name' | t }}</span>
           <input name="name" [(ngModel)]="name" required />
         </label>
+        <label>
+          <span>{{ 'profile.description' | t }}</span>
+          <textarea
+            name="description"
+            rows="3"
+            [(ngModel)]="description"
+            [placeholder]="'profile.descriptionPlaceholder' | t"
+          ></textarea>
+        </label>
         @if (message()) {
           <p class="muted">{{ message() }}</p>
         }
@@ -63,9 +72,33 @@
   </aside>
 
   <section>
-    <h2>{{ 'profile.myRecipes' | t }}</h2>
+    <div class="row tabs" role="tablist">
+      <button
+        type="button"
+        role="tab"
+        class="chip"
+        [class.on]="tab() === 'mine'"
+        [attr.aria-selected]="tab() === 'mine'"
+        (click)="selectTab('mine')"
+      >
+        {{ 'profile.myRecipes' | t }}
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="chip"
+        [class.on]="tab() === 'saved'"
+        [attr.aria-selected]="tab() === 'saved'"
+        (click)="selectTab('saved')"
+      >
+        {{ 'profile.savedRecipes' | t }}
+      </button>
+    </div>
     @if (page(); as page) {
-      <app-recipe-grid [recipes]="page.data" [emptyText]="'profile.noRecipes' | t" />
+      <app-recipe-grid
+        [recipes]="page.data"
+        [emptyText]="(tab() === 'mine' ? 'profile.noRecipes' : 'profile.noSaved') | t"
+      />
       <app-pager
         [pageIndex]="pageIndex()"
         [pageSize]="pageSize"

@@ -44,9 +44,10 @@ export class UsersApi {
     return this.http.get<User>(`${this.baseUrl}/${userId}`);
   }
 
-  updateProfile(name: string, icon: File | null) {
+  updateProfile(name: string, description: string, icon: File | null) {
     const form = new FormData();
     form.append('Name', name);
+    form.append('Description', description);
     if (icon) {
       form.append('Icon', icon);
     }

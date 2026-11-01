@@ -28,6 +28,7 @@ export class Profile {
   protected readonly currentUser = inject(CurrentUserService);
 
   readonly pageSize = PAGE_SIZE;
+  readonly tab = signal<'mine' | 'saved'>('mine');
   readonly pageIndex = signal(0);
   readonly page = signal<PageResponse<Recipe> | null>(null);
   readonly followers = signal<User[]>([]);
@@ -37,19 +38,31 @@ export class Profile {
   readonly error = signal('');
   readonly acceptImages = acceptFor(false);
   name = '';
+  description = '';
   private icon: File | null = null;
 
   constructor() {
     this.usersApi.getFollowers().subscribe((users) => this.followers.set(users));
     this.usersApi.getFollowing().subscribe((users) => this.following.set(users));
     effect(() => {
-      this.name = this.currentUser.user()?.name ?? this.name;
+      const user = this.currentUser.user();
+      this.name = user?.name ?? this.name;
+      this.description = user?.description ?? this.description;
     });
-    effect(() => {
-      this.recipesApi
-        .getMine({ pageIndex: this.pageIndex(), pageSize: PAGE_SIZE })
-        .subscribe((page) => this.page.set(page));
+    effect((onCleanup) => {
+      const query = { pageIndex: this.pageIndex(), pageSize: PAGE_SIZE };
+      const request = this.tab() === 'mine' ? this.recipesApi.getMine(query) : this.recipesApi.getSaved(query);
+      const sub = request.subscribe((page) => this.page.set(page));
+      onCleanup(() => sub.unsubscribe());
     });
+  }
+
+  selectTab(tab: 'mine' | 'saved'): void {
+    if (this.tab() !== tab) {
+      this.page.set(null);
+      this.pageIndex.set(0);
+      this.tab.set(tab);
+    }
   }
 
   pickIcon(event: Event): void {
@@ -84,7 +97,7 @@ export class Profile {
   save(): void {
     this.message.set('');
     this.error.set('');
-    this.usersApi.updateProfile(this.name.trim(), this.icon).subscribe({
+    this.usersApi.updateProfile(this.name.trim(), this.description.trim(), this.icon).subscribe({
       next: () => {
         this.message.set(this.i18n.t('profile.saved'));
         this.setIcon(null);

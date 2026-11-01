@@ -174,6 +174,8 @@ export const en = {
     choosePhotoAgain: 'Choose another',
     changePhotoLabel: 'Change profile photo',
     name: 'Name',
+    description: 'About you',
+    descriptionPlaceholder: 'A few words about you and your cooking',
     save: 'Save profile',
     saved: 'Profile saved.',
     following: 'Following ({count})',
@@ -182,6 +184,8 @@ export const en = {
     noFollowers: 'No followers yet.',
     myRecipes: 'My recipes',
     noRecipes: "You haven't posted any recipes yet.",
+    savedRecipes: 'Saved',
+    noSaved: 'Recipes you save will show up here.',
   },
   user: {
     unfollow: 'Unfollow',

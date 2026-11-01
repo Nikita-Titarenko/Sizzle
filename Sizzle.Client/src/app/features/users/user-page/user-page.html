@@ -8,6 +8,9 @@
     <app-user-avatar [name]="u.name" [imageUrl]="u.imageUrl" size="large" />
     <div>
       <h1>{{ u.name }}</h1>
+      @if (u.description) {
+        <p class="muted description">{{ u.description }}</p>
+      }
     </div>
     <span class="spacer"></span>
     @if (auth.isLoggedIn() && !isMe()) {
