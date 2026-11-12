@@ -31,6 +31,8 @@ public class UserFollowerRepositoryTests : InMemoryRepositoryTest
         Assert.Equal(2, followerIds.Count);
         Assert.Contains(recent.Id, followerIds);
         Assert.Contains(early.Id, followerIds);
+        Assert.Equal(2, await repository.GetFollowerCountAsync(owner.Id));
+        Assert.Equal([followed.Id], await repository.GetFollowingIdsAsync(owner.Id));
         Assert.NotNull(await repository.GetAsync(recent.Id, owner.Id));
         Assert.Null(await repository.GetAsync(owner.Id, recent.Id));
         Assert.True(await repository.UserExistsAsync(owner.Id));

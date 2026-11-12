@@ -72,13 +72,18 @@ public static class InfrastructureServiceExtensions
             .Bind(configuration.GetSection("Cache"))
             .Validate(options => options.DurationSeconds > 0, "Cache:DurationSeconds must be greater than zero.")
             .Validate(options => options.InteractionFlushIntervalMinutes > 0, "Cache:InteractionFlushIntervalMinutes must be greater than zero.")
+            .Validate(options => options.FollowingFeedMaxEntries > 0, "Cache:FollowingFeedMaxEntries must be greater than zero.")
+            .Validate(options => options.CelebrityFollowerThreshold > 0, "Cache:CelebrityFollowerThreshold must be greater than zero.")
+            .Validate(options => options.CelebrityFeedTakePerAuthor > 0, "Cache:CelebrityFeedTakePerAuthor must be greater than zero.")
             .ValidateOnStart();
         services.AddScoped<IRecipeReadCache, RecipeReadCache>();
+        services.AddScoped<IFollowingFeedCache, FollowingFeedCache>();
         services.AddScoped<IUserReadCache, UserReadCache>();
         services.AddScoped<ISubscriptionReadCache, SubscriptionReadCache>();
         services.AddScoped<IIngredientReadCache, IngredientReadCache>();
         services.AddScoped<ICategoryReadCache, CategoryReadCache>();
         services.AddScoped<ICommentReadCache, CommentReadCache>();
+        services.AddSingleton<IRecipeCreatedEventQueue, RecipeCreatedEventQueue>();
         if (configuration.GetValue<bool>("Cache:Enabled"))
         {
             var redis = configuration["Cache:Redis"] ?? throw new InvalidOperationException("Cache:Redis is required when caching is enabled.");
@@ -87,6 +92,7 @@ public static class InfrastructureServiceExtensions
             services.AddScoped<RecipeInteractionBuffer>();
             services.AddScoped<IRecipeInteractionBuffer>(provider => provider.GetRequiredService<RecipeInteractionBuffer>());
             services.AddHostedService<RecipeInteractionFlushService>();
+            services.AddHostedService<FollowingFeedCacheWorker>();
         }
         else
         {

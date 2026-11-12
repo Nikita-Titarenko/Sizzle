@@ -111,6 +111,44 @@ public class RecipeRepositoryTests : InMemoryRepositoryTest
     }
 
     [Fact]
+    public async Task GetFollowingRecipesAsync_ReturnsNewestFirstAndBuildsCacheEntries()
+    {
+        var viewer = new ApplicationUser { Id = Guid.NewGuid(), Name = "Viewer" };
+        var followedA = new ApplicationUser { Id = Guid.NewGuid(), Name = "A" };
+        var followedB = new ApplicationUser { Id = Guid.NewGuid(), Name = "B" };
+        var other = new ApplicationUser { Id = Guid.NewGuid(), Name = "Other" };
+        var first = NewRecipe(followedA.Id, Guid.NewGuid(), "First", 0);
+        first.CreationDate = DateTime.UnixEpoch.AddHours(1);
+        var latest = NewRecipe(followedB.Id, Guid.NewGuid(), "Latest", 0);
+        latest.CreationDate = DateTime.UnixEpoch.AddHours(2);
+        var unrelated = NewRecipe(other.Id, Guid.NewGuid(), "Other", 0);
+        unrelated.CreationDate = DateTime.UnixEpoch.AddHours(3);
+        await using (var seed = CreateContext())
+        {
+            seed.Users.AddRange(viewer, followedA, followedB, other);
+            seed.Recipes.AddRange(first, latest, unrelated);
+            seed.UserFollowers.AddRange(
+                new UserFollower { FollowerId = viewer.Id, FollowingId = followedA.Id },
+                new UserFollower { FollowerId = viewer.Id, FollowingId = followedB.Id });
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var repository = new RecipeRepository(db);
+        var page = await repository.GetFollowingRecipesAsync(new GetRecipesDto
+        {
+            ApplicationUserId = viewer.Id,
+            PageIndex = 0,
+            PageSize = 10
+        });
+        var entries = await repository.GetFollowingFeedEntriesAsync(viewer.Id, 10);
+
+        Assert.Equal(2, page.TotalSize);
+        Assert.Equal([latest.Id, first.Id], page.Data.Select(recipe => recipe.Id));
+        Assert.Equal([latest.Id, first.Id], entries.Select(item => item.RecipeId));
+    }
+
+    [Fact]
     public async Task GetRecommendationCandidatesAsync_ExcludesCurrentAuthorAndAppliesIngredientCategoryFilters()
     {
         var user = Guid.NewGuid();

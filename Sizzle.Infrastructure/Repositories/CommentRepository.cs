@@ -1,14 +1,19 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Sizzle.Application.Dtos;
 using Sizzle.Application.Repositories;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Infrastructure.Repositories;
 
-public class CommentRepository(ApplicationDbContext dbContext) : Repository<Comment>(dbContext), ICommentRepository
+public class CommentRepository(ApplicationDbContext dbContext, ILogger<CommentRepository>? logger = null) : Repository<Comment>(dbContext), ICommentRepository
 {
+    private readonly ILogger<CommentRepository> logger = logger ?? NullLogger<CommentRepository>.Instance;
+
     public async Task<PageResponse<Comment>> GetByRecipeIdAsync(Guid recipeId, int pageIndex, int pageSize, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.comments.get_by_recipe_page");
         var query = DbSet.AsNoTracking()
             .Where(comment => comment.RecipeId == recipeId);
 
@@ -43,12 +48,14 @@ public class CommentRepository(ApplicationDbContext dbContext) : Repository<Comm
 
     public Task<Comment?> GetWithUserAsync(Guid commentId, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.comments.get_with_user");
         return DbSet.Include(comment => comment.User)
             .FirstOrDefaultAsync(comment => comment.Id == commentId, cancellationToken);
     }
 
     public Task<string?> GetUserNameAsync(Guid userId, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.users.get_name");
         return DbContext.Users.Where(user => user.Id == userId)
             .Select(user => user.Name)
             .FirstOrDefaultAsync(cancellationToken);

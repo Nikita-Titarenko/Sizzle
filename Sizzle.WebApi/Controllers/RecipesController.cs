@@ -5,6 +5,7 @@ using Sizzle.Application.Dtos;
 using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Application.Services.Recipes;
 using Sizzle.Domain.Common;
+using Sizzle.WebApi.Requests.Base;
 using Sizzle.WebApi.Requests.Recipes;
 
 namespace Sizzle.WebApi.Controllers;
@@ -91,6 +92,26 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper) : B
     {
         return Ok(await recipeService.GetSavedRecipesAsync(mapper.Map(request,
             new GetRecipesDto { ApplicationUserId = GetUserId(), OwnerId = request.UserId }), cancellationToken));
+    }
+
+    /// <summary>Get recipes from followed users in chronological order.</summary>
+    /// <remarks>
+    /// <para>ErrorKey.BadRequest — invalid pagination parameters.</para>
+    /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
+    /// </remarks>
+    [HttpGet("following")]
+    [Authorize]
+    [ProducesResponseType(typeof(PageResponse<FeedRecipeDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<PageResponse<FeedRecipeDto>>> GetFollowingRecipes([FromQuery] PaginationRequestModel request, CancellationToken cancellationToken)
+    {
+        return Ok(await recipeService.GetFollowingRecipesAsync(new GetRecipesDto
+        {
+            ApplicationUserId = GetUserId(),
+            PageIndex = request.PageIndex,
+            PageSize = request.PageSize
+        }, cancellationToken));
     }
 
     /// <summary>Create a recipe.</summary>

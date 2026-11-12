@@ -16,7 +16,7 @@ using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Recipes;
 
-public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IOptions<BusinessLogicOptions> businessLogicOptions, IIngredientUnitFormatter unitFormatter, ILogger<PersonalizedRecipesLog> logger, IOptions<RecipeLoggingOptions> recipeLoggingOptions, IRecipeReadCache readCache, IRecipeInteractionBuffer interactionsBuffer, IIngredientReadCache ingredientCache, ICommentReadCache commentCache, IMapper mapper, ILogger<RecipeService> operationLogger) : IRecipeService
+public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUserFollowerRepository followerRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IRecipeCreatedEventQueue eventQueue, IOptions<BusinessLogicOptions> businessLogicOptions, IOptions<RecipeCacheOptions> cacheOptions, IIngredientUnitFormatter unitFormatter, ILogger<PersonalizedRecipesLog> logger, IOptions<RecipeLoggingOptions> recipeLoggingOptions, IRecipeReadCache readCache, IFollowingFeedCache followingFeedCache, IRecipeInteractionBuffer interactionsBuffer, IIngredientReadCache ingredientCache, ICommentReadCache commentCache, IMapper mapper, ILogger<RecipeService> operationLogger) : IRecipeService
 {
     private const int LikedInteractionWeight = 3;
     private const int SavedInteractionWeight = 6;
@@ -235,6 +235,69 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         return result;
     }
 
+    public async Task<PageResponse<FeedRecipeDto>> GetFollowingRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
+    {
+        var userId = dto.ApplicationUserId!.Value;
+        var required = (dto.PageIndex + 1L) * dto.PageSize;
+        var take = (int)Math.Min(int.MaxValue, required + dto.PageSize);
+        var entries = await followingFeedCache.GetUserFeedAsync(userId, take, cancellationToken);
+        if (entries.Count < required)
+        {
+            var seedTake = Math.Max(take, cacheOptions.Value.FollowingFeedMaxEntries);
+            entries = await recipeRepository.GetFollowingFeedEntriesAsync(userId, seedTake, cancellationToken);
+            await followingFeedCache.ReplaceUserFeedAsync(userId, entries, cancellationToken);
+        }
+
+        var followingIds = await followerRepository.GetFollowingIdsAsync(userId, cancellationToken);
+        var newerThan = entries.Count == 0 ? DateTime.UnixEpoch : entries.Max(item => item.CreatedAt);
+        var celebrityEntries = await followingFeedCache.GetCelebrityRecipesAsync(followingIds, newerThan,
+            cacheOptions.Value.CelebrityFeedTakePerAuthor, cancellationToken);
+        var merged = entries.Concat(celebrityEntries)
+            .GroupBy(item => item.RecipeId)
+            .Select(group => group.OrderByDescending(item => item.CreatedAt).ThenBy(item => item.RecipeId).First())
+            .OrderByDescending(item => item.CreatedAt)
+            .ThenBy(item => item.RecipeId)
+            .ToArray();
+        var offset = (long)dto.PageIndex * dto.PageSize;
+        if (offset > int.MaxValue)
+        {
+            return new PageResponse<FeedRecipeDto>
+            {
+                Data = [],
+                TotalSize = merged.Length,
+                PageIndex = dto.PageIndex,
+                PageSize = dto.PageSize
+            };
+        }
+
+        if (offset >= merged.Length)
+        {
+            var fallback = await recipeRepository.GetFollowingRecipesAsync(dto, cancellationToken);
+            var fallbackData = fallback.Data.Select(recipe => ToFeedRecipeDto(recipe, userId)).ToArray();
+            await interactionsBuffer.ApplyAsync(fallbackData, userId, cancellationToken);
+            return new PageResponse<FeedRecipeDto>
+            {
+                Data = fallbackData,
+                TotalSize = fallback.TotalSize,
+                PageIndex = fallback.PageIndex,
+                PageSize = fallback.PageSize
+            };
+        }
+
+        var pageIds = merged.Skip((int)offset).Take(dto.PageSize).Select(item => item.RecipeId).ToArray();
+        var recipes = pageIds.Length == 0 ? [] : await recipeRepository.GetByIdsWithAuthorAsync(pageIds, userId, cancellationToken);
+        var byId = recipes.ToDictionary(recipe => recipe.Id);
+        var data = pageIds.Where(byId.ContainsKey).Select(id => ToFeedRecipeDto(byId[id], userId)).ToArray();
+        await interactionsBuffer.ApplyAsync(data, userId, cancellationToken);
+        return new PageResponse<FeedRecipeDto>
+        {
+            Data = data,
+            TotalSize = merged.Length,
+            PageIndex = dto.PageIndex,
+            PageSize = dto.PageSize
+        };
+    }
+
     private async Task<PageResponse<RecipeDto>> GetRecipesCoreAsync(GetRecipesDto dto, CancellationToken cancellationToken)
     {
         var page = await recipeRepository.GetRecipesAsync(dto, cancellationToken);
@@ -367,6 +430,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         await ingredientCache.IngredientsCreatedAsync(ingredients.Value!.Created);
         await readCache.UpdateListsAsync(new RecipeListMutation(null, ToListSnapshot(recipe, recipe.RecipeSteps), resultDto,
             author?.Followers.Select(follower => follower.FollowerId).ToArray()), cancellationToken: cancellationToken);
+        await eventQueue.EnqueueAsync(new RecipeCreatedEvent(recipe.Id, recipe.ApplicationUserId, recipe.CreationDate), cancellationToken);
         await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
         return new Result<RecipeDto>
         {

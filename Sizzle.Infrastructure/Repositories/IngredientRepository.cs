@@ -1,25 +1,32 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Sizzle.Application.Repositories;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Extensions;
 
 namespace Sizzle.Infrastructure.Repositories;
 
-public class IngredientRepository(ApplicationDbContext dbContext) : Repository<Ingredient>(dbContext), IIngredientRepository
+public class IngredientRepository(ApplicationDbContext dbContext, ILogger<IngredientRepository>? logger = null) : Repository<Ingredient>(dbContext), IIngredientRepository
 {
+    private readonly ILogger<IngredientRepository> logger = logger ?? NullLogger<IngredientRepository>.Instance;
+
     public Task<List<Ingredient>> GetByIdsAsync(Guid[] ids, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.ingredients.get_by_ids");
         return DbSet.WhereIdIn(ids, ingredient => ingredient.Id).ToListAsync(cancellationToken);
     }
 
     public Task<List<Ingredient>> GetByIdsWithTranslationsAsync(Guid[] ids, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.ingredients.get_by_ids_with_translations");
         return DbSet.AsNoTracking().WhereIdIn(ids, ingredient => ingredient.Id)
             .Include(ingredient => ingredient.Translations).ToListAsync(cancellationToken);
     }
 
     public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.ingredients.get_by_names");
         return DbSet.Include(i => i.Translations)
             .Where(i => i.Translations.Any(t => normalizedNames.Contains(t.Name.ToLower())))
             .ToListAsync(cancellationToken);
@@ -27,6 +34,7 @@ public class IngredientRepository(ApplicationDbContext dbContext) : Repository<I
 
     public async Task<IEnumerable<Ingredient>> GetAllOrderedAsync(string? search, int? pageIndex, int? pageSize, string languageCode, CancellationToken cancellationToken = default)
     {
+        logger.LogInformation("db.ingredients.get_all_ordered");
         var query = DbSet.AsNoTracking();
 
         if (!string.IsNullOrWhiteSpace(search))

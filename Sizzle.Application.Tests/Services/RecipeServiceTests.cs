@@ -20,21 +20,25 @@ public class RecipeServiceTests
     private readonly IRecipeRepository recipes = Substitute.For<IRecipeRepository>();
     private readonly IIngredientRepository ingredients = Substitute.For<IIngredientRepository>();
     private readonly ICategoryRepository categories = Substitute.For<ICategoryRepository>();
+    private readonly IUserFollowerRepository followers = Substitute.For<IUserFollowerRepository>();
     private readonly IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly IFileService files = Substitute.For<IFileService>();
     private readonly IRecipeNotificationSender notifications = Substitute.For<IRecipeNotificationSender>();
+    private readonly IRecipeCreatedEventQueue events = Substitute.For<IRecipeCreatedEventQueue>();
     private readonly IIngredientUnitFormatter formatter = Substitute.For<IIngredientUnitFormatter>();
     private readonly IRecipeReadCache cache = Substitute.For<IRecipeReadCache>();
+    private readonly IFollowingFeedCache followingCache = Substitute.For<IFollowingFeedCache>();
     private readonly IRecipeInteractionBuffer interactions = Substitute.For<IRecipeInteractionBuffer>();
     private readonly IIngredientReadCache ingredientCache = Substitute.For<IIngredientReadCache>();
     private readonly ICommentReadCache commentCache = Substitute.For<ICommentReadCache>();
     private readonly IMapper mapper = Substitute.For<IMapper>();
 
     private RecipeService CreateService(int cooldownMinutes = 10) => new(
-        recipes, ingredients, categories, unitOfWork, files, notifications,
-        Microsoft.Extensions.Options.Options.Create(new BusinessLogicOptions { RecipeViewUpdateIntervalMinutes = cooldownMinutes }), formatter,
+        recipes, ingredients, categories, followers, unitOfWork, files, notifications, events,
+        Microsoft.Extensions.Options.Options.Create(new BusinessLogicOptions { RecipeViewUpdateIntervalMinutes = cooldownMinutes }),
+        Microsoft.Extensions.Options.Options.Create(new RecipeCacheOptions()), formatter,
         NullLogger<PersonalizedRecipesLog>.Instance, Microsoft.Extensions.Options.Options.Create(new RecipeLoggingOptions()), cache,
-        interactions, ingredientCache, commentCache, mapper, NullLogger<RecipeService>.Instance);
+        followingCache, interactions, ingredientCache, commentCache, mapper, NullLogger<RecipeService>.Instance);
 
     [Fact]
     public async Task CreateRecipeAsync_InvalidCookingTimeDoesNotAccessRepositoriesOrCommit()

@@ -10,6 +10,10 @@ public interface IUserFollowerRepository
 
     Task<List<Guid>> GetFollowerIdsAsync(Guid followingId, CancellationToken cancellationToken = default);
 
+    Task<int> GetFollowerCountAsync(Guid followingId, CancellationToken cancellationToken = default);
+
+    Task<List<Guid>> GetFollowingIdsAsync(Guid followerId, CancellationToken cancellationToken = default);
+
     Task<List<ApplicationUser>> GetFollowersAsync(Guid userId, CancellationToken cancellationToken = default);
 
     Task<List<ApplicationUser>> GetFollowingAsync(Guid userId, CancellationToken cancellationToken = default);
