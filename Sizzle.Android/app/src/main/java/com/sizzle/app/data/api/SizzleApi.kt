@@ -107,7 +107,7 @@ interface SizzleApi {
     suspend fun registerShare(@Path("id") id: String): RecipeShare
 
     @POST("api/recipes/{id}/update-view")
-    suspend fun registerView(@Path("id") id: String): FeedRecipe
+    suspend fun registerView(@Path("id") id: String)
 
     // Comments
 

@@ -8,6 +8,7 @@ namespace Sizzle.Application.Repositories;
 public interface IRecipeRepository : IRepository<Recipe>
 {
 	Task<PageResponse<Recipe>> GetRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
+	Task<PageResponse<Recipe>> GetDraftRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 	Task<PageResponse<Recipe>> GetFollowingRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 	Task<IReadOnlyList<FollowingFeedCacheEntry>> GetFollowingFeedEntriesAsync(Guid followerId, int take, CancellationToken cancellationToken = default);
 	Task<ApplicationUser?> GetAuthorForMutationAsync(Guid authorId, CancellationToken cancellationToken = default);

@@ -14,7 +14,7 @@ namespace Sizzle.WebApi.Controllers;
 [Route("api/[controller]")]
 public class UsersController(IUserService userService, IUserFollowerService followerService,
     IGoogleAuthFlowService googleAuthFlowService, IGoogleOAuthService googleOAuthService,
-    IDeviceTokenService deviceTokenService, IMapper mapper) : BaseController
+    IDeviceTokenService deviceTokenService, IMapper mapper, ILogger<BaseController> logger) : BaseController(logger)
 {
     /// <summary>Follow a user.</summary>
     /// <remarks>

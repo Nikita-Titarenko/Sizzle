@@ -1,0 +1,16 @@
+# Gemini video storage
+
+Recipe generation uploads each video to a private Google Cloud Storage bucket and sends its `gs://` URI to Gemini through Vertex AI. The object is deleted after generation, including when generation fails. Configure a bucket lifecycle rule to delete old objects under `recipe-generation/` as a fallback if the process terminates before cleanup.
+
+1. Enable the Vertex AI API and Cloud Storage API in your Google Cloud project. Create a private bucket **in that same project**. Select a Vertex AI location where the configured model is available (`global` by default).
+2. Set `Gemini:ProjectId`, `Gemini:BucketName`, `Gemini:Location`, and `Gemini:Model` in application configuration or environment variables (for example, `Gemini__ProjectId` and `Gemini__BucketName`). The bucket name is the bare name, without `gs://`.
+3. Configure the root `GoogleCloudServiceAccount` section with the complete service-account JSON object in ignored local Development settings, an ignored `appsettings.Secrets.json`, or another private configuration provider. The shared `appsettings.json` contains an empty example section; never put the actual private key there. Both the Cloud Storage and Vertex AI clients use this identity. For containers, provide private configuration at runtime; do not commit or bake credentials into an image.
+4. Grant the runtime identity `roles/aiplatform.user` on the project and `roles/storage.objectUser` on the bucket so it can upload and remove temporary videos. The bucket must remain in the Vertex AI request's project so Gemini can read private `gs://` inputs.
+
+The legacy Gemini Developer API key and Gemini Files API are not used by recipe generation in this configuration. Cloud access is required for end-to-end testing.
+
+## Recipe generation
+
+`POST /api/Recipes/generate` accepts a JSON body containing required `message` (up to 4000 characters) and optional `recipe` (the current generated draft). It returns a complete new draft based on both inputs. `POST /api/Recipes/generate-from-video` accepts multipart form data with only a required `video` (up to 100 MB) and creates a draft from the video alone. Both endpoints take the language from `Accept-Language` (for example `uk-UA`; default `en`). They do not send chat history or store chats, video, recipes, or ingredients in the database. Use the normal recipe creation endpoint to publish a draft.
+
+Both endpoints respond with `text/event-stream` (SSE). Each `chunk` event carries JSON with a `text` field containing the next fragment of Gemini's JSON output; concatenate fragments in order to preview the draft. The final `completed` event contains a `result` with the validated `recipe` (steps and ingredients without translations) and `message`. An `error` event contains `errors` and means no validated draft was produced, even if earlier `chunk` events were sent. Once streaming starts, errors are delivered as SSE events rather than changing the HTTP status code. Clients should read the response body as a stream (not as one JSON document); disconnecting cancels generation and cleans up the temporary video.

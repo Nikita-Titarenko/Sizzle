@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.WebApi.Requests.Recipes;
@@ -10,6 +11,7 @@ public class NewIngredientRequestModel
 
     public Guid? ParentId { get; init; }
 
+    [BindRequired]
     [EnumDataType(typeof(IngredientUnit))]
     public IngredientUnit Unit { get; init; }
 

@@ -6,8 +6,3 @@ public class Result
 
     public bool IsSuccess => Errors.Count == 0;
 }
-
-public class Result<T> : Result
-{
-    public T? Value { get; init; }
-}

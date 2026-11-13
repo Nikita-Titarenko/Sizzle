@@ -14,6 +14,10 @@ public class RecipeDto
 
     public string Description { get; init; } = string.Empty;
 
+    public bool IsDraft { get; init; }
+
+    public bool IsAIGeneratedImage { get; init; }
+
     public int CookingTimeMinutes { get; init; }
 
     public Guid CategoryId { get; init; }

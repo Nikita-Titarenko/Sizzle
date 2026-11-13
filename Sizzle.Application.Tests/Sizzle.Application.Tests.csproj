@@ -13,5 +13,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Sizzle.Application\Sizzle.Application.csproj" />
+    <ProjectReference Include="..\Sizzle.WebApi\Sizzle.WebApi.csproj" />
   </ItemGroup>
 </Project>

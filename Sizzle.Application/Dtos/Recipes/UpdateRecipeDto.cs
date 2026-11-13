@@ -10,6 +10,8 @@ public class UpdateRecipeDto
 
     public required string Description { get; init; }
 
+    public bool? IsDraft { get; init; }
+
     public required int CookingTimeMinutes { get; init; }
 
     public required Guid CategoryId { get; init; }

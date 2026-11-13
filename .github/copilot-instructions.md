@@ -1,8 +1,15 @@
 # Copilot Instructions
 
 ## Project Guidelines
-
-* User prefers implementation to be done as a single consolidated step instead of multiple plan steps.
-* \- не пишіть коментарі у коді
-* \- пишіть clean, maintainable код
-* слідуйте проєктному флоу: controller -> service -> repository
+- не пишіть коментарі у коді
+- пишіть clean, maintainable код
+- якщо змінна відображає айді, то пишіть в кінці назви id
+- не треба писати summary для промпту
+- якщо ви юзаєте якесь число, то виносьте його у константу
+- юзайте IEnumerable замість масивів
+- ніколи не юзайте short
+- ніколи не редагуйте файли міграції, тільки змінюйте те, що впливає на міграцію і потім додавайте нову
+- якщо foreach цикл 1-2 рядки, то пишіть LINQ замість foreach
+- слідуйте проєктному флоу: controller (тільки виклик сервісу і все, без бізнес логіки) -> service (бізнес логіка) -> repository/service в Infrastructure (імпліментація без бізнес логіки (наприклад, якщо це GeminiService, то просто метод для виклику LLM, без знання сутностей))
+- юзайте константи замість хардкодингу (наприклад, { Timeout = 600_000 } неправильно)
+- юзайте енами замість хардкодингу (наприклад, review.Status == "rejected" неправильно)

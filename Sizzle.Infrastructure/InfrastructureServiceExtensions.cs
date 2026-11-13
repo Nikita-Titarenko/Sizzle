@@ -1,3 +1,6 @@
+using Google.Apis.Auth.OAuth2;
+using Google.Cloud.Storage.V1;
+using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -14,6 +17,7 @@ using Sizzle.Application.Services.Subscriptions;
 using Sizzle.Application.Services.Notifications;
 using Sizzle.Application.Services.Users;
 using Sizzle.Domain.Entities;
+using Sizzle.Infrastructure.Cache;
 using Sizzle.Infrastructure.Options;
 using Sizzle.Infrastructure.Repositories;
 using Sizzle.Infrastructure.Services;
@@ -57,6 +61,21 @@ public static class InfrastructureServiceExtensions
 
         services.AddScoped<IJwtTokenService, JwtTokenService>();
         services.AddHttpClient<IGoogleOAuthService, GoogleOAuthService>();
+        services.AddScoped<IAIService, GeminiService>();
+        services.AddSingleton(_ =>
+        {
+            var serviceAccount = configuration.GetSection("GoogleCloudServiceAccount").GetChildren().ToArray();
+            if (serviceAccount.Length == 0)
+            {
+                throw new InvalidOperationException("GoogleCloudServiceAccount must be configured.");
+            }
+
+            var json = JsonSerializer.Serialize(serviceAccount.ToDictionary(field => field.Key, field => field.Value));
+            return CredentialFactory.FromJson<ServiceAccountCredential>(json).ToGoogleCredential()
+                .CreateScoped("https://www.googleapis.com/auth/cloud-platform");
+        });
+        services.AddSingleton(provider => StorageClient.Create(provider.GetRequiredService<GoogleCredential>()));
+        services.AddScoped<IAIVideoStorage, GcsVideoStorage>();
         services.AddScoped<IFileService, FileService>();
         services.AddSingleton<IEmailSender, SmtpEmailSender>();
 
@@ -109,8 +128,16 @@ public static class InfrastructureServiceExtensions
         services.Configure<SmtpEmailOptions>(configuration.GetSection("EmailOptions"));
         services.Configure<JwtTokenOptions>(configuration.GetSection("Jwt"));
         services.Configure<GoogleOAuthOptions>(configuration.GetSection("GoogleOAuth"));
+        services.Configure<GeminiOptions>(configuration.GetSection("Gemini"));
         services.Configure<StripeOptions>(configuration.GetSection("Stripe"));
         services.Configure<BusinessLogicOptions>(configuration.GetSection("BusinessLogic"));
+        services.AddOptions<MediaOptions>()
+            .Bind(configuration.GetSection("Media"))
+            .Validate(options => options.ImageExtensions.Length > 0 && options.VideoExtensions.Length > 0
+                && options.ImageExtensions.Concat(options.VideoExtensions).All(extension =>
+                    extension.Length > 1 && extension.StartsWith('.') && extension.Skip(1).All(char.IsLetterOrDigit)),
+                "Media extensions must be configured as nonempty dot-prefixed file extensions.")
+            .ValidateOnStart();
         services.Configure<RecipeLoggingOptions>(configuration.GetSection("Logging"));
         services.Configure<FirebaseOptions>(configuration.GetSection("Firebase"));
 

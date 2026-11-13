@@ -2,8 +2,6 @@ using AutoMapper;
 using Sizzle.Application.Dtos.Comments;
 using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Application.Dtos.Users;
-using Sizzle.Application.Services;
-using Sizzle.Application.Services.Ingredients;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Mapping;
@@ -23,6 +21,7 @@ public class ApplicationMappingProfile : Profile
             .ForMember(destination => destination.Comments, options => options.Ignore());
         CreateMap<UpdateRecipeDto, Recipe>()
             .ForMember(destination => destination.Id, options => options.Ignore())
+            .ForMember(destination => destination.IsDraft, options => options.Ignore())
             .ForMember(destination => destination.ApplicationUserId, options => options.Ignore())
             .ForMember(destination => destination.ApplicationUser, options => options.Ignore())
             .ForMember(destination => destination.Category, options => options.Ignore())
@@ -79,62 +78,4 @@ public class ApplicationMappingProfile : Profile
 
     private static Guid? ViewerId(ResolutionContext context) =>
         context.TryGetItems(out var items) && items.TryGetValue("ViewerId", out var id) ? (Guid?)id : null;
-}
-
-public class CommentImageUrlResolver(IFileService fileService) : IValueResolver<Comment, CommentDto, string?>
-{
-    public string? Resolve(Comment source, CommentDto destination, string? member, ResolutionContext context) =>
-        fileService.GetFileUrl(Path.Combine("icons", source.UserId.ToString()));
-}
-
-public class UserImageUrlResolver(IFileService fileService) : IValueResolver<ApplicationUser, UserDto, string?>
-{
-    public string? Resolve(ApplicationUser source, UserDto destination, string? member, ResolutionContext context) =>
-        fileService.GetFileUrl(Path.Combine("icons", source.Id.ToString()));
-}
-
-public class RecipeUserImageUrlResolver(IFileService fileService) : IValueResolver<Recipe, RecipeDto, string?>
-{
-    public string? Resolve(Recipe source, RecipeDto destination, string? member, ResolutionContext context) =>
-        fileService.GetFileUrl(Path.Combine("icons", source.ApplicationUserId.ToString()));
-}
-
-public class RecipeFileUrlResolver(IFileService fileService) : IValueResolver<Recipe, RecipeDto, string?>
-{
-    public string? Resolve(Recipe source, RecipeDto destination, string? member, ResolutionContext context) =>
-        source.FilePath == null ? null : fileService.GetFileUrl(source.FilePath);
-}
-
-public class RecipeDetailsStepsResolver(IFileService fileService)
-    : IValueResolver<Recipe, RecipeDetailsDto, IReadOnlyList<RecipeStepDto>>
-{
-    public IReadOnlyList<RecipeStepDto> Resolve(Recipe source, RecipeDetailsDto destination,
-        IReadOnlyList<RecipeStepDto> member, ResolutionContext context) =>
-        source.RecipeSteps.OrderBy(step => step.Position).Select(step => new RecipeStepDto
-        {
-            Id = step.Id,
-            Name = step.Name,
-            Description = step.Description,
-            FileUrls = step.Files.Select(file => fileService.GetFileUrl(file.FilePath))
-                .Where(url => url != null).Select(url => url!).ToList()
-        }).ToList();
-}
-
-public class RecipeDetailsIngredientsResolver(IIngredientUnitFormatter unitFormatter)
-    : IValueResolver<Recipe, RecipeDetailsDto, IReadOnlyList<RecipeIngredientDto>>
-{
-    public IReadOnlyList<RecipeIngredientDto> Resolve(Recipe source, RecipeDetailsDto destination,
-        IReadOnlyList<RecipeIngredientDto> member, ResolutionContext context)
-    {
-        var languageCode = (string)context.Items["LanguageCode"];
-        return source.RecipeIngredients.Select(link => new RecipeIngredientDto
-        {
-            Id = link.IngredientId,
-            Quantity = link.Quantity,
-            Unit = unitFormatter.Format(link.Ingredient.Unit, languageCode),
-            Name = link.Ingredient.Translations.FirstOrDefault(translation => translation.LanguageCode == languageCode)?.Name
-                ?? link.Ingredient.Translations.FirstOrDefault(translation => translation.LanguageCode == "en")?.Name
-                ?? string.Empty
-        }).ToList();
-    }
 }

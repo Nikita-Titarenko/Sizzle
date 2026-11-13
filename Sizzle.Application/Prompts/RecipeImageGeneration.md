@@ -1,0 +1,1 @@
+Create one photorealistic food photograph of the finished dish described by the recipe. Show the actual ingredients and final presentation. No text, labels, people or watermarks.

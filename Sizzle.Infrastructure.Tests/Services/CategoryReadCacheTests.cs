@@ -2,7 +2,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Caching.Memory;
 using Sizzle.Application.Dtos.Categories;
 using Sizzle.Application.Options;
-using Sizzle.Infrastructure.Services;
+using Sizzle.Infrastructure.Cache;
 
 namespace Sizzle.Infrastructure.Tests.Services;
 

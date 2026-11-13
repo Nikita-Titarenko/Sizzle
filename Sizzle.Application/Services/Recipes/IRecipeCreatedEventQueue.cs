@@ -1,9 +1,9 @@
-namespace Sizzle.Application.Services.Recipes;
+using Sizzle.Application.Dtos;
 
-public sealed record RecipeCreatedEvent(Guid RecipeId, Guid AuthorId, DateTime CreatedAt);
+namespace Sizzle.Application.Services.Recipes;
 
 public interface IRecipeCreatedEventQueue
 {
-    ValueTask EnqueueAsync(RecipeCreatedEvent item, CancellationToken cancellationToken = default);
-    IAsyncEnumerable<RecipeCreatedEvent> DequeueAllAsync(CancellationToken cancellationToken = default);
+    ValueTask EnqueueAsync(RecipeCreatedEventDto item, CancellationToken cancellationToken = default);
+    IAsyncEnumerable<RecipeCreatedEventDto> DequeueAllAsync(CancellationToken cancellationToken = default);
 }

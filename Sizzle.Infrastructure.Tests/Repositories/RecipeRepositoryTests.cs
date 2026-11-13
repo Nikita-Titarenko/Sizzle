@@ -7,6 +7,59 @@ namespace Sizzle.Infrastructure.Tests.Repositories;
 public class RecipeRepositoryTests : InMemoryRepositoryTest
 {
     [Fact]
+    public async Task Drafts_AppearOnlyInOwnerDraftListAndOwnerDetails()
+    {
+        var owner = new ApplicationUser { Id = Guid.NewGuid(), Name = "Owner" };
+        var viewer = new ApplicationUser { Id = Guid.NewGuid(), Name = "Viewer" };
+        var published = NewRecipe(owner.Id, Guid.NewGuid(), "Published", 0);
+        var ownDraft = NewRecipe(owner.Id, Guid.NewGuid(), "Own draft", 0);
+        ownDraft.IsDraft = true;
+        var otherDraft = NewRecipe(viewer.Id, Guid.NewGuid(), "Other draft", 0);
+        otherDraft.IsDraft = true;
+        await using (var seed = CreateContext())
+        {
+            seed.Users.AddRange(owner, viewer);
+            seed.Recipes.AddRange(published, ownDraft, otherDraft);
+            seed.UserFollowers.Add(new UserFollower { FollowerId = viewer.Id, FollowingId = owner.Id });
+            seed.ApplicationUserRecipes.Add(new ApplicationUserRecipe
+            { ApplicationUserId = viewer.Id, RecipeId = ownDraft.Id, IsSaved = true, IsLiked = true });
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var repository = new RecipeRepository(db);
+        var publicPage = await repository.GetRecipesAsync(new GetRecipesDto { OwnerId = owner.Id, PageSize = 10 });
+        var draftPage = await repository.GetDraftRecipesAsync(new GetRecipesDto { OwnerId = owner.Id, PageSize = 10 });
+        var savedPage = await repository.GetSavedRecipesAsync(new GetRecipesDto { ApplicationUserId = viewer.Id, PageSize = 10 });
+        var followingPage = await repository.GetFollowingRecipesAsync(new GetRecipesDto { ApplicationUserId = viewer.Id, PageSize = 10 });
+        var followingEntries = await repository.GetFollowingFeedEntriesAsync(viewer.Id, 10);
+        var candidates = await repository.GetRecommendationCandidatesAsync(new GetRecipesDto { ApplicationUserId = viewer.Id });
+        var recent = await repository.GetRecentInteractionsAsync(viewer.Id, 10);
+
+        Assert.Equal(published.Id, Assert.Single(publicPage.Data).Id);
+        Assert.Equal(1, publicPage.TotalSize);
+        Assert.Equal(ownDraft.Id, Assert.Single(draftPage.Data).Id);
+        Assert.Equal(1, draftPage.TotalSize);
+        Assert.Empty(savedPage.Data);
+        Assert.Equal(published.Id, Assert.Single(followingPage.Data).Id);
+        Assert.Equal(published.Id, Assert.Single(followingEntries).RecipeId);
+        Assert.Equal(published.Id, Assert.Single(candidates).Id);
+        Assert.Empty(recent);
+        Assert.Null(await repository.GetWithFullDetailsAsync(ownDraft.Id, viewer.Id));
+        Assert.Null(await repository.GetWithFullDetailsAsync(ownDraft.Id, null));
+        Assert.NotNull(await repository.GetWithFullDetailsAsync(ownDraft.Id, owner.Id));
+        Assert.Null(await repository.ToggleLikeAsync(viewer.Id, ownDraft.Id));
+    }
+
+    [Fact]
+    public async Task GetDraftRecipesAsync_RejectsQueryWithoutOwner()
+    {
+        await using var db = CreateContext();
+        await Assert.ThrowsAsync<ArgumentException>(() => new RecipeRepository(db)
+            .GetDraftRecipesAsync(new GetRecipesDto { PageSize = 10 }));
+    }
+
+    [Fact]
     public async Task GetRecipesAsync_FiltersByOwnerCategoryIngredientAndStepText_ThenOrdersAndPages()
     {
         var owner = new ApplicationUser { Id = Guid.NewGuid(), Name = "Chef" };

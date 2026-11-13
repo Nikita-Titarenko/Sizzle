@@ -11,6 +11,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Prompts\RecipeGeneration.md" />
+    <EmbeddedResource Include="Prompts\RecipeVideoGeneration.md" />
+    <EmbeddedResource Include="Prompts\RecipeImageGeneration.md" />
+    <EmbeddedResource Include="Prompts\RecipeCreationReview.md" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="AutoMapper" Version="15.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.9" />
   </ItemGroup>

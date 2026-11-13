@@ -26,7 +26,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     {
         logger.LogInformation("db.recipes.get_recent_interactions");
         return await DbContext.ApplicationUserRecipes.AsNoTracking()
-            .Where(link => link.ApplicationUserId == userId)
+            .Where(link => link.ApplicationUserId == userId && !link.Recipe!.IsDraft)
             .OrderByDescending(link => link.IsSharedAt ?? link.ViewUpdatedAt ?? link.IsSavedAt ?? link.Recipe!.CreationDate)
             .ThenBy(link => link.RecipeId)
             .Take(count)
@@ -47,7 +47,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     public async Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationCandidatesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.recipes.get_recommendation_candidates");
-        var query = DbSet.AsNoTracking().Where(recipe => recipe.ApplicationUserId != dto.ApplicationUserId);
+        var query = DbSet.AsNoTracking().Where(recipe => !recipe.IsDraft && recipe.ApplicationUserId != dto.ApplicationUserId);
 
         if (dto.CategoryIds.Length > 0)
         {
@@ -77,7 +77,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     {
         logger.LogInformation("db.recipes.get_by_ids_with_author");
         return await DbSet.AsNoTracking()
-            .Where(recipe => ids.Contains(recipe.Id))
+            .Where(recipe => !recipe.IsDraft && ids.Contains(recipe.Id))
             .Include(recipe => recipe.ApplicationUser)
             .Include(recipe => recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsLiked || link.IsSaved)))
             .Include(recipe => recipe.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId))
@@ -88,8 +88,18 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     public async Task<PageResponse<Recipe>> GetRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.recipes.get_page");
-        var query = ApplyFilters(DbSet.AsNoTracking(), dto);
+        return await GetRecipePageAsync(ApplyFilters(DbSet.AsNoTracking().Where(recipe => !recipe.IsDraft), dto), dto, cancellationToken);
+    }
 
+    public async Task<PageResponse<Recipe>> GetDraftRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("db.recipes.get_draft_page");
+        if (dto.OwnerId == null) throw new ArgumentException("Draft queries require an owner", nameof(dto));
+        return await GetRecipePageAsync(ApplyFilters(DbSet.AsNoTracking().Where(recipe => recipe.IsDraft), dto), dto, cancellationToken);
+    }
+
+    private static async Task<PageResponse<Recipe>> GetRecipePageAsync(IQueryable<Recipe> query, GetRecipesDto dto, CancellationToken cancellationToken)
+    {
         var totalSize = await query.CountAsync(cancellationToken);
         var offset = (long)dto.PageIndex * dto.PageSize;
         if (offset > int.MaxValue)
@@ -125,7 +135,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
         logger.LogInformation("db.recipes.get_following_page");
         var userId = dto.ApplicationUserId!.Value;
         var query = DbSet.AsNoTracking()
-            .Where(recipe => recipe.ApplicationUser.Followers.Any(follow => follow.FollowerId == userId));
+            .Where(recipe => !recipe.IsDraft && recipe.ApplicationUser.Followers.Any(follow => follow.FollowerId == userId));
         var totalSize = await query.CountAsync(cancellationToken);
         var offset = (long)dto.PageIndex * dto.PageSize;
         if (offset > int.MaxValue)
@@ -162,7 +172,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     {
         logger.LogInformation("db.recipes.get_following_feed_entries");
         return await DbSet.AsNoTracking()
-            .Where(recipe => recipe.ApplicationUser.Followers.Any(follow => follow.FollowerId == followerId))
+            .Where(recipe => !recipe.IsDraft && recipe.ApplicationUser.Followers.Any(follow => follow.FollowerId == followerId))
             .OrderByDescending(recipe => recipe.CreationDate)
             .ThenBy(recipe => recipe.Id)
             .Take(take)
@@ -175,7 +185,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
         logger.LogInformation("db.recipes.get_saved_page");
         var userId = dto.ApplicationUserId!.Value;
         var query = ApplyFilters(DbSet.AsNoTracking()
-            .Where(recipe => recipe.ApplicationUserRecipes.Any(link => link.ApplicationUserId == userId && link.IsSaved)), dto);
+            .Where(recipe => !recipe.IsDraft && recipe.ApplicationUserRecipes.Any(link => link.ApplicationUserId == userId && link.IsSaved)), dto);
         var totalSize = await query.CountAsync(cancellationToken);
         var offset = (long)dto.PageIndex * dto.PageSize;
         if (offset > int.MaxValue)
@@ -214,9 +224,9 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     {
         logger.LogInformation("db.recipes.get_saved_ids");
         var userId = dto.ApplicationUserId!.Value;
-        var query = ApplyFilters(DbSet.AsNoTracking().Where(recipe =>
+        var query = ApplyFilters(DbSet.AsNoTracking().Where(recipe => !recipe.IsDraft && (
             recipe.ApplicationUserRecipes.Any(link => link.ApplicationUserId == userId && link.IsSaved)
-            || pendingIds.Contains(recipe.Id)), dto);
+            || pendingIds.Contains(recipe.Id))), dto);
         var entries = await query.Select(recipe => new
         {
             recipe.Id,
@@ -270,7 +280,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             .AsSplitQuery();
         if (userId.HasValue)
             query = query.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId));
-        return query.FirstOrDefaultAsync(r => r.Id == recipeId, cancellationToken);
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId && (!r.IsDraft || r.ApplicationUserId == userId), cancellationToken);
     }
 
     public Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default)
@@ -283,7 +293,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
                 .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
         }
 
-        return query.FirstOrDefaultAsync(r => r.Id == recipeId, cancellationToken);
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId && (!r.IsDraft || r.ApplicationUserId == applicationUserId), cancellationToken);
     }
 
     public Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default)
@@ -302,7 +312,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
                 .Include(r => r.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId));
         }
 
-        return query.FirstOrDefaultAsync(r => r.Id == recipeId, cancellationToken);
+        return query.FirstOrDefaultAsync(r => r.Id == recipeId && (!r.IsDraft || r.ApplicationUserId == applicationUserId), cancellationToken);
     }
 
     public void AddSteps(IEnumerable<RecipeStep> steps)
@@ -337,7 +347,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             ? await DbContext.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
             : null;
 
-        var recipe = await DbSet.FirstOrDefaultAsync(item => item.Id == recipeId, cancellationToken);
+        var recipe = await DbSet.FirstOrDefaultAsync(item => item.Id == recipeId && !item.IsDraft, cancellationToken);
         if (recipe == null)
         {
             return null;

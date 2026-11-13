@@ -1,12 +1,47 @@
 using System.Security.Claims;
+using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Domain.Common;
+using Sizzle.WebApi.Serialization;
 
 namespace Sizzle.WebApi.Controllers;
 
 [ApiController]
-public abstract class BaseController : ControllerBase
+public abstract class BaseController(ILogger<BaseController> logger) : ControllerBase
 {
+    protected async Task WriteGenerationStreamAsync(IAsyncEnumerable<RecipeGenerationEvent> events, CancellationToken cancellationToken)
+    {
+        Response.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers["X-Accel-Buffering"] = "no";
+        try
+        {
+            await foreach (var item in events.WithCancellation(cancellationToken))
+            {
+                await WriteGenerationEventAsync(item, cancellationToken);
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+        }
+        catch (Exception exception)
+        {
+            logger.LogError(exception, "Generation stream failed");
+            if (!cancellationToken.IsCancellationRequested)
+            {
+                await WriteGenerationEventAsync(new RecipeGenerationEvent("error", Errors:
+                    [new Error { Message = "Generation failed", Key = ErrorKey.UnexpectedError }]), cancellationToken);
+            }
+        }
+    }
+
+    protected async Task WriteGenerationEventAsync(RecipeGenerationEvent item, CancellationToken cancellationToken)
+    {
+        await Response.WriteAsync($"event: {item.Type}\ndata: {JsonSerializer.Serialize(item, StreamJsonOptions.Value)}\n\n", cancellationToken);
+        await Response.Body.FlushAsync(cancellationToken);
+    }
+
     protected ActionResult HandleErrors(Result result)
     {
         var error = result.Errors.FirstOrDefault();

@@ -8,7 +8,7 @@ using Sizzle.WebApi.Requests.Other;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public class IngredientsController(IIngredientService ingredientService, IMapper mapper) : BaseController
+public class IngredientsController(IIngredientService ingredientService, IMapper mapper, ILogger<BaseController> logger) : BaseController(logger)
 {
     /// <summary>Get ingredients with search and pagination.</summary>
     /// <remarks>ErrorKey.BadRequest — invalid pagination parameters.</remarks>

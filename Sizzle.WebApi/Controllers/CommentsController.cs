@@ -11,7 +11,7 @@ using Sizzle.WebApi.Requests.Comments;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/recipes/{recipeId:guid}/comments")]
-public class CommentsController(ICommentService commentService, IMapper mapper) : BaseController
+public class CommentsController(ICommentService commentService, IMapper mapper, ILogger<BaseController> logger) : BaseController(logger)
 {
     /// <summary>Get a page of comments for a recipe.</summary>
     /// <remarks>

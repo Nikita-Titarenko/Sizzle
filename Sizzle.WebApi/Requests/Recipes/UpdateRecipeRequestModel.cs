@@ -9,6 +9,8 @@ public class UpdateRecipeRequestModel
 
     public required string Description { get; init; }
 
+    public bool? IsDraft { get; init; }
+
     [Range(1, int.MaxValue)]
     public int CookingTimeMinutes { get; init; }
 

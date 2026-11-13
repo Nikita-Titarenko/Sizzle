@@ -11,6 +11,11 @@ public class IngredientRepository(ApplicationDbContext dbContext, ILogger<Ingred
 {
     private readonly ILogger<IngredientRepository> logger = logger ?? NullLogger<IngredientRepository>.Instance;
 
+    public Task<List<Ingredient>> GetAllWithTranslationsAsync(CancellationToken cancellationToken = default)
+    {
+        return DbSet.AsNoTracking().Include(ingredient => ingredient.Translations).ToListAsync(cancellationToken);
+    }
+
     public Task<List<Ingredient>> GetByIdsAsync(Guid[] ids, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.ingredients.get_by_ids");

@@ -8,7 +8,7 @@ using Sizzle.Domain.Entities;
 namespace Sizzle.WebApi.Controllers;
 
 [Route("api/[controller]")]
-public sealed class SubscriptionsController(ISubscriptionService subscriptions) : BaseController
+public sealed class SubscriptionsController(ISubscriptionService subscriptions, ILogger<BaseController> logger) : BaseController(logger)
 {
     /// <summary>Get the available subscription plans and their prices.</summary>
     [HttpGet("plans")]

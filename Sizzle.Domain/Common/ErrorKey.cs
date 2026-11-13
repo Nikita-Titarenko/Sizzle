@@ -9,5 +9,7 @@ public enum ErrorKey
     AlreadyConfirmed,
     IncorrectLoginOrPassword,
     BadRequest,
-    Forbidden
+    Forbidden,
+    RecipeRejected,
+    RecipeNeedsCorrection
 }

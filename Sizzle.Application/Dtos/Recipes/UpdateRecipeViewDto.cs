@@ -6,5 +6,4 @@ public class UpdateRecipeViewDto
 
     public required Guid ApplicationUserId { get; init; }
 
-    public string LanguageCode { get; init; } = "en";
 }

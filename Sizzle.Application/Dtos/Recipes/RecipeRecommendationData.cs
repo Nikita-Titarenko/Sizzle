@@ -6,5 +6,3 @@ public sealed record RecipeRecommendationData(
     Guid CategoryId,
     string Name,
     Guid[] IngredientIds);
-
-public sealed record RecipeInteractionData(RecipeRecommendationData Recipe, bool IsLiked, bool IsSaved, bool IsShared);

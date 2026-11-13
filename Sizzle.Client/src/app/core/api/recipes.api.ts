@@ -67,7 +67,7 @@ export class RecipesApi {
   }
 
   registerView(id: string) {
-    return this.http.post<FeedRecipe>(`${this.baseUrl}/${id}/update-view`, null);
+    return this.http.post<void>(`${this.baseUrl}/${id}/update-view`, null);
   }
 }
 

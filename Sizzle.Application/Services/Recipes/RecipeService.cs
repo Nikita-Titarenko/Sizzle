@@ -1,7 +1,10 @@
 using AutoMapper;
 using System.Security.Cryptography;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sizzle.Application.Dtos;
@@ -11,16 +14,25 @@ using Sizzle.Application.Repositories;
 using Sizzle.Application.Services;
 using Sizzle.Application.Services.Ingredients;
 using Sizzle.Application.Services.Comments;
+using Sizzle.Application.Services.Subscriptions;
 using Sizzle.Domain.Common;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Services.Recipes;
 
-public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUserFollowerRepository followerRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IRecipeCreatedEventQueue eventQueue, IOptions<BusinessLogicOptions> businessLogicOptions, IOptions<RecipeCacheOptions> cacheOptions, IIngredientUnitFormatter unitFormatter, ILogger<PersonalizedRecipesLog> logger, IOptions<RecipeLoggingOptions> recipeLoggingOptions, IRecipeReadCache readCache, IFollowingFeedCache followingFeedCache, IRecipeInteractionBuffer interactionsBuffer, IIngredientReadCache ingredientCache, ICommentReadCache commentCache, IMapper mapper, ILogger<RecipeService> operationLogger) : IRecipeService
+public class RecipeService(IRecipeRepository recipeRepository, IIngredientRepository ingredientRepository, ICategoryRepository categoryRepository, IUserFollowerRepository followerRepository, IUnitOfWork unitOfWork, IFileService fileService, IRecipeNotificationSender notificationSender, IRecipeCreatedEventQueue eventQueue, IOptions<BusinessLogicOptions> businessLogicOptions, IOptions<RecipeCacheOptions> cacheOptions, IIngredientUnitFormatter unitFormatter, ILogger<PersonalizedRecipesLog> logger, IOptions<RecipeLoggingOptions> recipeLoggingOptions, IRecipeReadCache readCache, IFollowingFeedCache followingFeedCache, IRecipeInteractionBuffer interactionsBuffer, IIngredientReadCache ingredientCache, ICommentReadCache commentCache, IMapper mapper, ILogger<RecipeService> operationLogger, IAIService aiService, IAIVideoStorage videoStorage, IOptions<MediaOptions> mediaOptions, ISubscriptionService subscriptionService) : IRecipeService
 {
     private const int LikedInteractionWeight = 3;
     private const int SavedInteractionWeight = 6;
     private const int ShareInteractionWeight = 10;
+    private static readonly JsonSerializerOptions AiJsonOptions = new(JsonSerializerDefaults.Web)
+    {
+        Converters = { new JsonStringEnumConverter() }
+    };
+    private static readonly Lazy<string> RecipeSystemPrompt = new(() => LoadRecipeSystemPrompt("RecipeGeneration.md"));
+    private static readonly Lazy<string> VideoSystemPrompt = new(() => LoadRecipeSystemPrompt("RecipeVideoGeneration.md"));
+    private static readonly Lazy<string> ImageSystemPrompt = new(() => LoadRecipeSystemPrompt("RecipeImageGeneration.md"));
+    private static readonly Lazy<string> CreationReviewPrompt = new(() => LoadRecipeSystemPrompt("RecipeCreationReview.md"));
 
     public async Task<PageResponse<FeedRecipeDto>> GetPersonalizedRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
@@ -235,6 +247,28 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         return result;
     }
 
+    public async Task<PageResponse<RecipeDto>> GetDraftRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
+    {
+        var ownQuery = new GetRecipesDto
+        {
+            ApplicationUserId = dto.ApplicationUserId,
+            OwnerId = dto.ApplicationUserId,
+            Search = dto.Search,
+            IngredientIds = dto.IngredientIds,
+            CategoryIds = dto.CategoryIds,
+            PageIndex = dto.PageIndex,
+            PageSize = dto.PageSize
+        };
+        var page = await recipeRepository.GetDraftRecipesAsync(ownQuery, cancellationToken);
+        return new PageResponse<RecipeDto>
+        {
+            Data = page.Data.Select(ToRecipeDto).ToArray(),
+            TotalSize = page.TotalSize,
+            PageIndex = page.PageIndex,
+            PageSize = page.PageSize
+        };
+    }
+
     public async Task<PageResponse<FeedRecipeDto>> GetFollowingRecipesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default)
     {
         var userId = dto.ApplicationUserId!.Value;
@@ -367,29 +401,366 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private static PageResponse<FeedRecipeDto> CloneFeedPage(PageResponse<FeedRecipeDto> page) =>
         JsonSerializer.Deserialize<PageResponse<FeedRecipeDto>>(JsonSerializer.Serialize(page))!;
 
-    public async Task<Result<RecipeDto>> CreateRecipeAsync(CreateRecipeDto dto, CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<RecipeGenerationEvent> GenerateRecipeAsync(GenerateRecipeRequestDto request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var message = request.Message?.Trim();
+        if (string.IsNullOrWhiteSpace(message) || message.Length > 4000)
+        {
+            yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "Provide a message (up to 4000 characters)", Key = ErrorKey.BadRequest }]);
+            yield break;
+        }
+
+        await foreach (var item in GenerateRecipeCoreAsync(request.LanguageCode, RecipeSystemPrompt.Value,
+            catalog => [new AiPartDto(Text: $"User message: {message}\nCurrent recipe: {JsonSerializer.Serialize(request.Recipe, AiJsonOptions)}\nCatalog: {catalog}")],
+            cancellationToken)) yield return item;
+    }
+
+    public async Task<Result<GeneratedRecipeImage>> GenerateRecipeImageAsync(GeneratedRecipeDto? recipe, Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        if (!await HasActiveSubscriptionAsync(userId, cancellationToken))
+        {
+            return SubscriptionRequired<GeneratedRecipeImage>();
+        }
+
+        if (recipe == null || string.IsNullOrWhiteSpace(recipe.Name))
+        {
+            return new Result<GeneratedRecipeImage>
+            {
+                Errors = [new Error { Key = ErrorKey.BadRequest, Message = "Recipe name is required" }]
+            };
+        }
+
+        var recipeJson = JsonSerializer.Serialize(recipe, AiJsonOptions);
+        if (recipeJson.Length > 8000)
+        {
+            return new Result<GeneratedRecipeImage>
+            {
+                Errors = [new Error { Key = ErrorKey.BadRequest, Message = "Recipe is too long" }]
+            };
+        }
+
+        var prompt = $"{ImageSystemPrompt.Value}\nRecipe: {recipeJson}";
+        var image = await aiService.GenerateImageAsync(prompt, cancellationToken);
+        return new Result<GeneratedRecipeImage> { Value = image with { IsAIGeneratedImage = true } };
+    }
+
+    public async Task<Result<IAsyncEnumerable<RecipeGenerationEvent>>> GenerateRecipeFromVideoAsync(
+        GenerateRecipeFromVideoRequestDto request, Guid userId, CancellationToken cancellationToken = default)
+    {
+        if (!await HasActiveSubscriptionAsync(userId, cancellationToken))
+        {
+            return SubscriptionRequired<IAsyncEnumerable<RecipeGenerationEvent>>();
+        }
+
+        return new Result<IAsyncEnumerable<RecipeGenerationEvent>>
+        {
+            Value = GenerateRecipeFromVideoCoreAsync(request, cancellationToken)
+        };
+    }
+
+    private async IAsyncEnumerable<RecipeGenerationEvent> GenerateRecipeFromVideoCoreAsync(GenerateRecipeFromVideoRequestDto request,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var video = request.Video;
+        if (video == null || request.FormFieldCount != 0 || request.FileCount != 1)
+        {
+            yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "Provide only one video", Key = ErrorKey.BadRequest }]);
+            yield break;
+        }
+
+        if (!mediaOptions.Value.VideoExtensions.Contains(Path.GetExtension(video.FileName), StringComparer.OrdinalIgnoreCase)
+            || !fileService.IsValidMedia(video.FileName, video.Length))
+        {
+            yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "Provide a supported video", Key = ErrorKey.BadRequest }]);
+            yield break;
+        }
+
+        if (string.IsNullOrWhiteSpace(request.LanguageCode))
+        {
+            yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "Language code is required", Key = ErrorKey.BadRequest }]);
+            yield break;
+        }
+
+        var mimeType = Path.GetExtension(video.FileName).ToLowerInvariant() switch
+        {
+            ".mp4" => "video/mp4",
+            ".webm" => "video/webm",
+            ".mov" => "video/quicktime",
+            ".avi" => "video/x-msvideo",
+            ".mkv" => "video/x-matroska",
+            _ => throw new ArgumentException("Unsupported video type", nameof(video))
+        };
+
+        string? fileUri = null;
+        try
+        {
+            fileUri = await videoStorage.UploadAsync(video, mimeType, cancellationToken);
+            await foreach (var item in GenerateRecipeCoreAsync(request.LanguageCode, VideoSystemPrompt.Value,
+                catalog => [new AiPartDto(FileUri: fileUri, MimeType: mimeType), new AiPartDto(Text: $"Catalog: {catalog}")],
+                cancellationToken)) yield return item;
+        }
+        finally
+        {
+            if (fileUri != null)
+            {
+                try
+                {
+                    await videoStorage.DeleteAsync(fileUri, CancellationToken.None);
+                }
+                catch (Exception exception)
+                {
+                    operationLogger.LogWarning(exception, "Could not delete temporary AI video {FileUri}", fileUri);
+                }
+            }
+        }
+    }
+
+    private async IAsyncEnumerable<RecipeGenerationEvent> GenerateRecipeCoreAsync(string languageCode, string systemPrompt,
+        Func<string, IReadOnlyList<AiPartDto>> createParts, [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(languageCode))
+        {
+            yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "Language code is required", Key = ErrorKey.BadRequest }]);
+            yield break;
+        }
+
+        var ingredients = await ingredientRepository.GetAllWithTranslationsAsync(cancellationToken);
+        var categories = await categoryRepository.GetAllAsync(cancellationToken);
+        var catalogInput = new
+        {
+            languageCode,
+            categories = categories.Select(category => new
+            {
+                category.Id,
+                name = category.Translations.FirstOrDefault(translation => translation.LanguageCode == languageCode)?.Name
+                    ?? category.Translations.FirstOrDefault(translation => translation.LanguageCode == "en")?.Name
+            }),
+            ingredients = ingredients.Select(ingredient => new
+            {
+                ingredient.Id,
+                ingredient.ParentId,
+                ingredient.Unit,
+                name = ingredient.Translations.FirstOrDefault(translation => translation.LanguageCode == languageCode)?.Name
+                    ?? ingredient.Translations.FirstOrDefault(translation => translation.LanguageCode == "en")?.Name
+            })
+        };
+        var catalogJson = JsonSerializer.Serialize(catalogInput, AiJsonOptions);
+        var response = new StringBuilder();
+        await foreach (var chunk in aiService.GenerateStreamAsync(systemPrompt, [new AiMessageDto("user", createParts(catalogJson))], cancellationToken)
+            .WithCancellation(cancellationToken))
+        {
+            response.Append(chunk);
+            yield return new RecipeGenerationEvent("chunk", Text: chunk);
+        }
+
+        var generated = JsonSerializer.Deserialize<GenerateRecipeResponseDto>(response.ToString(), AiJsonOptions)
+            ?? throw new JsonException("AI returned an empty recipe.");
+
+        var recipe = generated?.Recipe;
+        var catalog = ingredients.ToDictionary(ingredient => ingredient.Id);
+
+        if (recipe == null || string.IsNullOrWhiteSpace(generated!.Message) || string.IsNullOrWhiteSpace(recipe.Name) || string.IsNullOrWhiteSpace(recipe.Description)
+            || recipe.CookingTimeMinutes <= 0 || !categories.Any(category => category.Id == recipe.CategoryId)
+            || recipe.Steps == null || recipe.Steps.Count == 0
+            || recipe.Steps.Any(step => step == null || string.IsNullOrWhiteSpace(step.Name) || string.IsNullOrWhiteSpace(step.Description))
+            || recipe.Ingredients == null || recipe.Ingredients.Count == 0)
+        {
+            yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "AI returned an incomplete recipe", Key = ErrorKey.UnexpectedError }]);
+            yield break;
+        }
+
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var ingredient in recipe.Ingredients)
+        {
+            if (ingredient == null || string.IsNullOrWhiteSpace(ingredient.Name) || ingredient.Quantity <= 0
+                || !Enum.IsDefined(ingredient.Unit))
+            {
+                yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "AI returned an invalid ingredient", Key = ErrorKey.UnexpectedError }]);
+                yield break;
+            }
+
+            var existing = ingredient.Id.HasValue && catalog.TryGetValue(ingredient.Id.Value, out var byId)
+                ? byId
+                : ingredients.FirstOrDefault(item => item.Translations.Any(translation =>
+                    (translation.LanguageCode == languageCode || translation.LanguageCode == "en")
+                    && string.Equals(translation.Name, ingredient.Name.Trim(), StringComparison.OrdinalIgnoreCase)));
+            if (existing != null)
+            {
+                ingredient.Id = existing.Id;
+                ingredient.Name = existing.Translations.FirstOrDefault(translation => translation.LanguageCode == languageCode)?.Name ?? ingredient.Name;
+                ingredient.ParentId = existing.ParentId;
+                ingredient.Unit = existing.Unit;
+            }
+            else
+            {
+                ingredient.Id = null;
+                ingredient.Name = ingredient.Name.Trim();
+                if (ingredient.ParentId.HasValue && (!catalog.TryGetValue(ingredient.ParentId.Value, out var parent) || parent.ParentId.HasValue))
+                {
+                    yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "AI returned an invalid parent ingredient", Key = ErrorKey.UnexpectedError }]);
+                    yield break;
+                }
+
+            }
+
+            if (!seen.Add(ingredient.Id?.ToString() ?? ingredient.Name))
+            {
+                yield return new RecipeGenerationEvent("error", Errors: [new Error { Message = "AI returned duplicate ingredients", Key = ErrorKey.UnexpectedError }]);
+                yield break;
+            }
+        }
+
+        yield return new RecipeGenerationEvent("completed", Result: new GenerateRecipeResponseDto { Recipe = recipe, Message = generated.Message });
+    }
+
+    private async Task<bool> HasActiveSubscriptionAsync(Guid userId, CancellationToken cancellationToken) =>
+        (await subscriptionService.GetStatusAsync(userId, cancellationToken)).RemainingSeconds > 0;
+
+    private static Result<T> SubscriptionRequired<T>() => new()
+    {
+        Errors = [new Error { Key = ErrorKey.Forbidden, Message = "An active subscription is required" }]
+    };
+
+    private static string LoadRecipeSystemPrompt(string fileName)
+    {
+        using var stream = typeof(RecipeService).Assembly.GetManifestResourceStream($"Sizzle.Application.Prompts.{fileName}")
+            ?? throw new InvalidOperationException("Recipe system prompt was not found.");
+        using var reader = new StreamReader(stream);
+        var prompt = reader.ReadToEnd();
+        return !string.IsNullOrWhiteSpace(prompt) ? prompt : throw new InvalidOperationException("Recipe system prompt is empty.");
+    }
+
+    public async Task<CreateRecipeResult> CreateRecipeAsync(CreateRecipeDto dto, CancellationToken cancellationToken = default)
     {
         var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes, cancellationToken);
         if (detailsError != null)
         {
-            return Reject<RecipeDto>("create", null, dto.ApplicationUserId, detailsError);
+            return new CreateRecipeResult { Errors = [detailsError] };
         }
 
         var mediaError = ValidateMedia(dto.File, dto.Steps);
         if (mediaError != null)
         {
-            return Reject<RecipeDto>("create", null, dto.ApplicationUserId, mediaError);
+            return new CreateRecipeResult { Errors = [mediaError] };
         }
 
-        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients, cancellationToken);
+        if (dto.IsDraft)
+        {
+            return await CreateRecipeCoreAsync(dto, [], cancellationToken);
+        }
+
+        var outcome = await ReviewRecipeAsync(dto, cancellationToken);
+        if (outcome.Error != null)
+        {
+            return new CreateRecipeResult { Errors = [outcome.Error], CorrectedRecipe = outcome.CorrectedRecipe };
+        }
+
+        return await CreateRecipeCoreAsync(dto, outcome.ApprovedIngredients, cancellationToken);
+    }
+
+    private async Task<RecipeReviewOutcomeDto> ReviewRecipeAsync(CreateRecipeDto dto, CancellationToken cancellationToken)
+    {
+        var catalog = await ingredientRepository.GetAllWithTranslationsAsync(cancellationToken);
+        var locales = catalog.SelectMany(ingredient => ingredient.Translations)
+            .Select(translation => translation.LanguageCode)
+            .Where(code => !string.IsNullOrWhiteSpace(code))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Order(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+        var known = catalog.ToDictionary(ingredient => ingredient.Id);
+        if (dto.Ingredients.Any(ingredient => ingredient == null || !known.ContainsKey(ingredient.Id)))
+        {
+            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.NotFound, Message = "Ingredient not found" });
+        }
+
+        RecipeReviewDto review;
+        try
+        {
+            review = await ReviewCreationAsync(dto, catalog, locales, cancellationToken);
+        }
+        catch (JsonException exception)
+        {
+            operationLogger.LogWarning(exception, "Invalid AI review for user {UserId}", dto.ApplicationUserId);
+            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.UnexpectedError, Message = "Invalid recipe review" });
+        }
+        if (review.Status == RecipeReviewStatus.Rejected)
+        {
+            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.RecipeRejected, Message = review.Reason });
+        }
+
+        if (review.Status == RecipeReviewStatus.Correction && review.CorrectedRecipe != null &&
+            IsValidCorrection(review.CorrectedRecipe, dto, known))
+        {
+            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.RecipeNeedsCorrection, Message = review.Reason },
+                review.CorrectedRecipe);
+        }
+
+        if (review.Status != RecipeReviewStatus.Approved || !ValidTranslations(review.NewIngredients, dto.NewIngredients, locales))
+        {
+            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.UnexpectedError, Message = review.Reason });
+        }
+
+        Ingredient? CatalogMatch(string name) => catalog.FirstOrDefault(ingredient => ingredient.Translations.Any(translation =>
+            string.Equals(translation.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase)));
+
+        if (dto.NewIngredients.Where((item, index) =>
+                !review.NewIngredients.Single(entry => entry.Index == index).Translations.Values.Any(name =>
+                    string.Equals(item.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase)) || CatalogMatch(item.Name) != null ||
+                CatalogMatch(review.NewIngredients.Single(entry => entry.Index == index).Name) != null).Any())
+        {
+            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.RecipeNeedsCorrection,
+                Message = "Review the corrected ingredient names" }, new GeneratedRecipeDto
+                {
+                    Name = dto.Name, Description = dto.Description, CookingTimeMinutes = dto.CookingTimeMinutes,
+                    CategoryId = dto.CategoryId,
+                    Steps = dto.Steps.Select(step => new GeneratedRecipeStepDto { Name = step.Name, Description = step.Description }).ToList(),
+                    Ingredients = [..dto.Ingredients.Select(item => new GeneratedRecipeIngredientDto
+                    {
+                        Id = item.Id, Name = known[item.Id].Translations.FirstOrDefault(translation =>
+                            string.Equals(translation.LanguageCode, locales.FirstOrDefault(), StringComparison.OrdinalIgnoreCase))?.Name
+                            ?? known[item.Id].Translations.FirstOrDefault()?.Name ?? string.Empty,
+                        ParentId = known[item.Id].ParentId, Unit = known[item.Id].Unit, Quantity = item.Quantity
+                    }), ..dto.NewIngredients.Select((item, index) =>
+                    {
+                        var name = review.NewIngredients.Single(entry => entry.Index == index).Name;
+                        var match = CatalogMatch(name) ?? CatalogMatch(item.Name);
+                        return new GeneratedRecipeIngredientDto
+                        {
+                            Id = match?.Id, Name = match?.Translations.FirstOrDefault(translation =>
+                                string.Equals(translation.LanguageCode, locales.FirstOrDefault(), StringComparison.OrdinalIgnoreCase))?.Name ?? name,
+                            ParentId = match is null ? item.ParentId : match.ParentId,
+                            Unit = match?.Unit ?? item.Unit, Quantity = item.Quantity
+                        };
+                    })]
+                });
+        }
+
+        var approvedIngredients = dto.NewIngredients.Select((item, index) =>
+            new ApprovedNewIngredientDto(review.NewIngredients.Single(entry => entry.Index == index).Name.Trim(),
+                item.ParentId, item.Unit, item.Quantity,
+                locales.ToDictionary(locale => locale, locale => review.NewIngredients.Single(entry => entry.Index == index)
+                    .Translations.Single(translation => string.Equals(translation.Key, locale, StringComparison.OrdinalIgnoreCase)).Value)))
+            .ToArray();
+        return new RecipeReviewOutcomeDto(approvedIngredients);
+    }
+
+    private async Task<CreateRecipeResult> CreateRecipeCoreAsync(CreateRecipeDto dto,
+        IReadOnlyCollection<ApprovedNewIngredientDto> approvedIngredients,
+        CancellationToken cancellationToken)
+    {
+        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, approvedIngredients, cancellationToken);
         if (!ingredients.IsSuccess)
         {
-            return Reject<RecipeDto>("create", null, dto.ApplicationUserId, ingredients.Errors.ToArray());
+            return new CreateRecipeResult { Errors = ingredients.Errors };
         }
 
         var author = await recipeRepository.GetAuthorForMutationAsync(dto.ApplicationUserId, cancellationToken);
         var recipe = mapper.Map<Recipe>(dto);
         recipe.Id = Guid.NewGuid();
+        recipe.IsDraft = dto.IsDraft;
+        recipe.IsAIGeneratedImage = dto.IsAIGeneratedImage;
         recipe.ApplicationUser = author;
         recipe.CreationDate = DateTime.UtcNow;
         recipe.RecipeSteps = dto.Steps.Select((step, index) =>
@@ -430,12 +801,134 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         await ingredientCache.IngredientsCreatedAsync(ingredients.Value!.Created);
         await readCache.UpdateListsAsync(new RecipeListMutation(null, ToListSnapshot(recipe, recipe.RecipeSteps), resultDto,
             author?.Followers.Select(follower => follower.FollowerId).ToArray()), cancellationToken: cancellationToken);
-        await eventQueue.EnqueueAsync(new RecipeCreatedEvent(recipe.Id, recipe.ApplicationUserId, recipe.CreationDate), cancellationToken);
-        await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
-        return new Result<RecipeDto>
+        if (!recipe.IsDraft)
+        {
+            await eventQueue.EnqueueAsync(new RecipeCreatedEventDto(recipe.Id, recipe.ApplicationUserId, recipe.CreationDate), cancellationToken);
+            await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
+        }
+        return new CreateRecipeResult
         {
             Value = ToRecipeDto(recipe)
         };
+    }
+
+    private async Task<RecipeReviewDto> ReviewCreationAsync(CreateRecipeDto dto, List<Ingredient> catalog, IReadOnlyCollection<string> locales,
+        CancellationToken cancellationToken)
+    {
+        var parts = new List<AiPartDto>
+        {
+            new(Text: JsonSerializer.Serialize(new
+            {
+                recipe = new { dto.Name, dto.Description, dto.CookingTimeMinutes, dto.CategoryId, dto.IsDraft,
+                    steps = dto.Steps.Select(step => new { step.Name, step.Description }), dto.Ingredients, dto.NewIngredients },
+                catalog = catalog.Select(ingredient => new { ingredient.Id, ingredient.ParentId, ingredient.Unit,
+                    translations = ingredient.Translations.Select(translation => new { translation.LanguageCode, translation.Name }) }),
+                locales
+            }, AiJsonOptions))
+        };
+        var uploadedVideos = new List<string>();
+        try
+        {
+            if (dto.File != null)
+            {
+                await AddReviewMediaAsync(parts, dto.File, "Recipe cover", uploadedVideos, cancellationToken);
+            }
+
+            foreach (var (step, index) in dto.Steps.Select((step, index) => (step, index)))
+            {
+                foreach (var upload in step.Files)
+                {
+                    await AddReviewMediaAsync(parts, upload, $"Step {index + 1}: {step.Name}", uploadedVideos, cancellationToken);
+                }
+            }
+
+            var json = await aiService.GenerateJsonAsync(CreationReviewPrompt.Value,
+                [new AiMessageDto("user", parts)], cancellationToken);
+            return JsonSerializer.Deserialize<RecipeReviewDto>(json, AiJsonOptions)
+                ?? throw new InvalidOperationException("AI returned an empty recipe review.");
+        }
+        finally
+        {
+            foreach (var uri in uploadedVideos)
+            {
+                await videoStorage.DeleteAsync(uri, CancellationToken.None);
+            }
+        }
+    }
+
+    private async Task AddReviewMediaAsync(List<AiPartDto> parts, RecipeMediaUploadDto upload, string label,
+        List<string> uploadedVideos, CancellationToken cancellationToken)
+    {
+        var extension = Path.GetExtension(upload.FileName).ToLowerInvariant();
+        var mimeType = extension switch
+        {
+            ".png" => "image/png", ".webp" => "image/webp", ".gif" => "image/gif",
+            ".mp4" => "video/mp4", ".mov" => "video/quicktime", ".webm" => "video/webm",
+            ".avi" => "video/x-msvideo", ".mkv" => "video/x-matroska",
+            _ => "image/jpeg"
+        };
+        parts.Add(new AiPartDto(Text: $"{label}: {upload.FileName}"));
+        if (mediaOptions.Value.VideoExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
+        {
+            var uri = await videoStorage.UploadAsync(upload, mimeType, cancellationToken);
+            uploadedVideos.Add(uri);
+            parts.Add(new AiPartDto(FileUri: uri, MimeType: mimeType));
+        }
+        else
+        {
+            await using var stream = upload.OpenReadStream();
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer, cancellationToken);
+            parts.Add(new AiPartDto(Data: buffer.ToArray(), MimeType: mimeType));
+        }
+    }
+
+    private static bool ValidTranslations(List<ReviewedIngredientTranslationDto>? entries, NewIngredientDto[] inputs,
+        IReadOnlyCollection<string> locales)
+    {
+        if (entries == null || entries.Count != inputs.Length || entries.Select(entry => entry.Index).Distinct().Count() != inputs.Length)
+        {
+            return false;
+        }
+
+        if (inputs.Length > 0 && locales.Count == 0)
+        {
+            return false;
+        }
+
+        var expectedLocales = locales.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var canonicalLocale = locales.FirstOrDefault();
+        return entries.All(entry => entry.Index >= 0 && entry.Index < inputs.Length &&
+            !string.IsNullOrWhiteSpace(entry.Name) &&
+            entry.Translations != null && entry.Translations.Count == expectedLocales.Count &&
+            entry.Translations.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(expectedLocales) &&
+            entry.Translations.All(translation => !string.IsNullOrWhiteSpace(translation.Value)) &&
+            entry.Translations.Any(translation =>
+                string.Equals(translation.Key, canonicalLocale, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(translation.Value.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase))) &&
+            entries.Select(entry => entry.Name.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Count() == entries.Count;
+    }
+
+    private static bool IsValidCorrection(GeneratedRecipeDto corrected, CreateRecipeDto input,
+        Dictionary<Guid, Ingredient> catalog)
+    {
+        if (corrected.CategoryId != input.CategoryId || corrected.CookingTimeMinutes <= 0 ||
+            string.IsNullOrWhiteSpace(corrected.Name) || corrected.Steps == null ||
+            corrected.Steps.Count != input.Steps.Length || corrected.Ingredients == null ||
+            corrected.Ingredients.Count != input.Ingredients.Length + input.NewIngredients.Length ||
+            corrected.Ingredients.Any(ingredient => ingredient.Quantity <= 0 ||
+                (ingredient.Id.HasValue && (!catalog.TryGetValue(ingredient.Id.Value, out var existing) ||
+                    existing.Unit != ingredient.Unit || existing.ParentId != ingredient.ParentId ||
+                    !existing.Translations.Any(translation => string.Equals(translation.Name, ingredient.Name,
+                        StringComparison.OrdinalIgnoreCase)))) ||
+                (!ingredient.Id.HasValue && (string.IsNullOrWhiteSpace(ingredient.Name) ||
+                    (ingredient.ParentId.HasValue && (!catalog.TryGetValue(ingredient.ParentId.Value, out var parent) || parent.ParentId.HasValue))))))
+        {
+            return false;
+        }
+
+        return input.Ingredients.All(selected => corrected.Ingredients.Any(ingredient =>
+            ingredient.Id == selected.Id && ingredient.Quantity == selected.Quantity));
     }
 
     public async Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto, CancellationToken cancellationToken = default)
@@ -468,41 +961,59 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         };
     }
 
-    public async Task<Result<RecipeDto>> UpdateRecipeAsync(UpdateRecipeDto dto, CancellationToken cancellationToken = default)
+    public async Task<UpdateRecipeResult> UpdateRecipeAsync(UpdateRecipeDto dto, CancellationToken cancellationToken = default)
     {
         var recipe = await recipeRepository.GetWithDetailsAsync(dto.Id, dto.ApplicationUserId, cancellationToken);
         if (recipe == null)
         {
-            return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId,
-                new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
+            return new UpdateRecipeResult { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
         }
 
         if (recipe.ApplicationUserId != dto.ApplicationUserId)
         {
-            return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId,
-                new Error { Message = "Recipe does not belong to current user", Key = ErrorKey.BadRequest });
+            return new UpdateRecipeResult { Errors = [new Error { Message = "Recipe does not belong to current user", Key = ErrorKey.BadRequest }] };
         }
 
         var detailsError = await ValidateRecipeDetailsAsync(dto.CategoryId, dto.CookingTimeMinutes, cancellationToken);
         if (detailsError != null)
         {
-            return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId, detailsError);
+            return new UpdateRecipeResult { Errors = [detailsError] };
         }
 
         var mediaError = ValidateMedia(dto.File, dto.Steps);
         if (mediaError != null)
         {
-            return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId, mediaError);
+            return new UpdateRecipeResult { Errors = [mediaError] };
         }
 
-        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, dto.NewIngredients, cancellationToken);
+        var isDraft = dto.IsDraft ?? recipe.IsDraft;
+        IReadOnlyCollection<ApprovedNewIngredientDto> approvedIngredients = [];
+        if (!isDraft)
+        {
+            var reviewInput = new CreateRecipeDto
+            {
+                ApplicationUserId = dto.ApplicationUserId, Name = dto.Name, Description = dto.Description,
+                CookingTimeMinutes = dto.CookingTimeMinutes, CategoryId = dto.CategoryId, File = dto.File,
+                Steps = dto.Steps, Ingredients = dto.Ingredients, NewIngredients = dto.NewIngredients
+            };
+            var outcome = await ReviewRecipeAsync(reviewInput, cancellationToken);
+            if (outcome.Error != null)
+            {
+                return new UpdateRecipeResult { Errors = [outcome.Error], CorrectedRecipe = outcome.CorrectedRecipe };
+            }
+
+            approvedIngredients = outcome.ApprovedIngredients;
+        }
+
+        var ingredients = await ResolveIngredientsAsync(dto.Ingredients, approvedIngredients, cancellationToken);
         if (!ingredients.IsSuccess)
         {
-            return Reject<RecipeDto>("update", dto.Id, dto.ApplicationUserId, ingredients.Errors.ToArray());
+            return new UpdateRecipeResult { Errors = ingredients.Errors };
         }
 
         var before = ToListSnapshot(recipe, recipe.RecipeSteps);
         mapper.Map(dto, recipe);
+        recipe.IsDraft = isDraft;
 
         var oldPaths = recipe.RecipeSteps.SelectMany(step => step.Files).Select(file => file.FilePath).ToList();
         recipeRepository.RemoveSteps(recipe.RecipeSteps.ToList());
@@ -582,6 +1093,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             IsFollowed = resultDto.IsFollowed,
             Name = recipe.Name,
             Description = recipe.Description,
+            IsDraft = recipe.IsDraft,
+            IsAIGeneratedImage = recipe.IsAIGeneratedImage,
             CookingTimeMinutes = recipe.CookingTimeMinutes,
             CategoryId = recipe.CategoryId,
             FileUrl = resultDto.FileUrl,
@@ -613,7 +1126,18 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 };
             }).ToArray()
         }, cancellationToken);
-        return new Result<RecipeDto>
+        if (!before.IsDraft && recipe.IsDraft)
+        {
+            var author = await recipeRepository.GetAuthorForMutationAsync(recipe.ApplicationUserId, cancellationToken);
+            await followingFeedCache.RemoveRecipeAsync(recipe.ApplicationUserId, recipe.Id,
+                author?.Followers.Select(follower => follower.FollowerId).ToArray() ?? [], cancellationToken);
+        }
+        if (before.IsDraft && !recipe.IsDraft)
+        {
+            await eventQueue.EnqueueAsync(new RecipeCreatedEventDto(recipe.Id, recipe.ApplicationUserId, recipe.CreationDate), cancellationToken);
+            await notificationSender.RecipeCreatedAsync(recipe.Id, recipe.ApplicationUserId, recipe.Name, recipe.CreationDate);
+        }
+        return new UpdateRecipeResult
         {
             Value = ToRecipeDto(recipe)
         };
@@ -621,7 +1145,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
     public async Task<Result> DeleteRecipeAsync(Guid recipeId, Guid applicationUserId, CancellationToken cancellationToken = default)
     {
-        var recipe = await recipeRepository.GetWithDetailsAsync(recipeId, cancellationToken: cancellationToken);
+        var recipe = await recipeRepository.GetWithDetailsAsync(recipeId, applicationUserId, cancellationToken);
         if (recipe == null)
         {
             operationLogger.LogWarning("Recipe deletion rejected for recipe {RecipeId} and user {UserId}: {ErrorKey}", recipeId, applicationUserId, ErrorKey.NotFound);
@@ -697,7 +1221,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<RecipeSaveDto> { Value = saved };
         }
 
-        if (await recipeRepository.GetAsync(cancellationToken, recipeId) == null)
+        if (await recipeRepository.GetAsync(cancellationToken, recipeId) is not { IsDraft: false })
         {
             return Reject<RecipeSaveDto>("toggle save", recipeId, userId,
                 new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
@@ -732,7 +1256,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<RecipeShareDto> { Value = shared };
         }
 
-        if (await recipeRepository.GetAsync(cancellationToken, recipeId) == null)
+        if (await recipeRepository.GetAsync(cancellationToken, recipeId) is not { IsDraft: false })
         {
             return Reject<RecipeShareDto>("share", recipeId, userId,
                 new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
@@ -753,35 +1277,23 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         return new Result<RecipeShareDto> { Value = new RecipeShareDto(recipeId, link.IsShared, link.IsSharedAt.Value) };
     }
 
-    public async Task<Result<FeedRecipeDto>> UpdateViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default)
+    public async Task<Result> UpdateViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default)
     {
         if (interactionsBuffer.Enabled)
         {
             if (!await interactionsBuffer.UpdateViewAsync(dto.ApplicationUserId, dto.RecipeId,
                     businessLogicOptions.Value.RecipeViewUpdateIntervalMinutes, cancellationToken))
-                return Reject<FeedRecipeDto>("update view", dto.RecipeId, dto.ApplicationUserId,
-                    new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
-
-            var cached = await readCache.GetAsync<Result<RecipeDetailsDto>>(
-                $"recipes:detail:{dto.RecipeId:N}:{dto.ApplicationUserId}:{dto.LanguageCode}", cancellationToken);
-            if (cached?.Value is { } details)
             {
-                var cachedRecipe = JsonSerializer.Deserialize<FeedRecipeDto>(JsonSerializer.Serialize(details))!;
-                await interactionsBuffer.ApplyAsync([cachedRecipe], dto.ApplicationUserId, cancellationToken);
-                return new Result<FeedRecipeDto> { Value = cachedRecipe };
+                return ViewNotFound(dto);
             }
 
-            var viewed = await recipeRepository.GetWithAuthorAsync(dto.RecipeId, dto.ApplicationUserId, cancellationToken);
-            var result = ToFeedRecipeDto(viewed!, dto.ApplicationUserId);
-            await interactionsBuffer.ApplyAsync([result], dto.ApplicationUserId, cancellationToken);
-            return new Result<FeedRecipeDto> { Value = result };
+            return new Result();
         }
 
         var recipe = await recipeRepository.GetAsync(cancellationToken, dto.RecipeId);
-        if (recipe == null)
+        if (recipe == null || recipe.IsDraft)
         {
-            return Reject<FeedRecipeDto>("update view", dto.RecipeId, dto.ApplicationUserId,
-                new Error { Message = "Recipe not found", Key = ErrorKey.NotFound });
+            return ViewNotFound(dto);
         }
 
         var userRecipe = await recipeRepository.GetUserRecipeAsync(dto.ApplicationUserId, dto.RecipeId, cancellationToken);
@@ -813,8 +1325,14 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             }
         }
 
-        var viewedRecipe = await recipeRepository.GetWithAuthorAsync(recipe.Id, dto.ApplicationUserId, cancellationToken);
-        return new Result<FeedRecipeDto> { Value = ToFeedRecipeDto(viewedRecipe!, dto.ApplicationUserId) };
+        return new Result();
+    }
+
+    private Result ViewNotFound(UpdateRecipeViewDto dto)
+    {
+        operationLogger.LogWarning("Recipe update view rejected for recipe {RecipeId} and user {UserId}: {ErrorKey}",
+            dto.RecipeId, dto.ApplicationUserId, ErrorKey.NotFound);
+        return new Result { Errors = [new Error { Message = "Recipe not found", Key = ErrorKey.NotFound }] };
     }
 
     private RecipeDto ToRecipeDto(Recipe recipe) => mapper.Map<RecipeDto>(recipe);
@@ -832,7 +1350,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private static RecipeListSnapshot ToListSnapshot(Recipe recipe, IEnumerable<RecipeStep> steps) => new(
         recipe.Id, recipe.ApplicationUserId, recipe.CategoryId, recipe.Name, recipe.Description,
         steps.SelectMany(step => new[] { step.Name, step.Description }).ToArray(),
-        recipe.RecipeIngredients.Select(link => link.IngredientId).ToArray(), recipe.LikeCount, recipe.CreationDate);
+        recipe.RecipeIngredients.Select(link => link.IngredientId).ToArray(), recipe.LikeCount, recipe.CreationDate, recipe.IsDraft);
 
     private async Task<Error?> ValidateRecipeDetailsAsync(Guid categoryId, int cookingTimeMinutes, CancellationToken cancellationToken)
     {
@@ -886,7 +1404,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
     }
 
-    private async Task<Result<ResolvedRecipeIngredients>> ResolveIngredientsAsync(RecipeIngredientInputDto[] selectedIngredients, NewIngredientDto[] newIngredients, CancellationToken cancellationToken)
+    private async Task<Result<ResolvedRecipeIngredients>> ResolveIngredientsAsync(RecipeIngredientInputDto[] selectedIngredients,
+        IReadOnlyCollection<ApprovedNewIngredientDto> newIngredients, CancellationToken cancellationToken)
     {
         if (selectedIngredients.Any(ingredient => ingredient == null || ingredient.Id == Guid.Empty))
         {
@@ -911,6 +1430,14 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         if (newIngredients.Any(ingredient => !Enum.IsDefined(ingredient.Unit)))
         {
             return new Result<ResolvedRecipeIngredients> { Errors = [new Error { Message = "Invalid ingredient unit", Key = ErrorKey.BadRequest }] };
+        }
+
+        if (newIngredients.Any(ingredient => ingredient.Translations == null || ingredient.Translations.Any(translation =>
+            string.IsNullOrWhiteSpace(translation.Key) || string.IsNullOrWhiteSpace(translation.Value))
+            || !ingredient.Translations.Values.Any(name =>
+                string.Equals(name.Trim(), ingredient.Name.Trim(), StringComparison.OrdinalIgnoreCase))))
+        {
+            return new Result<ResolvedRecipeIngredients> { Errors = [new Error { Message = "Invalid ingredient translations", Key = ErrorKey.BadRequest }] };
         }
 
         var quantities = selectedIngredients.ToDictionary(ingredient => ingredient.Id, ingredient => ingredient.Quantity);
@@ -939,9 +1466,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<ResolvedRecipeIngredients> { Errors = [new Error { Message = "Parent ingredient cannot have a parent", Key = ErrorKey.BadRequest }] };
         }
 
-        var ingredientsToResolve = newIngredients
-            .Select(ingredient => new NewIngredientDto { Name = ingredient.Name.Trim(), ParentId = ingredient.ParentId, Unit = ingredient.Unit, Quantity = ingredient.Quantity })
-            .ToArray();
+        var ingredientsToResolve = newIngredients.Select(ingredient => new ApprovedNewIngredientDto(ingredient.Name.Trim(),
+            ingredient.ParentId, ingredient.Unit, ingredient.Quantity, ingredient.Translations)).ToArray();
         if (ingredientsToResolve.Length == 0)
         {
             return new Result<ResolvedRecipeIngredients> { Value = new ResolvedRecipeIngredients(quantities, existing.ToDictionary(item => item.Id), []) };
@@ -967,7 +1493,10 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                     Id = Guid.NewGuid(),
                     ParentId = input.ParentId,
                     Unit = input.Unit,
-                    Translations = [new IngredientTranslation { LanguageCode = "en", Name = input.Name }]
+                    Translations = input.Translations.Select(translation => new IngredientTranslation
+                    {
+                        LanguageCode = translation.Key, Name = translation.Value.Trim()
+                    }).ToList()
                 };
                 ingredientRepository.Add(ingredient);
                 matched.Add(ingredient);

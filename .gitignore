@@ -368,6 +368,10 @@ appsettings.Secrets.json
 # Firebase: server key and the Android app config
 firebase-service-account.json
 google-services.json
+Sizzle.WebApi/eventa-481411-414e741d6a5e.json
 
 # JetBrains IDEs
 .idea/
+
+appsettings.Development.json
+appsettings.Production.json

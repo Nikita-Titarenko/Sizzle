@@ -12,6 +12,10 @@ public class Recipe
 
     public string Description { get; set; } = string.Empty;
 
+    public bool IsDraft { get; set; }
+
+    public bool IsAIGeneratedImage { get; set; }
+
     public int CookingTimeMinutes { get; set; }
 
     public Guid CategoryId { get; set; }

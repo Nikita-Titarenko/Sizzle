@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
+using Sizzle.Application.Options;
 using Sizzle.Application.Services;
 
 namespace Sizzle.Infrastructure.Services;
@@ -10,18 +12,17 @@ public class FileService : IFileService
 
     private const long MaxFileSize = 5 * 1024 * 1024;
 
-    private static readonly string[] ValidFileExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
-
-    private static readonly string[] ValidVideoExtensions = [".mp4", ".webm", ".mov", ".avi", ".mkv"];
-
     private const long MaxVideoSize = 100 * 1024 * 1024;
+
+    private readonly MediaOptions _mediaOptions;
 
     private readonly string _path;
 
     private readonly string _baseUrl;
 
-    public FileService(IWebHostEnvironment environment, IHttpContextAccessor accessor)
+    public FileService(IWebHostEnvironment environment, IHttpContextAccessor accessor, IOptions<MediaOptions> mediaOptions)
     {
+        _mediaOptions = mediaOptions.Value;
         var request = accessor.HttpContext?.Request;
         if (request != null)
         {
@@ -55,7 +56,7 @@ public class FileService : IFileService
             Path.GetDirectoryName(path) ?? string.Empty,
             Path.GetFileNameWithoutExtension(path));
 
-        foreach (var extension in ValidFileExtensions)
+        foreach (var extension in _mediaOptions.ImageExtensions)
         {
             var existing = fileNameWithoutExtension + extension;
             if (Exists(existing))
@@ -92,7 +93,7 @@ public class FileService : IFileService
             fileNameWithExtension = path;
         }
 
-        foreach (var extension in ValidFileExtensions)
+        foreach (var extension in _mediaOptions.ImageExtensions)
         {
             if (fileNameWithExtension == null && Exists(path + extension))
             {
@@ -114,8 +115,8 @@ public class FileService : IFileService
     public bool IsValidMedia(string fileName, long length)
     {
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
-        return length > 0 && (ValidFileExtensions.Contains(extension) && length <= MaxFileSize
-            || ValidVideoExtensions.Contains(extension) && length <= MaxVideoSize);
+        return length > 0 && (_mediaOptions.ImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) && length <= MaxFileSize
+            || _mediaOptions.VideoExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase) && length <= MaxVideoSize);
     }
 
     public void DeleteFile(string path)
@@ -133,10 +134,10 @@ public class FileService : IFileService
         }
     }
 
-    private static bool IsSupportedExtension(string extension)
+    private bool IsSupportedExtension(string extension)
     {
-        return ValidFileExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)
-            || ValidVideoExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
+        return _mediaOptions.ImageExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase)
+            || _mediaOptions.VideoExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase);
     }
 
     private bool Exists(string fileName)

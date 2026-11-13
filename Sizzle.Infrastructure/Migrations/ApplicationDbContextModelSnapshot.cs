@@ -396,6 +396,12 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<string>("FilePath")
                         .HasColumnType("longtext");
 
+                    b.Property<bool>("IsAIGeneratedImage")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("IsDraft")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<int>("LikeCount")
                         .HasColumnType("int");
 

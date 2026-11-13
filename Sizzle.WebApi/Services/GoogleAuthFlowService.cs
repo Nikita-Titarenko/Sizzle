@@ -7,14 +7,6 @@ using Sizzle.Domain.Common;
 
 namespace Sizzle.WebApi.Services;
 
-public interface IGoogleAuthFlowService
-{
-    IActionResult Start(HttpContext context);
-
-    Task<IActionResult> CompleteAsync(HttpContext context, string? code, string? state, string? error,
-        CancellationToken cancellationToken);
-}
-
 public sealed class GoogleAuthFlowService(
     IGoogleOAuthService googleOAuthService,
     IUserService userService,
