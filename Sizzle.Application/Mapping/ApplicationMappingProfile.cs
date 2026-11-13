@@ -2,6 +2,7 @@ using AutoMapper;
 using Sizzle.Application.Dtos.Comments;
 using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Application.Dtos.Users;
+using Sizzle.Application.Services.Recipes;
 using Sizzle.Domain.Entities;
 
 namespace Sizzle.Application.Mapping;
@@ -57,6 +58,7 @@ public class ApplicationMappingProfile : Profile
             .ForMember(destination => destination.ImageUrl, options => options.MapFrom<UserImageUrlResolver>());
         CreateMap<Recipe, RecipeDto>()
             .ForMember(destination => destination.UserId, options => options.MapFrom(source => source.ApplicationUserId))
+            .ForMember(destination => destination.Calories, options => options.MapFrom(source => RecipeCalories.Calculate(source.RecipeIngredients)))
             .ForMember(destination => destination.UserName, options => options.MapFrom(source => source.ApplicationUser == null ? string.Empty : source.ApplicationUser.Name))
             .ForMember(destination => destination.UserImageUrl, options => options.MapFrom<RecipeUserImageUrlResolver>())
             .ForMember(destination => destination.FileUrl, options => options.MapFrom<RecipeFileUrlResolver>());

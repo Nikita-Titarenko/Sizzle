@@ -296,6 +296,7 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                     UserImageUrl = RecipeListPages.Rebase(next.UserImageUrl, origin),
                     IsFollowed = previous?.IsFollowed ?? next.IsFollowed,
                     Name = next.Name, Description = next.Description, CookingTimeMinutes = next.CookingTimeMinutes,
+                    Calories = next.Calories,
                     CategoryId = next.CategoryId, IsDraft = next.IsDraft, IsAIGeneratedImage = next.IsAIGeneratedImage,
                     FileUrl = RecipeListPages.Rebase(next.FileUrl, origin),
                     ViewCount = next.ViewCount, LikeCount = next.LikeCount, CreationDate = next.CreationDate,

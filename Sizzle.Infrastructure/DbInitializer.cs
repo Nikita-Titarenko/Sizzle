@@ -39,7 +39,7 @@ public static class DbInitializer
             throw new InvalidOperationException($"Resource '{baseResource}' contains duplicate ingredient ids.");
         }
 
-        if (ingredients.Any(i => i.Id == Guid.Empty || !Enum.IsDefined(i.Unit)))
+        if (ingredients.Any(i => i.Id == Guid.Empty || !Enum.IsDefined(i.Unit) || i.Calories is null or < 0))
         {
             throw new InvalidOperationException($"Resource '{baseResource}' contains invalid ingredient data.");
         }
@@ -48,7 +48,7 @@ public static class DbInitializer
         var existingById = existingIngredients.ToDictionary(i => i.Id);
         var newIngredients = ingredients
             .Where(i => !existingById.ContainsKey(i.Id))
-            .Select(i => new Ingredient { Id = i.Id, ParentId = i.ParentId, Unit = i.Unit });
+            .Select(i => new Ingredient { Id = i.Id, ParentId = i.ParentId, Unit = i.Unit, Calories = i.Calories!.Value });
         await context.Ingredients.AddRangeAsync(newIngredients);
 
         foreach (var seed in ingredients)
@@ -56,6 +56,7 @@ public static class DbInitializer
             if (existingById.TryGetValue(seed.Id, out var ingredient))
             {
                 ingredient.Unit = seed.Unit;
+                ingredient.Calories = seed.Calories!.Value;
             }
         }
 
@@ -188,6 +189,8 @@ public static class DbInitializer
         public Guid? ParentId { get; set; }
 
         public IngredientUnit Unit { get; set; }
+
+        public int? Calories { get; set; }
     }
 
     private sealed class TranslationSeed

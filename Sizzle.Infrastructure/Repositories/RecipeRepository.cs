@@ -79,6 +79,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
         return await DbSet.AsNoTracking()
             .Where(recipe => !recipe.IsDraft && ids.Contains(recipe.Id))
             .Include(recipe => recipe.ApplicationUser)
+            .Include(recipe => recipe.RecipeIngredients).ThenInclude(link => link.Ingredient)
             .Include(recipe => recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsLiked || link.IsSaved)))
             .Include(recipe => recipe.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId))
             .AsSplitQuery()
@@ -119,6 +120,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             .Skip((int)offset)
             .Take(dto.PageSize)
             .Include(r => r.ApplicationUser)
+            .Include(r => r.RecipeIngredients).ThenInclude(link => link.Ingredient)
             .AsSplitQuery();
 
         return new PageResponse<Recipe>
@@ -154,6 +156,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             .Skip((int)offset)
             .Take(dto.PageSize)
             .Include(recipe => recipe.ApplicationUser)
+            .Include(recipe => recipe.RecipeIngredients).ThenInclude(link => link.Ingredient)
             .Include(recipe => recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsSaved || link.IsLiked)))
             .Include(recipe => recipe.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId))
             .AsSplitQuery()
@@ -206,6 +209,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             .Skip((int)offset)
             .Take(dto.PageSize)
             .Include(recipe => recipe.ApplicationUser)
+            .Include(recipe => recipe.RecipeIngredients).ThenInclude(link => link.Ingredient)
             .Include(recipe => recipe.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsSaved || link.IsLiked)))
             .Include(recipe => recipe.ApplicationUser!.Followers.Where(follow => follow.FollowerId == userId))
             .AsSplitQuery()
@@ -275,7 +279,7 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     {
         logger.LogInformation("db.recipes.get_with_details");
         var query = DbSet.Include(r => r.RecipeSteps).ThenInclude(step => step.Files)
-            .Include(r => r.RecipeIngredients)
+            .Include(r => r.RecipeIngredients).ThenInclude(link => link.Ingredient)
             .Include(r => r.ApplicationUser).ThenInclude(user => user!.Followers.Where(follower => follower.FollowerId == userId))
             .AsSplitQuery();
         if (userId.HasValue)
@@ -286,7 +290,8 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
     public Task<Recipe?> GetWithAuthorAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.recipes.get_with_author");
-        var query = DbSet.AsNoTracking().Include(r => r.ApplicationUser).AsSplitQuery();
+        var query = DbSet.AsNoTracking().Include(r => r.ApplicationUser)
+            .Include(r => r.RecipeIngredients).ThenInclude(link => link.Ingredient).AsSplitQuery();
         if (applicationUserId is Guid userId)
         {
             query = query.Include(r => r.ApplicationUserRecipes.Where(link => link.ApplicationUserId == userId && (link.IsLiked || link.IsSaved)))

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Logging;
 using Sizzle.Application.Dtos;
 using Sizzle.Application.Dtos.Comments;
 using Sizzle.Application.Repositories;
-using Sizzle.Application.Services;
 using Sizzle.Domain.Common;
 using Sizzle.Domain.Entities;
 

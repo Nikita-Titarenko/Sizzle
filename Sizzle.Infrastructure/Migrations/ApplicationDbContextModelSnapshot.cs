@@ -248,9 +248,9 @@ namespace Sizzle.Infrastructure.Migrations
 
                     b.HasKey("ApplicationUserId", "RecipeId");
 
-                    b.HasIndex("ApplicationUserId", "IsSaved", "IsSavedAt");
-
                     b.HasIndex("RecipeId");
+
+                    b.HasIndex("ApplicationUserId", "IsSaved", "IsSavedAt");
 
                     b.ToTable("ApplicationUserRecipes");
                 });
@@ -340,6 +340,9 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
+
+                    b.Property<int>("Calories")
+                        .HasColumnType("int");
 
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("char(36)");

@@ -36,6 +36,7 @@ public class IngredientServiceTests
         Assert.Equal(child.Id, nested.Id);
         Assert.Equal("Морква", nested.Name);
         Assert.Equal("г", nested.Unit);
+        Assert.Equal(42, nested.Calories);
         Assert.Equal("Salt", Assert.Single(result, item => item.Id == englishOnly.Id).Name);
         Assert.DoesNotContain(result, item => item.Id == child.Id);
     }
@@ -68,9 +69,99 @@ public class IngredientServiceTests
             Arg.Any<int?>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public void CalculateProportions_HalvesIngredientsAndRoundsHalfEggUp()
+    {
+        var cheeseId = Guid.NewGuid();
+        var eggId = Guid.NewGuid();
+        var initial = new List<IngredientProportionItemDto>
+        {
+            new() { Id = cheeseId, Quantity = 2000 },
+            new() { Id = eggId, Quantity = 3 }
+        };
+
+        var result = CreateService().CalculateProportions(new CalculateIngredientProportionsDto
+        {
+            Initial = initial,
+            ChangedIngredient = new IngredientProportionItemDto { Id = cheeseId, Quantity = 1000 }
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([cheeseId, eggId], result.Value!.Select(item => item.Id));
+        Assert.Equal([1000, 2], result.Value!.Select(item => item.Quantity));
+        Assert.Equal([2000, 3], initial.Select(item => item.Quantity));
+    }
+
+    [Fact]
+    public void CalculateProportions_KeepsChangedQuantityExactAndOtherQuantitiesPositive()
+    {
+        var cheeseId = Guid.NewGuid();
+        var eggId = Guid.NewGuid();
+
+        var result = CreateService().CalculateProportions(new CalculateIngredientProportionsDto
+        {
+            Initial = [new IngredientProportionItemDto { Id = cheeseId, Quantity = 2000 },
+                new IngredientProportionItemDto { Id = eggId, Quantity = 3 }],
+            ChangedIngredient = new IngredientProportionItemDto { Id = eggId, Quantity = 1 }
+        });
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal([667, 1], result.Value!.Select(item => item.Quantity));
+    }
+
+    [Fact]
+    public void CalculateProportions_RejectsMissingChangedIngredient()
+    {
+        var result = CreateService().CalculateProportions(new CalculateIngredientProportionsDto
+        {
+            Initial = [new IngredientProportionItemDto { Id = Guid.NewGuid(), Quantity = 2 }],
+            ChangedIngredient = new IngredientProportionItemDto { Id = Guid.NewGuid(), Quantity = 1 }
+        });
+
+        Assert.Equal(Sizzle.Domain.Common.ErrorKey.BadRequest, Assert.Single(result.Errors).Key);
+    }
+
+    [Fact]
+    public void CalculateProportions_RejectsEmptyDuplicateAndNonPositiveQuantities()
+    {
+        var id = Guid.NewGuid();
+        IEnumerable<CalculateIngredientProportionsDto> invalid =
+        [
+            new() { ChangedIngredient = new IngredientProportionItemDto { Id = id, Quantity = 1 } },
+            new() { Initial = [new IngredientProportionItemDto { Id = id, Quantity = 1 },
+                new IngredientProportionItemDto { Id = id, Quantity = 2 }],
+                ChangedIngredient = new IngredientProportionItemDto { Id = id, Quantity = 1 } },
+            new() { Initial = [new IngredientProportionItemDto { Id = id, Quantity = 0 }],
+                ChangedIngredient = new IngredientProportionItemDto { Id = id, Quantity = 1 } },
+            new() { Initial = [new IngredientProportionItemDto { Id = id, Quantity = 2 }],
+                ChangedIngredient = new IngredientProportionItemDto { Id = id, Quantity = 0 } }
+        ];
+
+        foreach (var request in invalid)
+        {
+            var result = CreateService().CalculateProportions(request);
+
+            Assert.Equal(Sizzle.Domain.Common.ErrorKey.BadRequest, Assert.Single(result.Errors).Key);
+        }
+    }
+
+    [Fact]
+    public void CalculateProportions_RejectsOverflow()
+    {
+        var changedId = Guid.NewGuid();
+        var result = CreateService().CalculateProportions(new CalculateIngredientProportionsDto
+        {
+            Initial = [new IngredientProportionItemDto { Id = changedId, Quantity = 1 },
+                new IngredientProportionItemDto { Id = Guid.NewGuid(), Quantity = int.MaxValue }],
+            ChangedIngredient = new IngredientProportionItemDto { Id = changedId, Quantity = 2 }
+        });
+
+        Assert.Equal(Sizzle.Domain.Common.ErrorKey.BadRequest, Assert.Single(result.Errors).Key);
+    }
+
     private static Ingredient NewIngredient(string english, string? ukrainian = null, Guid? parentId = null)
     {
-        var ingredient = new Ingredient { Id = Guid.NewGuid(), ParentId = parentId, Unit = IngredientUnit.Grams };
+        var ingredient = new Ingredient { Id = Guid.NewGuid(), ParentId = parentId, Unit = IngredientUnit.Grams, Calories = 42 };
         ingredient.Translations.Add(new IngredientTranslation { LanguageCode = "en", Name = english });
         if (ukrainian != null)
             ingredient.Translations.Add(new IngredientTranslation { LanguageCode = "uk", Name = ukrainian });

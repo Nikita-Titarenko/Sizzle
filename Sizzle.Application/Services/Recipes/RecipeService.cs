@@ -702,44 +702,9 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.UnexpectedError, Message = review.Reason });
         }
 
-        Ingredient? CatalogMatch(string name) => catalog.FirstOrDefault(ingredient => ingredient.Translations.Any(translation =>
-            string.Equals(translation.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase)));
-
-        if (dto.NewIngredients.Where((item, index) =>
-                !review.NewIngredients.Single(entry => entry.Index == index).Translations.Values.Any(name =>
-                    string.Equals(item.Name.Trim(), name.Trim(), StringComparison.OrdinalIgnoreCase)) || CatalogMatch(item.Name) != null ||
-                CatalogMatch(review.NewIngredients.Single(entry => entry.Index == index).Name) != null).Any())
-        {
-            return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.RecipeNeedsCorrection,
-                Message = "Review the corrected ingredient names" }, new GeneratedRecipeDto
-                {
-                    Name = dto.Name, Description = dto.Description, CookingTimeMinutes = dto.CookingTimeMinutes,
-                    CategoryId = dto.CategoryId,
-                    Steps = dto.Steps.Select(step => new GeneratedRecipeStepDto { Name = step.Name, Description = step.Description }).ToList(),
-                    Ingredients = [..dto.Ingredients.Select(item => new GeneratedRecipeIngredientDto
-                    {
-                        Id = item.Id, Name = known[item.Id].Translations.FirstOrDefault(translation =>
-                            string.Equals(translation.LanguageCode, locales.FirstOrDefault(), StringComparison.OrdinalIgnoreCase))?.Name
-                            ?? known[item.Id].Translations.FirstOrDefault()?.Name ?? string.Empty,
-                        ParentId = known[item.Id].ParentId, Unit = known[item.Id].Unit, Quantity = item.Quantity
-                    }), ..dto.NewIngredients.Select((item, index) =>
-                    {
-                        var name = review.NewIngredients.Single(entry => entry.Index == index).Name;
-                        var match = CatalogMatch(name) ?? CatalogMatch(item.Name);
-                        return new GeneratedRecipeIngredientDto
-                        {
-                            Id = match?.Id, Name = match?.Translations.FirstOrDefault(translation =>
-                                string.Equals(translation.LanguageCode, locales.FirstOrDefault(), StringComparison.OrdinalIgnoreCase))?.Name ?? name,
-                            ParentId = match is null ? item.ParentId : match.ParentId,
-                            Unit = match?.Unit ?? item.Unit, Quantity = item.Quantity
-                        };
-                    })]
-                });
-        }
-
         var approvedIngredients = dto.NewIngredients.Select((item, index) =>
             new ApprovedNewIngredientDto(review.NewIngredients.Single(entry => entry.Index == index).Name.Trim(),
-                item.ParentId, item.Unit, item.Quantity,
+                item.ParentId, item.Unit, item.Quantity, review.NewIngredients.Single(entry => entry.Index == index).Calories!.Value,
                 locales.ToDictionary(locale => locale, locale => review.NewIngredients.Single(entry => entry.Index == index)
                     .Translations.Single(translation => string.Equals(translation.Key, locale, StringComparison.OrdinalIgnoreCase)).Value)))
             .ToArray();
@@ -771,7 +736,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return recipeStep;
         }).ToList();
         recipe.RecipeIngredients = ingredients.Value!.Quantities.Select(entry =>
-            new RecipeIngredient { IngredientId = entry.Key, Quantity = entry.Value }).ToList();
+            new RecipeIngredient { IngredientId = entry.Key, Ingredient = ingredients.Value.ById[entry.Key], Quantity = entry.Value }).ToList();
 
         var savedPaths = new List<string>();
         try
@@ -821,7 +786,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             {
                 recipe = new { dto.Name, dto.Description, dto.CookingTimeMinutes, dto.CategoryId, dto.IsDraft,
                     steps = dto.Steps.Select(step => new { step.Name, step.Description }), dto.Ingredients, dto.NewIngredients },
-                catalog = catalog.Select(ingredient => new { ingredient.Id, ingredient.ParentId, ingredient.Unit,
+                catalog = catalog.Select(ingredient => new { ingredient.Id, ingredient.ParentId, ingredient.Unit, ingredient.Calories,
                     translations = ingredient.Translations.Select(translation => new { translation.LanguageCode, translation.Name }) }),
                 locales
             }, AiJsonOptions))
@@ -900,6 +865,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         var canonicalLocale = locales.FirstOrDefault();
         return entries.All(entry => entry.Index >= 0 && entry.Index < inputs.Length &&
             !string.IsNullOrWhiteSpace(entry.Name) &&
+            entry.Calories is >= 0 &&
             entry.Translations != null && entry.Translations.Count == expectedLocales.Count &&
             entry.Translations.Keys.ToHashSet(StringComparer.OrdinalIgnoreCase).SetEquals(expectedLocales) &&
             entry.Translations.All(translation => !string.IsNullOrWhiteSpace(translation.Value)) &&
@@ -1041,10 +1007,14 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             if (currentLinks.TryGetValue(ingredientId, out var link))
             {
                 link.Quantity = quantity;
+                link.Ingredient = ingredients.Value.ById[ingredientId];
             }
             else
             {
-                recipe.RecipeIngredients.Add(new RecipeIngredient { IngredientId = ingredientId, Quantity = quantity });
+                recipe.RecipeIngredients.Add(new RecipeIngredient
+                {
+                    IngredientId = ingredientId, Ingredient = ingredients.Value.ById[ingredientId], Quantity = quantity
+                });
             }
         }
 
@@ -1096,6 +1066,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             IsDraft = recipe.IsDraft,
             IsAIGeneratedImage = recipe.IsAIGeneratedImage,
             CookingTimeMinutes = recipe.CookingTimeMinutes,
+            Calories = RecipeCalories.Calculate(recipe.RecipeIngredients),
             CategoryId = recipe.CategoryId,
             FileUrl = resultDto.FileUrl,
             ViewCount = recipe.ViewCount,
@@ -1432,7 +1403,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<ResolvedRecipeIngredients> { Errors = [new Error { Message = "Invalid ingredient unit", Key = ErrorKey.BadRequest }] };
         }
 
-        if (newIngredients.Any(ingredient => ingredient.Translations == null || ingredient.Translations.Any(translation =>
+        if (newIngredients.Any(ingredient => ingredient.Calories < 0 || ingredient.Translations == null || ingredient.Translations.Any(translation =>
             string.IsNullOrWhiteSpace(translation.Key) || string.IsNullOrWhiteSpace(translation.Value))
             || !ingredient.Translations.Values.Any(name =>
                 string.Equals(name.Trim(), ingredient.Name.Trim(), StringComparison.OrdinalIgnoreCase))))
@@ -1449,7 +1420,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new Result<ResolvedRecipeIngredients> { Errors = [new Error { Message = "Invalid parent ingredient id", Key = ErrorKey.BadRequest }] };
         }
 
-        var existing = await ingredientRepository.GetByIdsWithTranslationsAsync(ids.Concat(parentIds).Distinct().ToArray(), cancellationToken);
+        var existing = await ingredientRepository.GetByIdsWithTranslationsTrackedAsync(ids.Concat(parentIds).Distinct().ToArray(), cancellationToken);
         var existingIds = existing.Select(ingredient => ingredient.Id).ToHashSet();
         if (!ids.IsSubsetOf(existingIds))
         {
@@ -1467,7 +1438,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
 
         var ingredientsToResolve = newIngredients.Select(ingredient => new ApprovedNewIngredientDto(ingredient.Name.Trim(),
-            ingredient.ParentId, ingredient.Unit, ingredient.Quantity, ingredient.Translations)).ToArray();
+            ingredient.ParentId, ingredient.Unit, ingredient.Quantity, ingredient.Calories, ingredient.Translations)).ToArray();
         if (ingredientsToResolve.Length == 0)
         {
             return new Result<ResolvedRecipeIngredients> { Value = new ResolvedRecipeIngredients(quantities, existing.ToDictionary(item => item.Id), []) };
@@ -1493,6 +1464,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                     Id = Guid.NewGuid(),
                     ParentId = input.ParentId,
                     Unit = input.Unit,
+                    Calories = input.Calories,
                     Translations = input.Translations.Select(translation => new IngredientTranslation
                     {
                         LanguageCode = translation.Key, Name = translation.Value.Trim()

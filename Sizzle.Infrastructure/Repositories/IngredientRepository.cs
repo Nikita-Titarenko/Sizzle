@@ -29,6 +29,13 @@ public class IngredientRepository(ApplicationDbContext dbContext, ILogger<Ingred
             .Include(ingredient => ingredient.Translations).ToListAsync(cancellationToken);
     }
 
+    public Task<List<Ingredient>> GetByIdsWithTranslationsTrackedAsync(Guid[] ids, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("db.ingredients.get_by_ids_with_translations_tracked");
+        return DbSet.WhereIdIn(ids, ingredient => ingredient.Id)
+            .Include(ingredient => ingredient.Translations).ToListAsync(cancellationToken);
+    }
+
     public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.ingredients.get_by_names");

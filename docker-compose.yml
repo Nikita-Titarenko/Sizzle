@@ -32,7 +32,7 @@ services:
       ASPNETCORE_URLS: http://0.0.0.0:8080
       DOTNET_USE_POLLING_FILE_WATCHER: "1"
       Cache__Redis: redis:6379
-      ConnectionStrings__DefaultConnection: server=mysql;port=3306;database=sizzle;user=sizzle;password=sizzlepass;
+      ConnectionStrings__DefaultConnection: server=mysql;port=3306;database=sizzle;user=sizzle;password=sizzlepass;Connection Timeout=60;
     ports:
       - "8080:8080"
     volumes:

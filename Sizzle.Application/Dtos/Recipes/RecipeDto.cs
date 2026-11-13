@@ -20,6 +20,8 @@ public class RecipeDto
 
     public int CookingTimeMinutes { get; init; }
 
+    public decimal Calories { get; init; }
+
     public Guid CategoryId { get; init; }
 
     public string? FileUrl { get; init; }

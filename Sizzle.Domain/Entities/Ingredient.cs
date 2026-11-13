@@ -6,6 +6,8 @@ public class Ingredient
 
     public IngredientUnit Unit { get; set; }
 
+    public int Calories { get; set; }
+
     public Guid? ParentId { get; set; }
 
     public Ingredient? Parent { get; set; }

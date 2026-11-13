@@ -446,11 +446,11 @@ public class RecipeServiceTests
     };
 
     [Theory]
-    [InlineData("Feta", true)]
-    [InlineData("Фета", true)]
-    [InlineData("  фета  ", true)]
-    [InlineData("Фетта", false)]
-    public async Task CreateRecipeAsync_PersistsNewIngredientTranslations(string inputName, bool approved)
+    [InlineData("Feta")]
+    [InlineData("Фета")]
+    [InlineData("  фета  ")]
+    [InlineData("Фетта")]
+    public async Task CreateRecipeAsync_PersistsNewIngredientTranslations(string inputName)
     {
         ingredients.GetAllWithTranslationsAsync(Arg.Any<CancellationToken>()).Returns([new Ingredient
         {
@@ -458,7 +458,7 @@ public class RecipeServiceTests
                 new IngredientTranslation { LanguageCode = "uk", Name = "Сіль" }]
         }]);
         ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
-            .Returns("""{"status":"approved","reason":"ok","newIngredients":[{"index":0,"name":"Feta","translations":{"en":"Feta","uk":"Фета"}}]}""");
+            .Returns("""{"status":"approved","reason":"ok","newIngredients":[{"index":0,"name":"Feta","calories":265,"translations":{"en":"Feta","uk":"Фета"}}]}""");
         var input = new CreateRecipeDto
         {
             ApplicationUserId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Name = "Toast",
@@ -469,29 +469,19 @@ public class RecipeServiceTests
             }]
         };
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
         ingredients.GetByNamesAsync(Arg.Any<string[]>(), Arg.Any<CancellationToken>()).Returns([]);
         mapper.Map<Recipe>(input).Returns(new Recipe { Name = input.Name, Description = input.Description, CategoryId = input.CategoryId,
             ApplicationUserId = input.ApplicationUserId });
 
         var result = await CreateService().CreateRecipeAsync(input);
 
-        if (approved)
-        {
-            Assert.True(result.IsSuccess);
-            recipes.Received(1).Add(Arg.Is<Recipe>(recipe => recipe.IsAIGeneratedImage));
-            ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient => ingredient.Translations.Any(translation =>
-                translation.LanguageCode == "uk" && translation.Name == "Фета")));
-            await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
-        }
-        else
-        {
-            Assert.Equal(ErrorKey.RecipeNeedsCorrection, Assert.Single(result.Errors).Key);
-            Assert.Equal("Feta", Assert.Single(result.CorrectedRecipe!.Ingredients).Name);
-            ingredients.DidNotReceive().Add(Arg.Any<Ingredient>());
-            recipes.DidNotReceive().Add(Arg.Any<Recipe>());
-            await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
-        }
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.CorrectedRecipe);
+        recipes.Received(1).Add(Arg.Is<Recipe>(recipe => recipe.IsAIGeneratedImage));
+        ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient => ingredient.Calories == 265 && ingredient.Translations.Any(translation =>
+            translation.LanguageCode == "uk" && translation.Name == "Фета")));
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
         await ai.Received(1).GenerateJsonAsync(Arg.Any<string>(), Arg.Is<IReadOnlyList<AiMessageDto>>(messages =>
             messages.Count == 1 && messages[0].Parts[0].Text != null &&
             messages[0].Parts[0].Text!.Contains("\"locales\":[\"en\",\"uk\"]", StringComparison.Ordinal)),
@@ -510,7 +500,7 @@ public class RecipeServiceTests
                 new IngredientTranslation { LanguageCode = "fr", Name = "Sel" }]
         }]);
         ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
-            .Returns("{\"status\":\"approved\",\"reason\":\"ok\",\"newIngredients\":[{\"index\":0,\"name\":\"Feta\",\"translations\":"
+            .Returns("{\"status\":\"approved\",\"reason\":\"ok\",\"newIngredients\":[{\"index\":0,\"name\":\"Feta\",\"calories\":265,\"translations\":"
                 + translations + "}]}");
         var input = new CreateRecipeDto
         {
@@ -519,7 +509,7 @@ public class RecipeServiceTests
             NewIngredients = [new NewIngredientDto { Name = "Feta", Quantity = 100, Unit = IngredientUnit.Grams }]
         };
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
         ingredients.GetByNamesAsync(Arg.Any<string[]>(), Arg.Any<CancellationToken>()).Returns([]);
         mapper.Map<Recipe>(input).Returns(new Recipe { Name = input.Name, Description = input.Description,
             CategoryId = input.CategoryId, ApplicationUserId = input.ApplicationUserId });
@@ -534,7 +524,7 @@ public class RecipeServiceTests
         {
             Assert.True(result.IsSuccess);
             ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient =>
-                ingredient.Translations.Count == 3 &&
+                ingredient.Calories == 265 && ingredient.Translations.Count == 3 &&
                 ingredient.Translations.Any(translation => translation.LanguageCode == "fr" && translation.Name == "Feta") &&
                 ingredient.Translations.Any(translation => translation.LanguageCode == "pl" && translation.Name == "Feta") &&
                 ingredient.Translations.Any(translation => translation.LanguageCode == "uk" && translation.Name == "Фета")));
@@ -549,6 +539,35 @@ public class RecipeServiceTests
         }
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(",\"calories\":-1")]
+    public async Task CreateRecipeAsync_InvalidAiCaloriesDoesNotWrite(string caloriesJson)
+    {
+        ingredients.GetAllWithTranslationsAsync(Arg.Any<CancellationToken>()).Returns([new Ingredient
+        {
+            Id = Guid.NewGuid(), Translations = [new IngredientTranslation { LanguageCode = "en", Name = "Salt" }]
+        }]);
+        ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
+            .Returns("{\"status\":\"approved\",\"reason\":\"ok\",\"newIngredients\":[{\"index\":0,\"name\":\"Feta\""
+                + caloriesJson + ",\"translations\":{\"en\":\"Feta\"}}]}");
+        var input = new CreateRecipeDto
+        {
+            ApplicationUserId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Name = "Toast",
+            Description = "Cheese toast", CookingTimeMinutes = 10,
+            NewIngredients = [new NewIngredientDto { Name = "Feta", Quantity = 100, Unit = IngredientUnit.Grams }]
+        };
+        categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
+
+        var result = await CreateService().CreateRecipeAsync(input);
+
+        Assert.Equal(ErrorKey.UnexpectedError, Assert.Single(result.Errors).Key);
+        ingredients.DidNotReceive().Add(Arg.Any<Ingredient>());
+        recipes.DidNotReceive().Add(Arg.Any<Recipe>());
+        await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+        await ai.Received(1).GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>());
+    }
+
     [Fact]
     public async Task CreateRecipeAsync_DraftDoesNotCreateIngredientsOrNotifyFollowers()
     {
@@ -559,7 +578,7 @@ public class RecipeServiceTests
             NewIngredients = [new NewIngredientDto { Name = "Cheese", Quantity = 100, Unit = IngredientUnit.Grams }]
         };
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
         mapper.Map<Recipe>(input).Returns(new Recipe { ApplicationUserId = input.ApplicationUserId, CategoryId = input.CategoryId });
 
         var result = await CreateService().CreateRecipeAsync(input);
@@ -606,7 +625,7 @@ public class RecipeServiceTests
                     new IngredientTranslation { LanguageCode = "uk", Name = "Сіль" }]
             }]);
             ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
-                .Returns("""{"status":"approved","reason":"ok","newIngredients":[{"index":0,"name":"Cheese","translations":{"en":"Cheese","uk":"Сир"}}]}""");
+                .Returns("""{"status":"approved","reason":"ok","newIngredients":[{"index":0,"name":"Cheese","calories":400,"translations":{"en":"Cheese","uk":"Сир"}}]}""");
         }
 
         var owner = Guid.NewGuid();
@@ -619,7 +638,7 @@ public class RecipeServiceTests
         };
         recipes.GetWithDetailsAsync(recipe.Id, owner, Arg.Any<CancellationToken>()).Returns(recipe);
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
         ingredients.GetByNamesAsync(Arg.Any<string[]>(), Arg.Any<CancellationToken>()).Returns([]);
 
         var result = await CreateService().UpdateRecipeAsync(input);
@@ -768,7 +787,7 @@ public class RecipeServiceTests
         };
         recipes.GetWithDetailsAsync(recipe.Id, ownerId, Arg.Any<CancellationToken>()).Returns(recipe);
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
 
         var result = await CreateService().UpdateRecipeAsync(input);
 
@@ -794,7 +813,7 @@ public class RecipeServiceTests
         recipes.GetWithDetailsAsync(recipe.Id, ownerId, Arg.Any<CancellationToken>()).Returns(recipe);
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
         ingredients.GetAllWithTranslationsAsync(Arg.Any<CancellationToken>()).Returns([]);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
         ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
             .Returns("""{"status":"approved","reason":"ok","newIngredients":[]}""");
 
@@ -845,13 +864,45 @@ public class RecipeServiceTests
             CategoryId = Guid.NewGuid(), Ingredients = [new RecipeIngredientInputDto { Id = ingredientId, Quantity = 2 }]
         };
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
-        ingredients.GetByIdsWithTranslationsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
 
         var result = await CreateService().CreateRecipeAsync(input);
 
         Assert.Equal(ErrorKey.NotFound, Assert.Single(result.Errors).Key);
         recipes.DidNotReceive().Add(Arg.Any<Recipe>());
         await unitOfWork.DidNotReceive().CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CreateRecipeAsync_UsesTrackedExistingIngredientForRecipeLink()
+    {
+        var existing = new Ingredient
+        {
+            Id = Guid.NewGuid(), Calories = 26,
+            Translations = [new IngredientTranslation { LanguageCode = "uk", Name = "Гарбуз" }]
+        };
+        var input = new CreateRecipeDto
+        {
+            ApplicationUserId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Name = "Суп",
+            Description = "Гарбузовий суп", CookingTimeMinutes = 45,
+            Ingredients = [new RecipeIngredientInputDto { Id = existing.Id, Quantity = 600 }]
+        };
+        categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
+        ingredients.GetAllWithTranslationsAsync(Arg.Any<CancellationToken>()).Returns([existing]);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([existing]);
+        ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
+            .Returns("""{"status":"approved","reason":"ok","newIngredients":[]}""");
+        mapper.Map<Recipe>(input).Returns(new Recipe { Name = input.Name, Description = input.Description,
+            CategoryId = input.CategoryId, ApplicationUserId = input.ApplicationUserId });
+
+        var result = await CreateService().CreateRecipeAsync(input);
+
+        Assert.True(result.IsSuccess);
+        await ingredients.Received(1).GetByIdsWithTranslationsTrackedAsync(
+            Arg.Is<Guid[]>(ids => ids.SequenceEqual(new[] { existing.Id })), Arg.Any<CancellationToken>());
+        recipes.Received(1).Add(Arg.Is<Recipe>(recipe => recipe.RecipeIngredients.Any(link =>
+            link.IngredientId == existing.Id && link.Ingredient == existing && link.Quantity == 600)));
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Theory]
@@ -939,7 +990,7 @@ public class RecipeServiceTests
     }
 
     [Fact]
-    public async Task CreateRecipeAsync_ApprovedExistingCatalogNameStillReturnsCorrection()
+    public async Task CreateRecipeAsync_ApprovedExistingCatalogNameUsesExistingIngredient()
     {
         var known = new Ingredient
         {
@@ -956,14 +1007,20 @@ public class RecipeServiceTests
         };
         categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
         ai.GenerateJsonAsync(Arg.Any<string>(), Arg.Any<IReadOnlyList<AiMessageDto>>(), Arg.Any<CancellationToken>())
-            .Returns("""{"status":"approved","reason":"ok","newIngredients":[{"index":0,"name":"Milk","translations":{"en":"Milk","uk":"Молоко"}}]}""");
+            .Returns("""{"status":"approved","reason":"ok","newIngredients":[{"index":0,"name":"Milk","calories":60,"translations":{"en":"Milk","uk":"Молоко"}}]}""");
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByNamesAsync(Arg.Any<string[]>(), Arg.Any<CancellationToken>()).Returns([known]);
+        mapper.Map<Recipe>(input).Returns(new Recipe { Name = input.Name, Description = input.Description,
+            CategoryId = input.CategoryId, ApplicationUserId = input.ApplicationUserId });
 
         var result = await CreateService().CreateRecipeAsync(input);
 
-        Assert.Equal(ErrorKey.RecipeNeedsCorrection, Assert.Single(result.Errors).Key);
-        Assert.Equal(known.Id, Assert.Single(result.CorrectedRecipe!.Ingredients).Id);
+        Assert.True(result.IsSuccess);
+        Assert.Null(result.CorrectedRecipe);
         ingredients.DidNotReceive().Add(Arg.Any<Ingredient>());
-        recipes.DidNotReceive().Add(Arg.Any<Recipe>());
+        recipes.Received(1).Add(Arg.Is<Recipe>(recipe => recipe.RecipeIngredients.Any(link =>
+            link.IngredientId == known.Id && link.Quantity == 200)));
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]

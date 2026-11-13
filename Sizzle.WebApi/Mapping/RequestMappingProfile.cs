@@ -5,6 +5,7 @@ using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Application.Dtos.Users;
 using Sizzle.WebApi.Requests.Base;
 using Sizzle.WebApi.Requests.Comments;
+using Sizzle.WebApi.Requests.Ingredients;
 using Sizzle.WebApi.Requests.Other;
 using Sizzle.WebApi.Requests.Recipes;
 using Sizzle.WebApi.Requests.Users;
@@ -46,5 +47,7 @@ public class RequestMappingProfile : Profile
             .ForMember(destination => destination.UserId, options => options.Ignore());
         CreateMap<SearchPaginationRequestModel, GetAllIngredientsDto>()
             .ForMember(destination => destination.LanguageCode, options => options.Ignore());
+        CreateMap<CalculateIngredientProportionsRequestModel, CalculateIngredientProportionsDto>();
+        CreateMap<IngredientProportionItemRequestModel, IngredientProportionItemDto>();
     }
 }

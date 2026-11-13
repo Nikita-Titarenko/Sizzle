@@ -8,5 +8,7 @@ public class IngredientListItemDto
 
     public string Unit { get; init; } = string.Empty;
 
+    public int Calories { get; init; }
+
     public List<IngredientListItemDto> Children { get; init; } = [];
 }

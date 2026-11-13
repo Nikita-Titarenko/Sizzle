@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Repositories;
 
@@ -46,6 +47,34 @@ public class IngredientRepositoryTests : InMemoryRepositoryTest
         Assert.Equal(apple.Id, Assert.Single(await repository.GetByIdsAsync([apple.Id])).Id);
         Assert.Equal(2, Assert.Single(await repository.GetByIdsWithTranslationsAsync([apple.Id])).Translations.Count);
         Assert.Equal(banana.Id, Assert.Single(await repository.GetByNamesAsync(["banana"])).Id);
+    }
+
+    [Fact]
+    public async Task GetByIdsWithTranslationsTrackedAsync_KeepsExistingIngredientUnchangedWhenAddingRecipe()
+    {
+        var ingredient = NewIngredient("Pumpkin", "Гарбуз");
+        await using (var seed = CreateContext())
+        {
+            seed.Ingredients.Add(ingredient);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var repository = new IngredientRepository(db);
+        var existing = Assert.Single(await repository.GetByIdsWithTranslationsTrackedAsync([ingredient.Id]));
+        Assert.Equal(2, existing.Translations.Count);
+        Assert.Equal(EntityState.Unchanged, db.Entry(existing).State);
+
+        db.Recipes.Add(new Recipe
+        {
+            Id = Guid.NewGuid(), CategoryId = Guid.NewGuid(), ApplicationUserId = Guid.NewGuid(),
+            RecipeIngredients = [new RecipeIngredient { IngredientId = existing.Id, Ingredient = existing, Quantity = 600 }]
+        });
+
+        Assert.Equal(EntityState.Unchanged, db.Entry(existing).State);
+        await db.SaveChangesAsync();
+        Assert.Single(db.Ingredients);
+        Assert.Single(db.RecipeIngredients);
     }
 
     private static Ingredient NewIngredient(string english, string? ukrainian = null)
