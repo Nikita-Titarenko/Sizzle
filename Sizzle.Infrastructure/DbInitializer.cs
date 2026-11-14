@@ -48,13 +48,14 @@ public static class DbInitializer
         var existingById = existingIngredients.ToDictionary(i => i.Id);
         var newIngredients = ingredients
             .Where(i => !existingById.ContainsKey(i.Id))
-            .Select(i => new Ingredient { Id = i.Id, ParentId = i.ParentId, Unit = i.Unit, Calories = i.Calories!.Value });
+            .Select(i => new Ingredient { Id = i.Id, IsBasic = i.IsBasic, ParentId = i.ParentId, Unit = i.Unit, Calories = i.Calories!.Value });
         await context.Ingredients.AddRangeAsync(newIngredients);
 
         foreach (var seed in ingredients)
         {
             if (existingById.TryGetValue(seed.Id, out var ingredient))
             {
+                ingredient.IsBasic = seed.IsBasic;
                 ingredient.Unit = seed.Unit;
                 ingredient.Calories = seed.Calories!.Value;
             }
@@ -185,6 +186,8 @@ public static class DbInitializer
     private sealed class IngredientSeed
     {
         public Guid Id { get; set; }
+
+        public bool IsBasic { get; set; }
 
         public Guid? ParentId { get; set; }
 

@@ -95,10 +95,6 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
 
             var result = await factory(previous, cancellationToken);
             await cache.SetAsync(cacheKey, JsonSerializer.SerializeToUtf8Bytes(result), entryOptions, cancellationToken);
-            if (key.StartsWith("recipes:personalized:feed:", StringComparison.Ordinal))
-            {
-                await RegisterRelatedAsync(cacheKey, key);
-            }
             return result;
         }
         finally
@@ -211,11 +207,6 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                     var parts = entry.Key.Split(':');
                     if (!Guid.TryParse(parts[3], out var viewerId) || viewerId != followerId) continue;
                 }
-                else if (entry.Key.StartsWith("recipes:personalized:feed:", StringComparison.Ordinal))
-                {
-                    using var query = JsonDocument.Parse(entry.Key[entry.Key.IndexOf('{')..]);
-                    if (query.RootElement.GetProperty("ApplicationUserId").GetGuid() != followerId) continue;
-                }
                 else continue;
 
                 var bytes = await cache.GetAsync(entry.CacheKey, cancellationToken);
@@ -233,7 +224,6 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                     if (recipe == null || recipe["UserId"]?.GetValue<Guid>() != followingId) continue;
                     recipe["IsFollowed"] = isFollowing;
                 }
-                else if (!UpdateFollowing(value["Data"]!.AsArray(), followingId, isFollowing)) continue;
 
                 await WriteFollowAsync(entry.CacheKey, value, remaining.Value, cancellationToken);
             }
@@ -242,18 +232,6 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
         {
             await redis!.LockReleaseAsync(LockKey, token);
         }
-    }
-
-    private static bool UpdateFollowing(JsonArray recipes, Guid authorId, bool isFollowing)
-    {
-        var changed = false;
-        foreach (var recipe in recipes)
-        {
-            if (recipe?["UserId"]?.GetValue<Guid>() != authorId) continue;
-            recipe["IsFollowed"] = isFollowing;
-            changed = true;
-        }
-        return changed;
     }
 
     private Task WriteFollowAsync(string key, JsonNode value, TimeSpan remaining, CancellationToken cancellationToken) =>
@@ -312,25 +290,6 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                 await cache.SetAsync(entry.CacheKey, JsonSerializer.SerializeToUtf8Bytes(new Result<RecipeDetailsDto> { Value = updated }),
                     new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = remaining.Value }, cancellationToken);
             }
-            else if (entry.Key.StartsWith("recipes:personalized:feed:", StringComparison.Ordinal))
-            {
-                var feed = JsonSerializer.Deserialize<PageResponse<FeedRecipeDto>>(bytes)!;
-                if (!feed.Data.Any(recipe => recipe.Id == mutation.After!.Id)) continue;
-                using var query = JsonDocument.Parse(entry.Key[entry.Key.IndexOf('{')..]);
-                var viewerId = query.RootElement.GetProperty("ApplicationUserId").GetGuid();
-                var categories = query.RootElement.GetProperty("CategoryIds").EnumerateArray().Select(id => id.GetGuid()).ToArray();
-                var ingredients = query.RootElement.GetProperty("IngredientIds").EnumerateArray().Select(id => id.GetGuid()).ToArray();
-                var matches = (categories.Length == 0 || categories.Contains(mutation.After.CategoryId))
-                    && ingredients.All(id => mutation.After.IngredientIds.Contains(id));
-                var recipes = feed.Data.Where(recipe => recipe.Id != mutation.After.Id || matches)
-                    .Select(recipe => recipe.Id == mutation.After.Id
-                        ? RecipeListPages.ForViewer(mutation.Recipe!, recipe, viewerId, origin) : recipe).ToArray();
-                await cache.SetAsync(entry.CacheKey, JsonSerializer.SerializeToUtf8Bytes(new PageResponse<FeedRecipeDto>
-                {
-                    Data = recipes, TotalSize = feed.TotalSize - (matches ? 0 : 1),
-                    PageIndex = feed.PageIndex, PageSize = feed.PageSize
-                }), new DistributedCacheEntryOptions { AbsoluteExpirationRelativeToNow = remaining.Value }, cancellationToken);
-            }
         }
     }
 
@@ -342,8 +301,7 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
         {
             cancellationToken.ThrowIfCancellationRequested();
             var entry = JsonSerializer.Deserialize<RelatedEntry>((string)member!)!;
-            if (!entry.Key.StartsWith("recipes:personalized:feed:", StringComparison.Ordinal)
-                && (recipeId == null || !entry.Key.StartsWith($"recipes:detail:{recipeId.Value:N}:", StringComparison.Ordinal)))
+            if (recipeId == null || !entry.Key.StartsWith($"recipes:detail:{recipeId.Value:N}:", StringComparison.Ordinal))
                 continue;
 
             await cache.RemoveAsync(entry.CacheKey, cancellationToken);

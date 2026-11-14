@@ -25,6 +25,9 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private const int LikedInteractionWeight = 3;
     private const int SavedInteractionWeight = 6;
     private const int ShareInteractionWeight = 10;
+    private const int MinNameWordLengthForPersonalization = 3;
+    private const string DefaultIngredientTranslationLanguageCode = "en";
+    private const int DefaultIngredientCaloriesWithoutAIValidation = 0;
     private static readonly JsonSerializerOptions AiJsonOptions = new(JsonSerializerDefaults.Web)
     {
         Converters = { new JsonStringEnumConverter() }
@@ -40,23 +43,15 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             ? (await interactionsBuffer.GetPendingInteractionsAsync(dto.ApplicationUserId!.Value, cancellationToken))
                 .Select(interaction => interaction.RecipeId).Distinct().Order().ToArray()
             : [];
-        var seen = pendingIds.ToHashSet();
         var offset = (long)dto.PageIndex * dto.PageSize;
         var required = offset + dto.PageSize;
-        var cached = await readCache.GetOrRefreshAsync<PageResponse<FeedRecipeDto>>(
-            $"recipes:personalized:feed:v2:{JsonSerializer.Serialize(new { dto.ApplicationUserId, dto.CategoryIds, dto.IngredientIds, dto.PageSize })}",
-            feed =>
-            {
-                var unseen = feed.Data.Count(recipe => !seen.Contains(recipe.Id));
-                return unseen >= required || unseen >= feed.TotalSize - feed.Data.Count(recipe => seen.Contains(recipe.Id));
-            },
-            (previous, token) => GetPersonalizedRecipesCoreAsync(dto, pendingIds,
-                (int)Math.Min(int.MaxValue, Math.Max(required * 2, (long)(previous?.Data.Count ?? 0) + dto.PageSize * 2L)), token), cancellationToken);
-        var available = cached.Data.Where(recipe => !seen.Contains(recipe.Id)).ToArray();
+        var batchSize = (int)Math.Min(int.MaxValue, Math.Max(required * 2, dto.PageSize * 2L));
+        var ranked = await GetPersonalizedRecipesCoreAsync(dto, pendingIds, batchSize, cancellationToken);
+        var available = ranked.Data;
         var page = new PageResponse<FeedRecipeDto>
         {
-            Data = offset >= available.Length ? [] : available.Skip((int)offset).Take(dto.PageSize).ToArray(),
-            TotalSize = Math.Max(available.Length, cached.TotalSize - (cached.Data.Count - available.Length)),
+            Data = offset >= available.Count ? [] : available.Skip((int)offset).Take(dto.PageSize).ToArray(),
+            TotalSize = ranked.TotalSize,
             PageIndex = dto.PageIndex,
             PageSize = dto.PageSize
         };
@@ -75,6 +70,12 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         var interactions = await recipeRepository.GetRecentInteractionsAsync(userId, 100, cancellationToken);
         var candidates = await recipeRepository.GetRecommendationCandidatesAsync(dto, cancellationToken);
         var seenIds = interactions.Select(interaction => interaction.Recipe.Id).Concat(pendingIds).ToHashSet();
+        var interactionIngredientIds = interactions.SelectMany(interaction => interaction.Recipe.IngredientIds).Distinct();
+        var candidateIngredientIds = candidates.SelectMany(recipe => recipe.IngredientIds).Distinct();
+        var ingredientIds = interactionIngredientIds.Concat(candidateIngredientIds).Distinct().ToArray();
+        var basicIngredientIds = ingredientIds.Length == 0
+            ? []
+            : await ingredientRepository.GetBasicIdsAsync(ingredientIds, cancellationToken);
         var authorWeights = new Dictionary<Guid, int>();
         var categoryWeights = new Dictionary<Guid, int>();
         var ingredientWeights = new Dictionary<Guid, int>();
@@ -87,6 +88,11 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             categoryWeights[interaction.Recipe.CategoryId] = categoryWeights.GetValueOrDefault(interaction.Recipe.CategoryId) + weight;
             foreach (var id in interaction.Recipe.IngredientIds.Distinct())
             {
+                if (basicIngredientIds.Contains(id))
+                {
+                    continue;
+                }
+
                 ingredientWeights[id] = ingredientWeights.GetValueOrDefault(id) + weight;
             }
 
@@ -102,7 +108,9 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 Recipe = recipe,
                 AuthorScore = authorMultiplier * authorWeights.GetValueOrDefault(recipe.AuthorId),
                 CategoryScore = categoryMultiplier * categoryWeights.GetValueOrDefault(recipe.CategoryId),
-                IngredientScore = ingredientMultiplier * recipe.IngredientIds.Distinct().Sum(id => ingredientWeights.GetValueOrDefault(id)),
+                IngredientScore = ingredientMultiplier * recipe.IngredientIds.Distinct()
+                    .Where(id => !basicIngredientIds.Contains(id))
+                    .Sum(id => ingredientWeights.GetValueOrDefault(id)),
                 NameScore = nameMultiplier * NameWords(recipe.Name).Sum(word => wordWeights.GetValueOrDefault(word))
             }).Select(item => new
             {
@@ -216,7 +224,9 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     }
 
     private static HashSet<string> NameWords(string name) => Regex.Matches(name, @"[\p{L}\p{M}\p{N}]+")
-        .Select(match => match.Value).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        .Select(match => match.Value)
+        .Where(word => word.Length >= MinNameWordLengthForPersonalization)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
     private static string FormatSources(IEnumerable<RecipeInteractionData> interactions) =>
         FormatMatches(interactions.Select(interaction =>
@@ -651,6 +661,11 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return await CreateRecipeCoreAsync(dto, [], cancellationToken);
         }
 
+        if (!businessLogicOptions.Value.AIValidation)
+        {
+            return await CreateRecipeCoreAsync(dto, BuildApprovedIngredientsWithoutAIValidation(dto.NewIngredients), cancellationToken);
+        }
+
         var outcome = await ReviewRecipeAsync(dto, cancellationToken);
         if (outcome.Error != null)
         {
@@ -848,6 +863,14 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         }
     }
 
+    private static IReadOnlyCollection<ApprovedNewIngredientDto> BuildApprovedIngredientsWithoutAIValidation(NewIngredientDto[] newIngredients) =>
+        newIngredients.Select(ingredient => new ApprovedNewIngredientDto(ingredient.Name.Trim(), ingredient.ParentId,
+            ingredient.Unit, ingredient.Quantity, DefaultIngredientCaloriesWithoutAIValidation,
+            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                [DefaultIngredientTranslationLanguageCode] = ingredient.Name.Trim()
+            })).ToArray();
+
     private static bool ValidTranslations(List<ReviewedIngredientTranslationDto>? entries, NewIngredientDto[] inputs,
         IReadOnlyCollection<string> locales)
     {
@@ -954,7 +977,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
 
         var isDraft = dto.IsDraft ?? recipe.IsDraft;
         IReadOnlyCollection<ApprovedNewIngredientDto> approvedIngredients = [];
-        if (!isDraft)
+        if (!isDraft && businessLogicOptions.Value.AIValidation)
         {
             var reviewInput = new CreateRecipeDto
             {
@@ -969,6 +992,10 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             }
 
             approvedIngredients = outcome.ApprovedIngredients;
+        }
+        else if (!isDraft)
+        {
+            approvedIngredients = BuildApprovedIngredientsWithoutAIValidation(dto.NewIngredients);
         }
 
         var ingredients = await ResolveIngredientsAsync(dto.Ingredients, approvedIngredients, cancellationToken);
@@ -1462,6 +1489,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 ingredient = new Ingredient
                 {
                     Id = Guid.NewGuid(),
+                    IsBasic = false,
                     ParentId = input.ParentId,
                     Unit = input.Unit,
                     Calories = input.Calories,

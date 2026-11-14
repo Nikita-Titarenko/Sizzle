@@ -25,6 +25,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.None);
 
+var logsRoot = Path.Combine(builder.Environment.ContentRootPath, "logs");
+var generalLogsPath = Path.Combine(logsRoot, "general");
+var personalizedLogsPath = Path.Combine(logsRoot, "personalized-recipes");
+Directory.CreateDirectory(generalLogsPath);
+Directory.CreateDirectory(personalizedLogsPath);
+
+var dateFileName = $"{DateTime.UtcNow:yyyyMMdd}.log";
+builder.Logging.AddSerilog(new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Filter.ByExcluding(Matching.FromSource<PersonalizedRecipesLog>())
+    .WriteTo.File(Path.Combine(generalLogsPath, dateFileName), shared: true)
+    .CreateLogger(), dispose: true);
+
 if (builder.Configuration.GetValue<bool>("Logging:PersonalizedRecipesLogging"))
 {
     var category = typeof(PersonalizedRecipesLog).FullName!;
@@ -34,8 +47,7 @@ if (builder.Configuration.GetValue<bool>("Logging:PersonalizedRecipesLogging"))
     builder.Logging.AddSerilog(new LoggerConfiguration()
         .MinimumLevel.Information()
         .Filter.ByIncludingOnly(Matching.FromSource<PersonalizedRecipesLog>())
-        .WriteTo.File(Path.Combine(builder.Environment.ContentRootPath, "logs", "personalized-recipes-.log"),
-            rollingInterval: RollingInterval.Day, retainedFileCountLimit: 14, shared: true)
+        .WriteTo.File(Path.Combine(personalizedLogsPath, dateFileName), shared: true)
         .CreateLogger(), dispose: true);
 }
 

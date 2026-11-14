@@ -344,6 +344,9 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<int>("Calories")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsBasic")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("char(36)");
 

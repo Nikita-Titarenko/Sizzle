@@ -1,0 +1,46 @@
+name: Docker Compose CI
+
+on:
+  push:
+
+concurrency:
+  group: docker-compose-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare Compose file
+        run: |
+          cat > docker-compose.ci.yml <<'YAML'
+          services:
+            dotnet-ci:
+              image: mcr.microsoft.com/dotnet/sdk:10.0
+              working_dir: /src
+              volumes:
+                - ./:/src
+                - nuget_cache:/root/.nuget/packages
+              command: >
+                bash -lc "
+                dotnet restore Sizzle.slnx &&
+                dotnet build Sizzle.WebApi/Sizzle.WebApi.csproj --no-restore -c Release &&
+                dotnet test Sizzle.Application.Tests/Sizzle.Application.Tests.csproj --no-restore -c Release --logger 'console;verbosity=normal' &&
+                dotnet test Sizzle.Infrastructure.Tests/Sizzle.Infrastructure.Tests.csproj --no-restore -c Release --logger 'console;verbosity=normal'
+                "
+          volumes:
+            nuget_cache:
+          YAML
+
+      - name: Run build and tests via Docker Compose
+        run: docker compose -f docker-compose.ci.yml run --rm dotnet-ci
+
+      - name: Cleanup
+        if: always()
+        run: docker compose -f docker-compose.ci.yml down -v --remove-orphans

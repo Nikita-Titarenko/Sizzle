@@ -14,5 +14,7 @@ public interface IIngredientRepository : IRepository<Ingredient>
 
     Task<List<Ingredient>> GetByIdsWithTranslationsTrackedAsync(Guid[] ids, CancellationToken cancellationToken = default);
 
+    Task<HashSet<Guid>> GetBasicIdsAsync(Guid[] ids, CancellationToken cancellationToken = default);
+
     Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames, CancellationToken cancellationToken = default);
 }

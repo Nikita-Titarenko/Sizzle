@@ -72,14 +72,19 @@ public class RecipeServiceTests
     private readonly ISubscriptionService subscriptions = Substitute.For<ISubscriptionService>();
     private readonly Guid userId = Guid.NewGuid();
 
-    private RecipeService CreateService(int cooldownMinutes = 10, MediaOptions? mediaOptions = null, bool hasSubscription = true)
+    private RecipeService CreateService(int cooldownMinutes = 10, MediaOptions? mediaOptions = null, bool hasSubscription = true,
+        bool aiValidation = true)
     {
         subscriptions.GetStatusAsync(userId, Arg.Any<CancellationToken>())
             .Returns(new SubscriptionStatusDto(hasSubscription ? 60 : 0, []));
         videoStorage.UploadAsync(Arg.Any<RecipeMediaUploadDto>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns("gs://test-bucket/recipe-generation/cook.mp4");
         return new RecipeService(recipes, ingredients, categories, followers, unitOfWork, files, notifications, events,
-            Microsoft.Extensions.Options.Options.Create(new BusinessLogicOptions { RecipeViewUpdateIntervalMinutes = cooldownMinutes }),
+            Microsoft.Extensions.Options.Options.Create(new BusinessLogicOptions
+            {
+                RecipeViewUpdateIntervalMinutes = cooldownMinutes,
+                AIValidation = aiValidation
+            }),
             Microsoft.Extensions.Options.Options.Create(new RecipeCacheOptions()), formatter,
             NullLogger<PersonalizedRecipesLog>.Instance, Microsoft.Extensions.Options.Options.Create(new RecipeLoggingOptions()), cache,
             followingCache, interactions, ingredientCache, commentCache, mapper, NullLogger<RecipeService>.Instance, ai, videoStorage,
@@ -479,8 +484,8 @@ public class RecipeServiceTests
         Assert.True(result.IsSuccess);
         Assert.Null(result.CorrectedRecipe);
         recipes.Received(1).Add(Arg.Is<Recipe>(recipe => recipe.IsAIGeneratedImage));
-        ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient => ingredient.Calories == 265 && ingredient.Translations.Any(translation =>
-            translation.LanguageCode == "uk" && translation.Name == "Фета")));
+        ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient => !ingredient.IsBasic && ingredient.Calories == 265
+            && ingredient.Translations.Any(translation => translation.LanguageCode == "uk" && translation.Name == "Фета")));
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
         await ai.Received(1).GenerateJsonAsync(Arg.Any<string>(), Arg.Is<IReadOnlyList<AiMessageDto>>(messages =>
             messages.Count == 1 && messages[0].Parts[0].Text != null &&
@@ -594,6 +599,29 @@ public class RecipeServiceTests
             Arg.Any<CancellationToken>());
         await events.DidNotReceiveWithAnyArgs().EnqueueAsync(default!, default);
         await notifications.DidNotReceiveWithAnyArgs().RecipeCreatedAsync(default, default, default!, default);
+    }
+
+    [Fact]
+    public async Task CreateRecipeAsync_WhenAiValidationDisabled_SkipsReviewAndPersistsNewIngredient()
+    {
+        var input = new CreateRecipeDto
+        {
+            ApplicationUserId = Guid.NewGuid(), CategoryId = Guid.NewGuid(), Name = "Soup",
+            Description = "Pumpkin soup", CookingTimeMinutes = 10,
+            NewIngredients = [new NewIngredientDto { Name = "Pumpkin", Quantity = 600, Unit = IngredientUnit.Grams }]
+        };
+        categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByNamesAsync(Arg.Any<string[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        mapper.Map<Recipe>(input).Returns(new Recipe { ApplicationUserId = input.ApplicationUserId, CategoryId = input.CategoryId });
+
+        var result = await CreateService(aiValidation: false).CreateRecipeAsync(input);
+
+        Assert.True(result.IsSuccess);
+        await ai.DidNotReceiveWithAnyArgs().GenerateJsonAsync(default!, default!);
+        ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient => !ingredient.IsBasic && ingredient.Calories == 0
+            && ingredient.Translations.Any(translation => translation.LanguageCode == "en" && translation.Name == "Pumpkin")));
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -826,6 +854,31 @@ public class RecipeServiceTests
     }
 
     [Fact]
+    public async Task UpdateRecipeAsync_WhenAiValidationDisabled_SkipsReviewAndPersistsNewIngredient()
+    {
+        var ownerId = Guid.NewGuid();
+        var recipe = new Recipe { Id = Guid.NewGuid(), ApplicationUserId = ownerId, Name = "Original" };
+        var input = new UpdateRecipeDto
+        {
+            Id = recipe.Id, ApplicationUserId = ownerId, CategoryId = Guid.NewGuid(), Name = "Soup",
+            Description = "Vegetable soup", CookingTimeMinutes = 10,
+            NewIngredients = [new NewIngredientDto { Name = "Leek", Quantity = 100, Unit = IngredientUnit.Grams }]
+        };
+        recipes.GetWithDetailsAsync(recipe.Id, ownerId, Arg.Any<CancellationToken>()).Returns(recipe);
+        categories.ExistsAsync(input.CategoryId, Arg.Any<CancellationToken>()).Returns(true);
+        ingredients.GetByIdsWithTranslationsTrackedAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([]);
+        ingredients.GetByNamesAsync(Arg.Any<string[]>(), Arg.Any<CancellationToken>()).Returns([]);
+
+        var result = await CreateService(aiValidation: false).UpdateRecipeAsync(input);
+
+        Assert.True(result.IsSuccess);
+        await ai.DidNotReceiveWithAnyArgs().GenerateJsonAsync(default!, default!);
+        ingredients.Received(1).Add(Arg.Is<Ingredient>(ingredient => ingredient.Calories == 0
+            && ingredient.Translations.Any(translation => translation.LanguageCode == "en" && translation.Name == "Leek")));
+        await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task CreateRecipeAsync_InvalidCookingTimeDoesNotAccessRepositoriesOrCommit()
     {
         var result = await CreateService().CreateRecipeAsync(new CreateRecipeDto
@@ -903,6 +956,62 @@ public class RecipeServiceTests
         recipes.Received(1).Add(Arg.Is<Recipe>(recipe => recipe.RecipeIngredients.Any(link =>
             link.IngredientId == existing.Id && link.Ingredient == existing && link.Quantity == 600)));
         await unitOfWork.Received(1).CommitAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task GetPersonalizedRecipesAsync_NameScoreIgnoresOneOrTwoLetterWords()
+    {
+        var user = Guid.NewGuid();
+        var interaction = new RecipeInteractionData(
+            new RecipeRecommendationData(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "А суп", []),
+            false, false, false);
+        var first = new RecipeRecommendationData(Guid.NewGuid(), Guid.NewGuid(), interaction.Recipe.CategoryId, "А пиріг", []);
+        var second = new RecipeRecommendationData(Guid.NewGuid(), Guid.NewGuid(), interaction.Recipe.CategoryId, "Суп пиріг", []);
+        recipes.GetRecentInteractionsAsync(user, 100, Arg.Any<CancellationToken>()).Returns([interaction]);
+        recipes.GetRecommendationCandidatesAsync(Arg.Any<GetRecipesDto>(), Arg.Any<CancellationToken>()).Returns([first, second]);
+        recipes.GetByIdsWithAuthorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), user, Arg.Any<CancellationToken>())
+            .Returns([new Recipe { Id = first.Id }, new Recipe { Id = second.Id }]);
+        mapper.Map<FeedRecipeDto>(Arg.Any<Recipe>(), Arg.Any<Action<IMappingOperationOptions<object, FeedRecipeDto>>>())
+            .Returns(call => new FeedRecipeDto { Id = call.Arg<Recipe>().Id });
+
+        var result = await CreateService().GetPersonalizedRecipesAsync(new GetRecipesDto
+        {
+            ApplicationUserId = user,
+            PageIndex = 0,
+            PageSize = 2
+        });
+
+        Assert.Equal(second.Id, result.Data[0].Id);
+    }
+
+    [Fact]
+    public async Task GetPersonalizedRecipesAsync_BasicIngredientDoesNotAddPersonalizedScore()
+    {
+        var user = Guid.NewGuid();
+        var basicId = Guid.NewGuid();
+        var authorMatch = Guid.NewGuid();
+        var categoryMatch = Guid.NewGuid();
+        var interaction = new RecipeInteractionData(
+            new RecipeRecommendationData(Guid.NewGuid(), authorMatch, categoryMatch, "А", [basicId]),
+            false, false, false);
+        var byCategory = new RecipeRecommendationData(Guid.NewGuid(), Guid.NewGuid(), categoryMatch, "Рецепт 1", [basicId]);
+        var byAuthor = new RecipeRecommendationData(Guid.NewGuid(), authorMatch, Guid.NewGuid(), "Рецепт 2", []);
+        recipes.GetRecentInteractionsAsync(user, 100, Arg.Any<CancellationToken>()).Returns([interaction]);
+        recipes.GetRecommendationCandidatesAsync(Arg.Any<GetRecipesDto>(), Arg.Any<CancellationToken>()).Returns([byCategory, byAuthor]);
+        recipes.GetByIdsWithAuthorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), user, Arg.Any<CancellationToken>())
+            .Returns([new Recipe { Id = byCategory.Id }, new Recipe { Id = byAuthor.Id }]);
+        ingredients.GetBasicIdsAsync(Arg.Any<Guid[]>(), Arg.Any<CancellationToken>()).Returns([basicId]);
+        mapper.Map<FeedRecipeDto>(Arg.Any<Recipe>(), Arg.Any<Action<IMappingOperationOptions<object, FeedRecipeDto>>>())
+            .Returns(call => new FeedRecipeDto { Id = call.Arg<Recipe>().Id });
+
+        var result = await CreateService().GetPersonalizedRecipesAsync(new GetRecipesDto
+        {
+            ApplicationUserId = user,
+            PageIndex = 0,
+            PageSize = 2
+        });
+
+        Assert.Equal(byAuthor.Id, result.Data[0].Id);
     }
 
     [Theory]

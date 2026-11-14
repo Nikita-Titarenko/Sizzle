@@ -50,6 +50,25 @@ public class IngredientRepositoryTests : InMemoryRepositoryTest
     }
 
     [Fact]
+    public async Task GetBasicIdsAsync_ReturnsOnlyBasicIngredientIds()
+    {
+        var basic = NewIngredient("Salt");
+        basic.IsBasic = true;
+        var regular = NewIngredient("Feta");
+        await using (var seed = CreateContext())
+        {
+            seed.Ingredients.AddRange(basic, regular);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var repository = new IngredientRepository(db);
+        var result = await repository.GetBasicIdsAsync([basic.Id, regular.Id]);
+
+        Assert.Equal([basic.Id], result);
+    }
+
+    [Fact]
     public async Task GetByIdsWithTranslationsTrackedAsync_KeepsExistingIngredientUnchangedWhenAddingRecipe()
     {
         var ingredient = NewIngredient("Pumpkin", "Гарбуз");

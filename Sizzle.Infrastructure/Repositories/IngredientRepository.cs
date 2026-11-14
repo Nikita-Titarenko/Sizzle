@@ -36,6 +36,16 @@ public class IngredientRepository(ApplicationDbContext dbContext, ILogger<Ingred
             .Include(ingredient => ingredient.Translations).ToListAsync(cancellationToken);
     }
 
+    public async Task<HashSet<Guid>> GetBasicIdsAsync(Guid[] ids, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("db.ingredients.get_basic_ids");
+        return (await DbSet.AsNoTracking()
+            .WhereIdIn(ids, ingredient => ingredient.Id)
+            .Where(ingredient => ingredient.IsBasic)
+            .Select(ingredient => ingredient.Id)
+            .ToListAsync(cancellationToken)).ToHashSet();
+    }
+
     public Task<List<Ingredient>> GetByNamesAsync(string[] normalizedNames, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.ingredients.get_by_names");
