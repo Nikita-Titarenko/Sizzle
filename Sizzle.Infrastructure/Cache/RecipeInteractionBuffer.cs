@@ -232,19 +232,4 @@ public sealed class RecipeInteractionBuffer(ApplicationDbContext db, IConnection
     private static string RecipeKey(Guid recipeId) => $"sizzle:interaction:recipe:{recipeId:N}";
     private static string UserKey(Guid userId) => $"sizzle:interaction:user:{userId:N}";
     private static string SeenKey(Guid userId) => $"sizzle:interaction:seen:{userId:N}";
-
-    private sealed class PendingInteraction
-    {
-        public PendingInteraction() { }
-        public Guid UserId { get; set; }
-        public Guid RecipeId { get; set; }
-        public bool BaseIsLiked { get; set; }
-        public bool IsLiked { get; set; }
-        public bool IsSaved { get; set; }
-        public DateTime? IsSavedAt { get; set; }
-        public bool IsShared { get; set; }
-        public DateTime? IsSharedAt { get; set; }
-        public DateTime? ViewUpdatedAt { get; set; }
-        public int ViewDelta { get; set; }
-    }
 }

@@ -1048,5 +1048,61 @@
     "ParentId": "c4e5850b-955f-424b-b115-9f8c8fc4d723",
     "Calories": 389,
     "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000001",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 228,
+    "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000002",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 53,
+    "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000003",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 654,
+    "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000004",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 546,
+    "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000005",
+    "Unit": "Milliliters",
+    "ParentId": null,
+    "Calories": 800,
+    "IsBasic": true
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000006",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 250,
+    "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000007",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 480,
+    "IsBasic": false
+  },
+  {
+    "Id": "c0c0a000-0000-4000-8000-000000000008",
+    "Unit": "Grams",
+    "ParentId": null,
+    "Calories": 335,
+    "IsBasic": false
   }
 ]

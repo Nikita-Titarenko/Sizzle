@@ -2,6 +2,9 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Sizzle.Application.Dtos.Base;
+using Sizzle.Application.Dtos.Recipes;
+using Sizzle.Application.Dtos.Users;
 using Sizzle.Application.Services;
 using Sizzle.Domain.Entities;
 using Sizzle.Infrastructure.Extensions;
@@ -12,8 +15,8 @@ public static class TestDataInitializer
 {
     public static async Task InitializeAsync(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IFileService fileService)
     {
-        var users = await ReadAsync<List<UserSeed>>("app-users.json");
-        var recipes = await ReadAsync<List<RecipeSeed>>("recipes.json");
+        var users = await ReadAsync<List<UserSeedDto>>("app-users.json");
+        var recipes = await ReadAsync<List<RecipeSeedDto>>("recipes.json");
         var ingredientCatalog = await ReadCatalogIdsAsync("ingredients.json");
         var categoryCatalog = await ReadCatalogIdsAsync("categories.json");
 
@@ -155,7 +158,7 @@ public static class TestDataInitializer
         await context.SaveChangesAsync();
     }
 
-    private static List<MediaSeed> ReadMedia(IReadOnlyCollection<RecipeSeed> recipes, IFileService fileService)
+    private static List<MediaSeed> ReadMedia(IReadOnlyCollection<RecipeSeedDto> recipes, IFileService fileService)
     {
         var recipesById = recipes.ToDictionary(recipe => recipe.Id);
         var assembly = typeof(TestDataInitializer).Assembly;
@@ -249,7 +252,7 @@ public static class TestDataInitializer
 
     private static async Task<HashSet<Guid>> ReadCatalogIdsAsync(string resourceName)
     {
-        var catalog = await ReadAsync<List<CatalogSeed>>(resourceName, "InitialData");
+        var catalog = await ReadAsync<List<CatalogSeedDto>>(resourceName, "InitialData");
         return catalog.Select(item => item.Id).ToHashSet();
     }
 
@@ -262,45 +265,4 @@ public static class TestDataInitializer
             ?? throw new InvalidOperationException($"Resource '{fullName}' is empty.");
     }
 
-    private sealed class CatalogSeed
-    {
-        public Guid Id { get; set; }
-    }
-
-    private sealed class UserSeed
-    {
-        public Guid Id { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
-    }
-
-    private sealed class RecipeSeed
-    {
-        public Guid Id { get; set; }
-        public Guid ApplicationUserId { get; set; }
-        public Guid CategoryId { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public int CookingTimeMinutes { get; set; }
-        public int ViewCount { get; set; }
-        public int LikeCount { get; set; }
-        public string? FilePath { get; set; }
-        public IngredientSeed[] Ingredients { get; set; } = [];
-        public StepSeed[] Steps { get; set; } = [];
-    }
-
-    private sealed class IngredientSeed
-    {
-        public Guid IngredientId { get; set; }
-        public int Quantity { get; set; }
-    }
-
-    private sealed class StepSeed
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Description { get; set; } = string.Empty;
-        public string[] FilePaths { get; set; } = [];
-    }
 }

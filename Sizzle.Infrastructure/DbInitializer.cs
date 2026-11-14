@@ -177,29 +177,4 @@ public static class DbInitializer
 
         await context.SaveChangesAsync();
     }
-
-    private sealed class CategorySeed
-    {
-        public Guid Id { get; set; }
-    }
-
-    private sealed class IngredientSeed
-    {
-        public Guid Id { get; set; }
-
-        public bool IsBasic { get; set; }
-
-        public Guid? ParentId { get; set; }
-
-        public IngredientUnit Unit { get; set; }
-
-        public int? Calories { get; set; }
-    }
-
-    private sealed class TranslationSeed
-    {
-        public Guid Id { get; set; }
-
-        public string Name { get; set; } = string.Empty;
-    }
 }

@@ -44,15 +44,4 @@ public class GoogleCloudServiceAccountTests
         var exception = Assert.Throws<InvalidOperationException>(() => provider.GetRequiredService<GoogleCredential>());
         Assert.Contains("GoogleCloudServiceAccount", exception.Message);
     }
-
-    private sealed class TestEnvironment : IHostEnvironment
-    {
-        public string EnvironmentName { get; set; } = Environments.Production;
-
-        public string ApplicationName { get; set; } = "Sizzle.Infrastructure.Tests";
-
-        public string ContentRootPath { get; set; } = AppContext.BaseDirectory;
-
-        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
-    }
 }
