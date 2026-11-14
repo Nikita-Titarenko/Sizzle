@@ -84,7 +84,7 @@ public class RecipeRepositoryTests : InMemoryRepositoryTest
         {
             OwnerId = owner.Id,
             CategoryIds = [categoryId],
-            IngredientIds = [ingredientId],
+            Ingredients = [new RecipeIngredientFilterDto { IngredientId = ingredientId }],
             Search = " herbs ",
             PageIndex = 1,
             PageSize = 1
@@ -222,12 +222,50 @@ public class RecipeRepositoryTests : InMemoryRepositoryTest
         {
             ApplicationUserId = user,
             CategoryIds = [category],
-            IngredientIds = [ingredient]
+            Ingredients = [new RecipeIngredientFilterDto { IngredientId = ingredient }]
         });
 
         var candidate = Assert.Single(candidates);
         Assert.Equal(included.Id, candidate.Id);
         Assert.Equal([ingredient], candidate.IngredientIds);
+    }
+
+    [Fact]
+    public async Task GetRecipesAsync_AppliesIngredientQuantityUpperBound()
+    {
+        const int acceptedQuantity = 2;
+        const int rejectedQuantity = 5;
+        const int requestedQuantity = 3;
+        const int defaultPageSize = 10;
+        var owner = new ApplicationUser { Id = Guid.NewGuid(), Name = "Chef" };
+        var categoryId = Guid.NewGuid();
+        var ingredientId = Guid.NewGuid();
+
+        var accepted = NewRecipe(owner.Id, categoryId, "Accepted", 1);
+        accepted.RecipeIngredients.Clear();
+        accepted.RecipeIngredients.Add(new RecipeIngredient { IngredientId = ingredientId, Quantity = acceptedQuantity });
+
+        var rejected = NewRecipe(owner.Id, categoryId, "Rejected", 1);
+        rejected.RecipeIngredients.Clear();
+        rejected.RecipeIngredients.Add(new RecipeIngredient { IngredientId = ingredientId, Quantity = rejectedQuantity });
+
+        await using (var seed = CreateContext())
+        {
+            seed.Users.Add(owner);
+            seed.Recipes.AddRange(accepted, rejected);
+            await seed.SaveChangesAsync();
+        }
+
+        await using var db = CreateContext();
+        var page = await new RecipeRepository(db).GetRecipesAsync(new GetRecipesDto
+        {
+            OwnerId = owner.Id,
+            Ingredients = [new RecipeIngredientFilterDto { IngredientId = ingredientId, Quantity = requestedQuantity }],
+            PageSize = defaultPageSize
+        });
+
+        Assert.Equal(1, page.TotalSize);
+        Assert.Equal(accepted.Id, Assert.Single(page.Data).Id);
     }
 
     [Fact]

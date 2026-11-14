@@ -19,6 +19,7 @@ public class RequestMappingProfile : Profile
         CreateMap<GetRecipesRequestModel, GetRecipesDto>()
             .ForMember(destination => destination.OwnerId, options => options.Ignore())
             .ForMember(destination => destination.ApplicationUserId, options => options.Ignore());
+        CreateMap<GetRecipeIngredientRequestModel, RecipeIngredientFilterDto>();
         CreateMap<CreateRecipeRequestModel, CreateRecipeDto>()
             .ForMember(destination => destination.ApplicationUserId,
                 options => options.MapFrom((_, _, _, context) => (Guid)context.Items["ApplicationUserId"]));

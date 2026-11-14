@@ -7,7 +7,7 @@ public sealed record RecipeListSnapshot(
     string Name,
     string Description,
     string[] StepTexts,
-    Guid[] IngredientIds,
+    RecipeIngredientFilterDto[] Ingredients,
     int LikeCount,
     DateTime CreationDate,
     bool IsDraft = false);

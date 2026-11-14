@@ -6,7 +6,7 @@ public class GetRecipesRequestModel : PaginationRequestModel
 {
     public Guid? UserId { get; init; }
 
-    public Guid[] IngredientIds { get; init; } = [];
+    public GetRecipeIngredientRequestModel[] Ingredients { get; init; } = [];
 
     public Guid[] CategoryIds { get; init; } = [];
 

@@ -10,7 +10,9 @@ internal static class RecipeListPages
         if (recipe == null || recipe.IsDraft) return false;
         if (query.OwnerId.HasValue && query.OwnerId.Value != recipe.OwnerId) return false;
         if (query.CategoryIds.Length > 0 && !query.CategoryIds.Contains(recipe.CategoryId)) return false;
-        if (query.IngredientIds.Any(id => !recipe.IngredientIds.Contains(id))) return false;
+        if (query.Ingredients.Any(filter => !recipe.Ingredients.Any(ingredient =>
+            ingredient.IngredientId == filter.IngredientId
+            && (!filter.Quantity.HasValue || ingredient.Quantity <= filter.Quantity.Value)))) return false;
         if (string.IsNullOrWhiteSpace(query.Search)) return true;
         var search = query.Search.Trim();
         return recipe.Name.Contains(search, StringComparison.OrdinalIgnoreCase)

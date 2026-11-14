@@ -249,7 +249,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         var publicQuery = new GetRecipesDto
         {
             OwnerId = dto.OwnerId, Search = dto.Search, CategoryIds = dto.CategoryIds,
-            IngredientIds = dto.IngredientIds, PageIndex = dto.PageIndex, PageSize = dto.PageSize
+            Ingredients = dto.Ingredients, PageIndex = dto.PageIndex, PageSize = dto.PageSize
         };
         var cached = await readCache.GetOrCreateAsync($"recipes:list:{JsonSerializer.Serialize(publicQuery)}", token => GetRecipesCoreAsync(publicQuery, token), cancellationToken);
         var result = ClonePage(cached);
@@ -264,7 +264,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             ApplicationUserId = dto.ApplicationUserId,
             OwnerId = dto.ApplicationUserId,
             Search = dto.Search,
-            IngredientIds = dto.IngredientIds,
+            Ingredients = dto.Ingredients,
             CategoryIds = dto.CategoryIds,
             PageIndex = dto.PageIndex,
             PageSize = dto.PageSize
@@ -1348,7 +1348,12 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private static RecipeListSnapshot ToListSnapshot(Recipe recipe, IEnumerable<RecipeStep> steps) => new(
         recipe.Id, recipe.ApplicationUserId, recipe.CategoryId, recipe.Name, recipe.Description,
         steps.SelectMany(step => new[] { step.Name, step.Description }).ToArray(),
-        recipe.RecipeIngredients.Select(link => link.IngredientId).ToArray(), recipe.LikeCount, recipe.CreationDate, recipe.IsDraft);
+        recipe.RecipeIngredients.Select(link => new RecipeIngredientFilterDto
+        {
+            IngredientId = link.IngredientId,
+            Quantity = link.Quantity
+        }).ToArray(),
+        recipe.LikeCount, recipe.CreationDate, recipe.IsDraft);
 
     private async Task<Error?> ValidateRecipeDetailsAsync(Guid categoryId, int cookingTimeMinutes, CancellationToken cancellationToken)
     {

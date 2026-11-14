@@ -139,7 +139,9 @@ public sealed class RecipeReadCache(IDistributedCache cache, IOptions<RecipeCach
                 item.Query.OwnerId,
                 item.Query.Search,
                 Categories = string.Join(',', item.Query.CategoryIds),
-                Ingredients = string.Join(',', item.Query.IngredientIds),
+                Ingredients = string.Join(',', item.Query.Ingredients
+                    .OrderBy(filter => filter.IngredientId)
+                    .Select(filter => $"{filter.IngredientId}:{filter.Quantity?.ToString() ?? string.Empty}")),
                 item.Query.PageSize
             }))
             {

@@ -54,11 +54,10 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             query = query.Where(recipe => dto.CategoryIds.Contains(recipe.CategoryId));
         }
 
-        foreach (var ingredientId in dto.IngredientIds.Distinct())
-        {
-            var id = ingredientId;
-            query = query.Where(recipe => recipe.RecipeIngredients.Any(ingredient => ingredient.IngredientId == id));
-        }
+        foreach (var ingredient in dto.Ingredients.GroupBy(item => item.IngredientId).Select(group => group.First()))
+            query = ingredient.Quantity.HasValue
+                ? query.Where(recipe => recipe.RecipeIngredients.Any(link => link.IngredientId == ingredient.IngredientId && link.Quantity <= ingredient.Quantity.Value))
+                : query.Where(recipe => recipe.RecipeIngredients.Any(link => link.IngredientId == ingredient.IngredientId));
 
         return await query
             .OrderByDescending(recipe => recipe.CreationDate)
@@ -255,11 +254,10 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
                 || r.RecipeSteps.Any(step => step.Name.Contains(search) || step.Description.Contains(search)));
         }
 
-        foreach (var ingredientId in dto.IngredientIds.Distinct())
-        {
-            var id = ingredientId;
-            query = query.Where(r => r.RecipeIngredients.Any(ingredient => ingredient.IngredientId == id));
-        }
+        foreach (var ingredient in dto.Ingredients.GroupBy(item => item.IngredientId).Select(group => group.First()))
+            query = ingredient.Quantity.HasValue
+                ? query.Where(recipe => recipe.RecipeIngredients.Any(link => link.IngredientId == ingredient.IngredientId && link.Quantity <= ingredient.Quantity.Value))
+                : query.Where(recipe => recipe.RecipeIngredients.Any(link => link.IngredientId == ingredient.IngredientId));
 
         if (dto.CategoryIds.Length > 0)
         {
