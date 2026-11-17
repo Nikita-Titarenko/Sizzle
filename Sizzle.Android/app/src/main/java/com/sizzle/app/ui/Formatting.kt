@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.stringResource
 import com.sizzle.app.R
+import com.sizzle.app.data.model.IngredientUnit
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
@@ -53,17 +54,17 @@ fun formatDateTime(value: String): String {
 
 /** "g" → "г" etc. The API returns short unit codes for catalog and recipe ingredients. */
 @Composable
-fun unitLabel(unit: String): String = when (unit) {
-    "g", "Grams" -> stringResource(R.string.units_g)
-    "ml", "Milliliters" -> stringResource(R.string.units_ml)
-    "pcs", "Pieces" -> stringResource(R.string.units_pcs)
-    else -> unit
+fun unitLabel(unit: String): String = when (IngredientUnit.parse(unit)) {
+    IngredientUnit.Grams -> stringResource(R.string.units_g)
+    IngredientUnit.Milliliters -> stringResource(R.string.units_ml)
+    IngredientUnit.Pieces -> stringResource(R.string.units_pcs)
+    null -> unit
 }
 
 /** A catalog ingredient's calories as stored: "52 kcal/100 g" or "78 kcal/pc". */
 @Composable
 fun kcalRate(unit: String, calories: Int): String =
-    if (unit == "pcs" || unit == "Pieces") stringResource(R.string.units_kcal_per_piece, calories)
+    if (IngredientUnit.parse(unit) == IngredientUnit.Pieces) stringResource(R.string.units_kcal_per_piece, calories)
     else stringResource(R.string.units_kcal_per_100, calories, unitLabel(unit))
 
 @Composable

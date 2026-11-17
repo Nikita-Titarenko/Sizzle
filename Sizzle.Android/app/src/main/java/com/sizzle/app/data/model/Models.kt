@@ -44,16 +44,22 @@ data class IngredientChoice(
 )
 
 /** Values of the API's IngredientUnit enum, sent by name when creating a new ingredient. */
-enum class IngredientUnit(val short: String) {
-    Grams("g"),
-    Milliliters("ml"),
-    Pieces("pcs");
+enum class IngredientUnit(val short: String, private val localizedShort: Set<String>) {
+    // Localized forms come from the API's InitialData/ingredient-unit.json; keep them in sync.
+    Grams("g", setOf("г")),
+    Milliliters("ml", setOf("мл")),
+    Pieces("pcs", setOf("шт"));
 
     companion object {
-        fun fromShort(short: String): IngredientUnit? = entries.firstOrNull { it.short == short }
+        /** A catalog short unit in any language the API answers in ("g", "г"). */
+        fun fromShort(short: String): IngredientUnit? {
+            val key = short.trim().lowercase()
+            return entries.firstOrNull { it.short == key || key in it.localizedShort }
+        }
 
-        /** Accepts both forms the API uses: "g" on catalog items, "Grams" from the AI. */
-        fun parse(value: String): IngredientUnit? = fromShort(value) ?: entries.firstOrNull { it.name == value }
+        /** Accepts every form the API uses: "g"/"г" on catalog items, "Grams" from the AI. */
+        fun parse(value: String): IngredientUnit? =
+            fromShort(value) ?: entries.firstOrNull { it.name.equals(value.trim(), ignoreCase = true) }
     }
 }
 

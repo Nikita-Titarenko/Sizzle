@@ -31,4 +31,13 @@ class MediaFilesTest {
         assertEquals(IngredientUnit.Pieces, IngredientUnit.fromShort("pcs"))
         assertNull(IngredientUnit.fromShort("kg"))
     }
+
+    @Test
+    fun unitsMapFromLocalizedShortCodesAndEnumNames() {
+        assertEquals(IngredientUnit.Grams, IngredientUnit.parse("г"))
+        assertEquals(IngredientUnit.Milliliters, IngredientUnit.parse("мл"))
+        assertEquals(IngredientUnit.Pieces, IngredientUnit.parse("шт"))
+        assertEquals(IngredientUnit.Pieces, IngredientUnit.parse("Pieces"))
+        assertNull(IngredientUnit.parse("кг"))
+    }
 }
