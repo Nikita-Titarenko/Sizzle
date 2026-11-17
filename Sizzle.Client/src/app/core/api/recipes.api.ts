@@ -37,6 +37,20 @@ export class RecipesApi {
     });
   }
 
+  /** The signed-in user's unpublished drafts, newest first. */
+  getDrafts(query: RecipeQuery) {
+    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/mine/drafts`, {
+      params: toParams(query),
+    });
+  }
+
+  /** Recipes from cooks the signed-in user follows, newest first. */
+  getFollowing(pageIndex: number, pageSize: number) {
+    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/following`, {
+      params: new HttpParams().set('PageIndex', pageIndex).set('PageSize', pageSize),
+    });
+  }
+
   getById(id: string) {
     return this.http.get<RecipeDetails>(`${this.baseUrl}/${id}`);
   }

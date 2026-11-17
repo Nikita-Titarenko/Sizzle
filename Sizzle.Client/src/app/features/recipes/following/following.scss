@@ -1,0 +1,245 @@
+:host {
+  display: block;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.head {
+  margin-bottom: 18px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.9rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+// The people behind the timeline, one tap from their pages.
+.cooks {
+  display: flex;
+  gap: 16px;
+  margin: 0 0 24px;
+  padding: 4px 2px 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.cook {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 72px;
+  flex-shrink: 0;
+  color: var(--text);
+  font-size: 0.78rem;
+  text-align: center;
+
+  span {
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  app-user-avatar {
+    width: 56px;
+    height: 56px;
+    font-size: 1.2rem;
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 4px var(--accent);
+  }
+
+  &:hover {
+    text-decoration: none;
+    color: var(--accent-dark);
+  }
+}
+
+.day + .day {
+  margin-top: 24px;
+}
+
+.day-label {
+  position: sticky;
+  top: var(--header-height);
+  z-index: 1;
+  margin: 0 0 10px;
+  padding: 8px 0;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.entries {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+// Time on the left, a rail with a dot, then the post.
+.entry {
+  position: relative;
+  display: grid;
+  grid-template-columns: 56px 14px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 14px;
+
+  &:not(:last-child)::before {
+    position: absolute;
+    top: 22px;
+    bottom: -2px;
+    left: calc(56px + 12px + 6px);
+    width: 2px;
+    background: var(--border);
+    content: '';
+  }
+}
+
+.time {
+  padding-top: 14px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 14px;
+  height: 14px;
+  margin-top: 16px;
+  border: 3px solid var(--bg);
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+.post {
+  display: flex;
+  gap: 14px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--card);
+  color: var(--text);
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: var(--accent);
+    text-decoration: none;
+  }
+}
+
+.post-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+
+  h3 {
+    margin: 2px 0 0;
+    font-size: 1.05rem;
+  }
+}
+
+.byline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82rem;
+
+  app-user-avatar {
+    width: 22px;
+    height: 22px;
+    font-size: 0.7rem;
+  }
+}
+
+.description {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.88rem;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.thumb {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 112px;
+  height: 112px;
+  flex-shrink: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--muted);
+
+  img,
+  video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .play {
+    position: absolute;
+    color: #fff;
+    filter: drop-shadow(0 1px 3px rgb(0 0 0 / 0.6));
+  }
+}
+
+.more {
+  display: flex;
+  justify-content: center;
+  margin-top: 12px;
+}
+
+.end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 16px;
+}
+
+@media (max-width: 560px) {
+  .entry {
+    grid-template-columns: 14px minmax(0, 1fr);
+    gap: 10px;
+
+    &:not(:last-child)::before {
+      left: 6px;
+    }
+  }
+
+  .time {
+    display: none;
+  }
+
+  .thumb {
+    width: 84px;
+    height: 84px;
+  }
+}

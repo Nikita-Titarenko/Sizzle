@@ -1,0 +1,113 @@
+<header class="head">
+  <h1>{{ 'following.title' | t }}</h1>
+  <p class="muted">{{ 'following.subtitle' | t }}</p>
+</header>
+
+@if (cooks().length) {
+  <nav class="cooks" [attr.aria-label]="'following.cooks' | t">
+    @for (cook of cooks(); track cook.id) {
+      <a class="cook" [routerLink]="['/users', cook.id]">
+        <app-user-avatar [name]="cook.name" [imageUrl]="cook.imageUrl" />
+        <span>{{ cook.name }}</span>
+      </a>
+    }
+  </nav>
+}
+
+@if (error() && !recipes().length) {
+  <app-status-view [heading]="'errors.title' | t" [message]="error()">
+    <button type="button" class="btn" (click)="loadMore()">{{ 'common.tryAgain' | t }}</button>
+  </app-status-view>
+} @else if (!loaded()) {
+  <app-loader />
+} @else if (!recipes().length) {
+  <app-status-view
+    kind="empty"
+    [heading]="(cooks().length ? 'following.quietTitle' : 'following.emptyTitle') | t"
+    [message]="(cooks().length ? 'following.quietMessage' : 'following.emptyMessage') | t"
+  >
+    <a class="btn" routerLink="/explore">{{ 'following.findCooks' | t }}</a>
+  </app-status-view>
+} @else {
+  <div class="timeline">
+    @for (day of days(); track day.key) {
+      <section class="day">
+        <h2 class="day-label">
+          @switch (day.daysAgo) {
+            @case (0) {
+              {{ 'following.today' | t }}
+            }
+            @case (1) {
+              {{ 'following.yesterday' | t }}
+            }
+            @default {
+              {{ day.date | date: 'EEEE, d MMMM' }}
+            }
+          }
+        </h2>
+        <ol class="entries">
+          @for (r of day.recipes; track r.id) {
+            <li class="entry">
+              <time class="time" [attr.datetime]="r.creationDate">
+                {{ r.creationDate | date: 'shortTime' }}
+              </time>
+              <span class="dot" aria-hidden="true"></span>
+              <a class="post" [routerLink]="['/recipes', r.id]">
+                <div class="post-body">
+                  <span class="byline">
+                    <app-user-avatar [name]="r.userName" [imageUrl]="r.userImageUrl" />
+                    {{ 'following.posted' | t: { name: r.userName } }}
+                  </span>
+                  <h3>{{ r.name }}</h3>
+                  <p class="description">{{ r.description }}</p>
+                  <span class="meta">
+                    <span class="meta-item">
+                      <app-icon name="clock" />
+                      {{ 'common.minutes' | t: { count: r.cookingTimeMinutes } }}
+                    </span>
+                    @if (r.calories) {
+                      <span class="meta-item">
+                        <app-icon name="flame" />
+                        {{ 'common.kcal' | t: { count: round(r.calories) } }}
+                      </span>
+                    }
+                    <span class="meta-item">
+                      <app-icon name="heart" [filled]="r.isLiked" />
+                      {{ r.likeCount }}
+                    </span>
+                  </span>
+                </div>
+                <div class="thumb">
+                  @if (r.fileUrl && isVideo(r.fileUrl)) {
+                    <video [src]="r.fileUrl" muted preload="metadata"></video>
+                    <app-icon class="play" name="play" />
+                  } @else if (r.fileUrl) {
+                    <img [src]="r.fileUrl" [alt]="r.name" loading="lazy" />
+                  } @else {
+                    <app-icon name="utensils" />
+                  }
+                </div>
+              </a>
+            </li>
+          }
+        </ol>
+      </section>
+    }
+  </div>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+  @if (hasMore()) {
+    <div class="more">
+      <button type="button" class="btn outline" [disabled]="loading()" (click)="loadMore()">
+        {{ (loading() ? 'common.loading' : 'following.loadMore') | t }}
+      </button>
+    </div>
+  } @else {
+    <p class="end muted">
+      <app-icon name="check" />
+      {{ 'following.caughtUp' | t }}
+    </p>
+  }
+}

@@ -101,7 +101,11 @@
     display: none;
   }
 
+  // Signed in, the links do not all fit: the row scrolls instead of overflowing the page.
   .nav {
     gap: 10px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
 }

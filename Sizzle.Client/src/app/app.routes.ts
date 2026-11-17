@@ -34,6 +34,11 @@ export const routes: Routes = [
       import('./features/auth/google-callback/google-callback').then((m) => m.GoogleCallback),
   },
   {
+    path: 'following',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/recipes/following/following').then((m) => m.Following),
+  },
+  {
     path: 'recipes/new',
     canActivate: [authGuard],
     loadComponent: () =>
