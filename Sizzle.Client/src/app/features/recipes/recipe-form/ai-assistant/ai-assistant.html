@@ -1,0 +1,124 @@
+<section class="assistant-panel" [attr.aria-label]="'ai.title' | t">
+  <header class="assistant-header">
+    <span class="badge-ai"><app-icon name="sparkles" /></span>
+    <h2 class="titles" [title]="'ai.subtitle' | t">{{ 'ai.title' | t }}</h2>
+    <button
+      type="button"
+      class="btn small outline restore"
+      [disabled]="!canRestore() || busy()"
+      [title]="'ai.restoreHint' | t"
+      (click)="restore.emit()"
+    >
+      <app-icon name="rotate-ccw" />
+      {{ 'ai.restore' | t }}
+    </button>
+  </header>
+
+  <div class="messages" #scroller aria-live="polite">
+    @if (!messages().length && !busy()) {
+      <div class="intro">
+        <p>{{ (currentRecipe()() ? 'ai.introEdit' : 'ai.introNew') | t }}</p>
+        <div class="suggestions">
+          @for (s of suggestions(); track s) {
+            <button type="button" class="suggestion" (click)="sendSuggestion(s)">
+              {{ s | t }}
+            </button>
+          }
+        </div>
+      </div>
+    }
+
+    @for (m of messages(); track $index) {
+      <div class="bubble" [class]="m.role">
+        @if (m.video) {
+          <app-icon name="film" />
+        }
+        <span class="text">{{ m.text }}</span>
+        @if (m.applied) {
+          <span class="applied">
+            <app-icon name="check" />
+            {{ 'ai.applied' | t }}
+          </span>
+        }
+      </div>
+    }
+
+    @if (preview(); as p) {
+      <div class="bubble assistant streaming">
+        @if (p.message) {
+          <span class="text">{{ p.message }}</span>
+        } @else if (p.name) {
+          <span class="text">
+            {{ 'ai.writing' | t: { name: p.name } }}
+          </span>
+        } @else {
+          <span class="text muted">{{ 'ai.thinking' | t }}</span>
+        }
+        @if (p.ingredients || p.steps) {
+          <span class="progress muted">
+            {{ 'ai.progress' | t: { ingredients: p.ingredients, steps: p.steps } }}
+          </span>
+        }
+        <span class="dots" aria-hidden="true">
+          <i></i>
+          <i></i>
+          <i></i>
+        </span>
+      </div>
+    }
+  </div>
+
+  <form class="composer" (ngSubmit)="send()">
+    <textarea
+      #input
+      name="message"
+      rows="2"
+      maxlength="4000"
+      [placeholder]="'ai.placeholder' | t"
+      [value]="text()"
+      (input)="text.set($any($event.target).value)"
+      (keydown.enter)="onEnter($event)"
+    ></textarea>
+    <div class="composer-actions">
+      <button
+        type="button"
+        class="tool"
+        [disabled]="busy()"
+        [title]="(subscribed() === false ? 'ai.videoLocked' : 'ai.videoHint') | t"
+        (click)="videoInput.click()"
+      >
+        <app-icon name="film" />
+        {{ 'ai.fromVideo' | t }}
+        <span class="premium">
+          @if (subscribed() === false) {
+            <app-icon name="lock" />
+          }
+          {{ 'ai.premium' | t }}
+        </span>
+      </button>
+      <input
+        #videoInput
+        type="file"
+        hidden
+        accept="video/mp4,video/webm,video/quicktime,video/x-msvideo,video/x-matroska,.mkv"
+        (change)="onVideo($event)"
+      />
+      <span class="spacer"></span>
+      @if (busy()) {
+        <button type="button" class="btn small outline" (click)="stop()">
+          <app-icon name="stop" />
+          {{ 'ai.stop' | t }}
+        </button>
+      } @else {
+        <button
+          type="submit"
+          class="btn small send"
+          [disabled]="!text().trim()"
+          [attr.aria-label]="'ai.send' | t"
+        >
+          <app-icon name="arrow-up" />
+        </button>
+      }
+    </div>
+  </form>
+</section>

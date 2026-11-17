@@ -1,279 +1,423 @@
-<div class="editor">
-  <header class="editor-header">
-    <h1>{{ (id() ? 'editor.editTitle' : 'editor.newTitle') | t }}</h1>
-    <p class="muted">
-      {{ 'editor.intro' | t }}
-    </p>
-  </header>
+@switch (mode()) {
+  @case ('loading') {
+    <app-loader />
+  }
 
-  <form id="recipe-form" class="editor-body" (ngSubmit)="submit()">
-    <section class="panel composer">
-      <div class="cover-column">
-        <app-media-picker
-          layout="portrait"
-          allowVideo
-          [files]="cover()"
-          (filesChange)="cover.set($event)"
-          [currentUrl]="currentCoverUrl()"
-        />
-      </div>
+  @case ('choose') {
+    <app-draft-chooser
+      [drafts]="drafts()"
+      [error]="error()"
+      (fresh)="startFresh()"
+      (open)="openDraft($event)"
+      (remove)="deleteDraft($event)"
+    />
+  }
 
-      <div class="details-column">
-        <input
-          class="title-input"
-          name="name"
-          [placeholder]="'editor.namePlaceholder' | t"
-          autocomplete="off"
-          [(ngModel)]="name"
-          required
-        />
-        <textarea
-          class="description-input"
-          name="description"
-          [placeholder]="'editor.descriptionPlaceholder' | t"
-          [(ngModel)]="description"
-          required
-        ></textarea>
-
-        <div class="field">
-          <span class="field-label">{{ 'editor.category' | t }}</span>
-          <div class="category-chips" role="radiogroup" [attr.aria-label]="'editor.category' | t">
-            @for (c of categories(); track c.id) {
-              <button
-                type="button"
-                class="chip"
-                role="radio"
-                [class.on]="categoryId === c.id"
-                [attr.aria-checked]="categoryId === c.id"
-                (click)="categoryId = c.id"
-              >
-                {{ c.name }}
-              </button>
-            }
-          </div>
-        </div>
-
-        <div class="field">
-          <span class="field-label">{{ 'editor.cookingTime' | t }}</span>
-          <div class="stepper-input">
-            <button
-              type="button"
-              [attr.aria-label]="'editor.lessTime' | t"
-              (click)="adjustTime(-5)"
-            >
-              −
-            </button>
-            <input
-              type="number"
-              min="1"
-              name="time"
-              [attr.aria-label]="'editor.cookingTimeMinutes' | t"
-              [(ngModel)]="cookingTimeMinutes"
-              required
-            />
-            <span class="suffix">{{ 'editor.minutesSuffix' | t }}</span>
-            <button type="button" [attr.aria-label]="'editor.moreTime' | t" (click)="adjustTime(5)">
-              +
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="panel">
-      <header class="panel-header">
-        <div>
-          <h2>{{ 'editor.ingredients' | t }}</h2>
-          <p class="muted">{{ 'editor.ingredientsHint' | t }}</p>
-        </div>
-        <span class="count-badge">{{ ingredients().length + newIngredients().length }}</span>
+  @case ('form') {
+    <div class="editor">
+      <header class="editor-header">
+        <h1>
+          {{
+            (recipeId()
+              ? isDraft()
+                ? 'editor.editDraftTitle'
+                : 'editor.editTitle'
+              : 'editor.newTitle'
+            ) | t
+          }}
+          @if (isDraft()) {
+            <span class="draft-pill">{{ 'drafts.tag' | t }}</span>
+          }
+        </h1>
+        <p class="muted">{{ 'editor.intro' | t }}</p>
       </header>
 
-      <app-ingredient-picker
-        [placeholder]="'editor.ingredientSearch' | t"
-        [excludeIds]="ingredientIds()"
-        (picked)="addIngredient($event)"
-      />
-
-      @if (ingredients().length) {
-        <ul class="ingredient-list">
-          @for (i of ingredients(); track i.id; let idx = $index) {
-            <li class="ingredient-row">
-              <span class="ingredient-name">
-                @if (i.parentName) {
-                  <span class="muted">{{ i.parentName }} ›</span>
+      <div class="workspace">
+        <div class="form-column">
+          @if (review(); as r) {
+            <div class="review" [class.rejected]="r.kind === 'rejected'" role="alert">
+              <app-icon [name]="r.kind === 'rejected' ? 'close' : 'sparkles'" />
+              <div class="review-text">
+                <strong>
+                  {{
+                    (r.kind === 'rejected' ? 'review.rejectedTitle' : 'review.correctedTitle') | t
+                  }}
+                </strong>
+                @if (r.reason) {
+                  <p>{{ r.reason }}</p>
                 }
-                {{ i.name }}
-              </span>
-              <span class="quantity">
-                <input
-                  type="number"
-                  min="1"
-                  [name]="'iq' + idx"
-                  [(ngModel)]="i.quantity"
-                  [attr.aria-label]="'editor.quantityOf' | t: { name: i.name }"
-                />
-                <span class="muted">{{ i.unit | unitLabel }}</span>
-              </span>
-              <button
-                type="button"
-                class="icon-button"
-                [attr.aria-label]="'common.remove' | t: { name: i.name }"
-                (click)="removeIngredient(i.id)"
-              >
-                <app-icon name="close" />
-              </button>
-            </li>
-          }
-        </ul>
-      }
-
-      @for (n of newIngredients(); track $index; let idx = $index) {
-        <div class="new-ingredient">
-          <div class="new-ingredient-header">
-            <span class="tag-new">{{ 'editor.newTag' | t }}</span>
-            <span class="spacer"></span>
-            <button
-              type="button"
-              class="icon-button"
-              [attr.aria-label]="'editor.removeNew' | t"
-              (click)="removeNewIngredient(idx)"
-            >
-              <app-icon name="close" />
-            </button>
-          </div>
-          <div class="new-ingredient-fields">
-            <input
-              class="grow"
-              [placeholder]="'editor.newNamePlaceholder' | t"
-              [name]="'nn' + idx"
-              [(ngModel)]="n.name"
-            />
-            <span class="quantity">
-              <input
-                type="number"
-                min="1"
-                [name]="'nq' + idx"
-                [(ngModel)]="n.quantity"
-                [attr.aria-label]="'editor.quantity' | t"
-              />
-              <select
-                [name]="'nu' + idx"
-                [(ngModel)]="n.unit"
-                [attr.aria-label]="'editor.unit' | t"
-              >
-                @for (u of units; track u) {
-                  <option [value]="u">{{ u | unitLabel }}</option>
+                @if (r.kind === 'corrected') {
+                  <p class="muted">{{ 'review.correctedHint' | t }}</p>
                 }
-              </select>
-            </span>
-          </div>
-          @if (n.parent) {
-            <span class="removable-chip">
-              <span class="chip-context">{{ 'editor.variantOf' | t }}</span>
-              {{ n.parent.name }}
-              <button
-                type="button"
-                [attr.aria-label]="'editor.removeParent' | t"
-                (click)="setParent(n, null)"
-              >
-                <app-icon name="close" />
-              </button>
-            </span>
-          } @else {
-            <app-ingredient-picker
-              rootsOnly
-              [placeholder]="'editor.parentPlaceholder' | t"
-              (picked)="setParent(n, $event)"
-            />
+              </div>
+              <div class="review-actions">
+                @if (r.kind === 'corrected') {
+                  <button type="button" class="btn small outline" (click)="restorePrevious()">
+                    {{ 'review.restoreMine' | t }}
+                  </button>
+                }
+                <button type="button" class="btn small ghost" (click)="review.set(null)">
+                  {{ 'review.dismiss' | t }}
+                </button>
+              </div>
+            </div>
           }
-        </div>
-      }
 
-      <button type="button" class="add-row" (click)="addNewIngredient()">
-        <app-icon name="plus" />
-        {{ 'editor.addCustomIngredient' | t }}
-      </button>
-    </section>
-
-    <section class="panel">
-      <header class="panel-header">
-        <div>
-          <h2>{{ 'editor.steps' | t }}</h2>
-          <p class="muted">
-            {{ 'editor.stepsHint' | t }}
-            @if (id()) {
-              {{ 'editor.stepsReupload' | t }}
-            }
-          </p>
-        </div>
-        <span class="count-badge">{{ steps().length }}</span>
-      </header>
-
-      <ol class="timeline">
-        @for (step of steps(); track $index; let idx = $index) {
-          <li class="timeline-step">
-            <span class="marker">{{ idx + 1 }}</span>
-            <div class="step-body">
-              <div class="step-title-row">
-                <input
-                  class="step-title"
-                  [placeholder]="'editor.stepTitlePlaceholder' | t"
-                  [name]="'sn' + idx"
-                  [(ngModel)]="step.name"
-                  required
+          <form id="recipe-form" class="editor-body" (ngSubmit)="publish()">
+            <section class="panel composer">
+              <div class="cover-column">
+                <app-media-picker
+                  layout="portrait"
+                  allowVideo
+                  [files]="cover()"
+                  (filesChange)="setCover($event)"
+                  [currentUrl]="currentCoverUrl()"
                 />
                 <button
                   type="button"
-                  class="icon-button"
-                  [attr.aria-label]="'editor.removeStep' | t"
-                  [disabled]="steps().length === 1"
-                  (click)="removeStep(idx)"
+                  class="ai-cover"
+                  [disabled]="!!busy()"
+                  [title]="(subscribed() === false ? 'ai.coverLocked' : 'ai.coverHint') | t"
+                  (click)="generateCover()"
                 >
-                  <app-icon name="close" />
+                  <app-icon name="sparkles" />
+                  {{ (busy() === 'image' ? 'ai.coverGenerating' : 'ai.coverGenerate') | t }}
+                  <span class="premium">
+                    @if (subscribed() === false) {
+                      <app-icon name="lock" />
+                    }
+                    {{ 'ai.premium' | t }}
+                  </span>
                 </button>
+                @if (coverIsAI() && cover().length) {
+                  <span class="ai-tag">
+                    <app-icon name="sparkles" />
+                    {{ 'ai.coverIsAI' | t }}
+                  </span>
+                }
               </div>
-              <textarea
-                [placeholder]="'editor.stepDescriptionPlaceholder' | t"
-                [name]="'sd' + idx"
-                [(ngModel)]="step.description"
-                required
-              ></textarea>
-              <app-media-picker
-                multiple
-                allowVideo
-                [files]="step.files"
-                (filesChange)="setStepFiles(step, $event)"
+
+              <div class="details-column">
+                <input
+                  class="title-input"
+                  name="name"
+                  [class.ai-changed]="isChanged('name')"
+                  [placeholder]="'editor.namePlaceholder' | t"
+                  autocomplete="off"
+                  [(ngModel)]="name"
+                  (ngModelChange)="unmark('name')"
+                  required
+                />
+                <textarea
+                  class="description-input"
+                  name="description"
+                  [class.ai-changed]="isChanged('description')"
+                  [placeholder]="'editor.descriptionPlaceholder' | t"
+                  [(ngModel)]="description"
+                  (ngModelChange)="unmark('description')"
+                  required
+                ></textarea>
+
+                <div class="field" [class.ai-changed-field]="isChanged('category')">
+                  <span class="field-label">{{ 'editor.category' | t }}</span>
+                  <div
+                    class="category-chips"
+                    role="radiogroup"
+                    [attr.aria-label]="'editor.category' | t"
+                  >
+                    @for (c of categories(); track c.id) {
+                      <button
+                        type="button"
+                        class="chip"
+                        role="radio"
+                        [class.on]="categoryId === c.id"
+                        [attr.aria-checked]="categoryId === c.id"
+                        (click)="setCategory(c.id)"
+                      >
+                        {{ c.name }}
+                      </button>
+                    }
+                  </div>
+                </div>
+
+                <div class="field">
+                  <span class="field-label">{{ 'editor.cookingTime' | t }}</span>
+                  <div class="stepper-input" [class.ai-changed]="isChanged('time')">
+                    <button
+                      type="button"
+                      [attr.aria-label]="'editor.lessTime' | t"
+                      (click)="adjustTime(-5)"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min="1"
+                      name="time"
+                      [attr.aria-label]="'editor.cookingTimeMinutes' | t"
+                      [(ngModel)]="cookingTimeMinutes"
+                      (ngModelChange)="unmark('time')"
+                      required
+                    />
+                    <span class="suffix">{{ 'editor.minutesSuffix' | t }}</span>
+                    <button
+                      type="button"
+                      [attr.aria-label]="'editor.moreTime' | t"
+                      (click)="adjustTime(5)"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <header class="panel-header">
+                <div>
+                  <h2>{{ 'editor.ingredients' | t }}</h2>
+                  <p class="muted">{{ 'editor.ingredientsHint' | t }}</p>
+                </div>
+                <div class="panel-badges">
+                  @if (calories()) {
+                    <span class="kcal-badge" [title]="'editor.caloriesHint' | t">
+                      {{ 'common.kcal' | t: { count: calories() } }}
+                    </span>
+                  }
+                  <span class="count-badge">
+                    {{ ingredients().length + newIngredients().length }}
+                  </span>
+                </div>
+              </header>
+
+              <app-ingredient-picker
+                [placeholder]="'editor.ingredientSearch' | t"
+                [excludeIds]="ingredientIds()"
+                (picked)="addIngredient($event)"
               />
-            </div>
-          </li>
+
+              @if (ingredients().length) {
+                <ul class="ingredient-list">
+                  @for (i of ingredients(); track i.id; let idx = $index) {
+                    <li class="ingredient-row" [class.ai-changed]="isChanged('ingredient-' + i.id)">
+                      <span class="ingredient-name">
+                        @if (i.parentName) {
+                          <span class="muted">{{ i.parentName }} ›</span>
+                        }
+                        {{ i.name }}
+                        @if (ingredientCalories(i); as kcal) {
+                          <span class="muted kcal">{{ 'common.kcal' | t: { count: kcal } }}</span>
+                        }
+                      </span>
+                      <span class="quantity">
+                        <input
+                          type="number"
+                          min="1"
+                          [name]="'iq' + idx"
+                          [(ngModel)]="i.quantity"
+                          (ngModelChange)="unmark('ingredient-' + i.id)"
+                          [attr.aria-label]="'editor.quantityOf' | t: { name: i.name }"
+                        />
+                        <span class="muted">{{ i.unit | unitLabel }}</span>
+                      </span>
+                      <button
+                        type="button"
+                        class="icon-button"
+                        [attr.aria-label]="'common.remove' | t: { name: i.name }"
+                        (click)="removeIngredient(i.id)"
+                      >
+                        <app-icon name="close" />
+                      </button>
+                    </li>
+                  }
+                </ul>
+              }
+
+              @for (n of newIngredients(); track $index; let idx = $index) {
+                <div class="new-ingredient" [class.ai-changed]="isChanged('new-' + idx)">
+                  <div class="new-ingredient-header">
+                    <span class="tag-new">{{ 'editor.newTag' | t }}</span>
+                    <span class="spacer"></span>
+                    <button
+                      type="button"
+                      class="icon-button"
+                      [attr.aria-label]="'editor.removeNew' | t"
+                      (click)="removeNewIngredient(idx)"
+                    >
+                      <app-icon name="close" />
+                    </button>
+                  </div>
+                  <div class="new-ingredient-fields">
+                    <input
+                      class="grow"
+                      [placeholder]="'editor.newNamePlaceholder' | t"
+                      [name]="'nn' + idx"
+                      [(ngModel)]="n.name"
+                      (ngModelChange)="unmark('new-' + idx)"
+                    />
+                    <span class="quantity">
+                      <input
+                        type="number"
+                        min="1"
+                        [name]="'nq' + idx"
+                        [(ngModel)]="n.quantity"
+                        [attr.aria-label]="'editor.quantity' | t"
+                      />
+                      <select
+                        [name]="'nu' + idx"
+                        [(ngModel)]="n.unit"
+                        [attr.aria-label]="'editor.unit' | t"
+                      >
+                        @for (u of units; track u) {
+                          <option [value]="u">{{ u | unitLabel }}</option>
+                        }
+                      </select>
+                    </span>
+                  </div>
+                  @if (n.parent) {
+                    <span class="removable-chip">
+                      <span class="chip-context">{{ 'editor.variantOf' | t }}</span>
+                      {{ n.parent.name }}
+                      <button
+                        type="button"
+                        [attr.aria-label]="'editor.removeParent' | t"
+                        (click)="setParent(n, null)"
+                      >
+                        <app-icon name="close" />
+                      </button>
+                    </span>
+                  } @else {
+                    <app-ingredient-picker
+                      rootsOnly
+                      [placeholder]="'editor.parentPlaceholder' | t"
+                      (picked)="setParent(n, $event)"
+                    />
+                  }
+                </div>
+              }
+
+              <button type="button" class="add-row" (click)="addNewIngredient()">
+                <app-icon name="plus" />
+                {{ 'editor.addCustomIngredient' | t }}
+              </button>
+            </section>
+
+            <section class="panel">
+              <header class="panel-header">
+                <div>
+                  <h2>{{ 'editor.steps' | t }}</h2>
+                  <p class="muted">
+                    {{ 'editor.stepsHint' | t }}
+                    @if (recipeId()) {
+                      {{ 'editor.stepsReupload' | t }}
+                    }
+                  </p>
+                </div>
+                <span class="count-badge">{{ steps().length }}</span>
+              </header>
+
+              <ol class="timeline">
+                @for (step of steps(); track $index; let idx = $index) {
+                  <li class="timeline-step">
+                    <span class="marker">{{ idx + 1 }}</span>
+                    <div class="step-body">
+                      <div class="step-title-row">
+                        <input
+                          class="step-title"
+                          [class.ai-changed]="isChanged('step-' + idx + '-name')"
+                          [placeholder]="'editor.stepTitlePlaceholder' | t"
+                          [name]="'sn' + idx"
+                          [(ngModel)]="step.name"
+                          (ngModelChange)="unmark('step-' + idx + '-name')"
+                        />
+                        <button
+                          type="button"
+                          class="icon-button"
+                          [attr.aria-label]="'editor.removeStep' | t"
+                          [disabled]="steps().length === 1"
+                          (click)="removeStep(idx)"
+                        >
+                          <app-icon name="close" />
+                        </button>
+                      </div>
+                      <textarea
+                        [class.ai-changed]="isChanged('step-' + idx + '-description')"
+                        [placeholder]="'editor.stepDescriptionPlaceholder' | t"
+                        [name]="'sd' + idx"
+                        [(ngModel)]="step.description"
+                        (ngModelChange)="unmark('step-' + idx + '-description')"
+                      ></textarea>
+                      <app-media-picker
+                        multiple
+                        allowVideo
+                        [files]="step.files"
+                        (filesChange)="setStepFiles(step, $event)"
+                      />
+                    </div>
+                  </li>
+                }
+              </ol>
+
+              <button type="button" class="add-row" (click)="addStep()">
+                <app-icon name="plus" />
+                {{ 'editor.addStep' | t }}
+              </button>
+            </section>
+          </form>
+        </div>
+
+        <app-ai-assistant
+          class="assistant-column"
+          [currentRecipe]="currentRecipe"
+          [subscribed]="subscribed()"
+          [canRestore]="history().length > 0"
+          (generated)="applyGenerated($event)"
+          (restore)="restorePrevious()"
+        />
+      </div>
+
+      <footer class="action-bar">
+        @if (error()) {
+          <span class="error">{{ error() }}</span>
+        } @else if (notice()) {
+          <span class="ready">
+            <app-icon name="check" />
+            {{ notice() }}
+          </span>
+        } @else if (missingHint(); as hint) {
+          <span class="muted">{{ hint }}</span>
+        } @else {
+          <span class="ready">
+            <app-icon name="check" />
+            {{ 'editor.ready' | t }}
+          </span>
         }
-      </ol>
-
-      <button type="button" class="add-row" (click)="addStep()">
-        <app-icon name="plus" />
-        {{ 'editor.addStep' | t }}
-      </button>
-    </section>
-  </form>
-
-  <footer class="action-bar">
-    @if (error()) {
-      <span class="error">{{ error() }}</span>
-    } @else if (missingHint(); as hint) {
-      <span class="muted">{{ hint }}</span>
-    } @else {
-      <span class="ready">
-        <app-icon name="check" />
-        {{ 'editor.ready' | t }}
-      </span>
-    }
-    <span class="spacer"></span>
-    <button type="button" class="btn ghost" (click)="cancel()">
-      {{ 'common.cancel' | t }}
-    </button>
-    <button form="recipe-form" class="btn" [disabled]="busy() || !!missingHint()">
-      {{ (busy() ? 'editor.saving' : id() ? 'editor.saveChanges' : 'editor.publish') | t }}
-    </button>
-  </footer>
-</div>
+        <span class="spacer"></span>
+        <button type="button" class="btn ghost" (click)="cancel()">
+          {{ 'common.cancel' | t }}
+        </button>
+        @if (canSaveDraft()) {
+          <button
+            type="button"
+            class="btn outline"
+            [disabled]="!!busy() || !!draftMissingHint()"
+            [title]="draftMissingHint() ?? ''"
+            (click)="saveDraft()"
+          >
+            {{ (busy() === 'draft' ? 'editor.saving' : 'editor.saveDraft') | t }}
+          </button>
+        }
+        <button form="recipe-form" class="btn" [disabled]="!!busy() || !!missingHint()">
+          {{
+            (busy() === 'publish'
+              ? 'editor.publishing'
+              : recipeId() && !isDraft()
+                ? 'editor.saveChanges'
+                : 'editor.publish'
+            ) | t
+          }}
+        </button>
+      </footer>
+    </div>
+  }
+}

@@ -109,8 +109,10 @@ function toFormData(value: RecipeFormValue): FormData {
   form.append('Description', value.description);
   form.append('CookingTimeMinutes', String(value.cookingTimeMinutes));
   form.append('CategoryId', value.categoryId);
+  form.append('IsDraft', String(value.isDraft));
   if (value.file) {
     form.append('File', value.file);
+    form.append('IsAIGeneratedImage', String(value.isAIGeneratedImage));
   }
   value.steps.forEach((step, i) => {
     form.append(`Steps[${i}].Name`, step.name);

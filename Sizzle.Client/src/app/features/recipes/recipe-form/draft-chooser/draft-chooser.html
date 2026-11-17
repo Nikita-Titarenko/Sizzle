@@ -1,0 +1,49 @@
+<header class="head">
+  <h1>{{ 'editor.newTitle' | t }}</h1>
+  <p class="muted">{{ 'drafts.intro' | t }}</p>
+</header>
+<div class="draft-grid">
+  <button type="button" class="draft-card fresh" (click)="fresh.emit()">
+    <span class="fresh-icon"><app-icon name="plus" /></span>
+    <strong>{{ 'drafts.startFresh' | t }}</strong>
+    <span class="muted">{{ 'drafts.startFreshHint' | t }}</span>
+  </button>
+  @for (d of drafts(); track d.id) {
+    <div
+      class="draft-card"
+      role="button"
+      tabindex="0"
+      (click)="open.emit(d)"
+      (keydown.enter)="open.emit(d)"
+    >
+      <div class="draft-cover">
+        @if (d.fileUrl && !isVideo(d.fileUrl)) {
+          <img [src]="d.fileUrl" alt="" />
+        } @else if (d.fileUrl) {
+          <video [src]="d.fileUrl" muted preload="metadata"></video>
+        } @else {
+          <app-icon name="file-text" />
+        }
+        <span class="draft-tag">{{ 'drafts.tag' | t }}</span>
+      </div>
+      <div class="draft-body">
+        <strong>{{ d.name }}</strong>
+        <span class="muted">
+          {{ 'drafts.created' | t: { date: (d.creationDate | date: 'mediumDate') ?? '' } }}
+        </span>
+      </div>
+      <button
+        type="button"
+        class="icon-button draft-delete"
+        [attr.aria-label]="'drafts.delete' | t: { name: d.name }"
+        [title]="'drafts.delete' | t: { name: d.name }"
+        (click)="$event.stopPropagation(); remove.emit(d)"
+      >
+        <app-icon name="trash" />
+      </button>
+    </div>
+  }
+</div>
+@if (error()) {
+  <p class="error">{{ error() }}</p>
+}
