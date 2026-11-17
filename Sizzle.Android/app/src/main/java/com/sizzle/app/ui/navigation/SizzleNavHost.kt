@@ -64,6 +64,11 @@ class Navigator(private val nav: NavHostController, private val currentUserId: (
     fun recipe(id: String) = nav.navigate(RecipeRoute(id))
     fun editRecipe(id: String) = nav.navigate(RecipeEditorRoute(id))
 
+    /** From the drafts list: the draft's editor replaces the "new recipe" one. */
+    fun openDraft(id: String) = nav.navigate(RecipeEditorRoute(id)) {
+        popUpTo<RecipeEditorRoute> { inclusive = true }
+    }
+
     /** Your own user page is the profile tab. */
     fun user(id: String) = if (id == currentUserId()) tab(ProfileRoute) else nav.navigate(UserRoute(id))
     fun login() = nav.navigate(LoginRoute) { launchSingleTop = true }

@@ -36,6 +36,9 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.PlayCircle
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
@@ -50,7 +53,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TextFieldColors
+import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -78,10 +85,12 @@ import com.sizzle.app.ui.components.IngredientPicker
 import com.sizzle.app.ui.components.Loader
 import com.sizzle.app.ui.components.MediaThumbnail
 import com.sizzle.app.ui.components.PrimaryButton
+import com.sizzle.app.ui.components.SecondaryButton
 import com.sizzle.app.ui.components.SectionCard
 import com.sizzle.app.ui.components.sizzleFieldColors
 import com.sizzle.app.ui.navigation.Navigator
 import com.sizzle.app.ui.theme.Sizzle
+import com.sizzle.app.ui.kcal
 import com.sizzle.app.ui.unitLabel
 
 private const val MAX_STEP_FILES = 10
@@ -92,7 +101,10 @@ fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
     val context = LocalContext.current
 
     val pickCover = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) vm.accept(listOf(MediaFiles.describe(context, uri)), allowVideo = true).firstOrNull()?.let { vm.cover = it }
+        if (uri != null) vm.accept(listOf(MediaFiles.describe(context, uri)), allowVideo = true).firstOrNull()?.let(vm::pickCover)
+    }
+    val pickVideo = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) vm.generateFromVideo(MediaFiles.describe(context, uri))
     }
     var stepForMedia by remember { mutableStateOf(-1) }
     val pickStepMedia = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(MAX_STEP_FILES)) { uris ->
@@ -104,44 +116,73 @@ fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
     }
     val imageAndVideo = PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
 
+    // Publishing happens at the bottom; the reviewer's verdict is shown at the top.
+    val formScroll = rememberScrollState()
+    LaunchedEffect(vm.review) { if (vm.review != null) formScroll.animateScrollTo(0) }
+    val title = when {
+        vm.mode == EditorMode.Choose || vm.recipeId == null -> R.string.editor_new_title
+        vm.isDraft -> R.string.editor_edit_draft_title
+        else -> R.string.editor_edit_title
+    }
     Scaffold(
         containerColor = Sizzle.colors.background,
         topBar = {
             TopAppBar(
-                title = { Text(stringResource(if (recipeId == null) R.string.editor_new_title else R.string.editor_edit_title)) },
+                title = { Text(stringResource(title)) },
                 navigationIcon = {
                     IconButton(onClick = navigator::back) { Icon(Icons.Outlined.Close, stringResource(R.string.common_cancel)) }
+                },
+                actions = {
+                    if (vm.mode == EditorMode.Form) {
+                        IconButton(onClick = vm::restorePrevious, enabled = vm.canRestore && !vm.generating) {
+                            Icon(Icons.Outlined.History, stringResource(R.string.ai_restore_hint))
+                        }
+                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Sizzle.colors.background),
             )
         },
-        bottomBar = { PublishBar(vm) { vm.submit(onSaved = navigator::showSavedRecipe) } },
+        bottomBar = {
+            if (vm.mode == EditorMode.Form) PublishBar(vm) { vm.publish(onPublished = navigator::showSavedRecipe) }
+        },
     ) { padding ->
-        if (vm.loading) {
-            Box(Modifier.padding(padding)) { Loader() }
-            return@Scaffold
+        when (vm.mode) {
+            EditorMode.Loading -> {
+                Box(Modifier.padding(padding)) { Loader() }
+                return@Scaffold
+            }
+            EditorMode.Choose -> {
+                DraftChooser(vm, Modifier.padding(padding), onOpen = { navigator.openDraft(it.id) })
+                return@Scaffold
+            }
+            EditorMode.Form -> Unit
         }
         Column(
-            Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier.fillMaxSize().padding(padding).imePadding().verticalScroll(formScroll).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             Text(stringResource(R.string.editor_intro), color = Sizzle.colors.muted)
 
+            AiAssistantCard(vm, onPickVideo = { pickVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) })
+
+            vm.review?.let { ReviewBanner(it, vm) }
+
             CoverPicker(vm, onPick = { pickCover.launch(imageAndVideo) })
+            AiCoverButton(vm)
 
             SectionCard {
                 OutlinedTextField(
-                    value = vm.name, onValueChange = { vm.name = it },
+                    value = vm.name, onValueChange = { vm.name = it; vm.unmark("name") },
                     modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(stringResource(R.string.editor_name_placeholder)) },
                     textStyle = MaterialTheme.typography.titleLarge,
-                    singleLine = true, shape = FieldShape, colors = sizzleFieldColors(),
+                    singleLine = true, shape = FieldShape, colors = aiFieldColors(vm.isChanged("name")),
                 )
                 OutlinedTextField(
-                    value = vm.description, onValueChange = { vm.description = it },
+                    value = vm.description, onValueChange = { vm.description = it; vm.unmark("description") },
                     modifier = Modifier.fillMaxWidth().height(130.dp),
                     placeholder = { Text(stringResource(R.string.editor_description_placeholder)) },
-                    shape = FieldShape, colors = sizzleFieldColors(),
+                    shape = FieldShape, colors = aiFieldColors(vm.isChanged("description")),
                 )
                 CategoryDropdown(vm)
                 CookingTime(vm)
@@ -175,7 +216,6 @@ fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
             }
 
             vm.mediaProblem?.let { AlertBox(it) }
-            vm.failure?.let { AlertBox(it.message()) }
             Spacer(Modifier.height(8.dp))
         }
     }
@@ -183,27 +223,133 @@ fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
 @Composable
 private fun PublishBar(vm: RecipeEditorViewModel, onPublish: () -> Unit) {
     Surface(color = Sizzle.colors.surface, border = BorderStroke(1.dp, Sizzle.colors.border)) {
-        Row(
-            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            Modifier.fillMaxWidth().navigationBarsPadding().padding(horizontal = 16.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             val missing = vm.missingHint
-            if (missing != null) {
-                Text(stringResource(missing), color = Sizzle.colors.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.weight(1f))
-            } else {
-                Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.CheckCircle, null, tint = Sizzle.colors.success, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.editor_ready), color = Sizzle.colors.success, fontWeight = FontWeight.SemiBold,
-                        style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 6.dp))
-                }
+            val failure = vm.failure
+            val notice = vm.notice
+            when {
+                failure != null -> Text(failure.message(), color = Sizzle.colors.danger, style = MaterialTheme.typography.bodySmall)
+                notice != null -> ReadyLine(stringResource(notice))
+                missing != null -> Text(stringResource(missing), color = Sizzle.colors.muted, style = MaterialTheme.typography.bodySmall)
+                else -> ReadyLine(stringResource(R.string.editor_ready))
             }
-            PrimaryButton(
-                text = stringResource(if (vm.recipeId == null) R.string.editor_publish else R.string.editor_save_changes),
-                onClick = onPublish,
-                enabled = missing == null,
-                busy = vm.busy,
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (vm.canSaveDraft) {
+                    OutlinedButton(
+                        onClick = vm::saveDraft,
+                        enabled = vm.busy == null && vm.draftMissingHint == null,
+                        modifier = Modifier.weight(1f).height(48.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, Sizzle.colors.accent),
+                    ) {
+                        if (vm.busy == Busy.Draft) {
+                            CircularProgressIndicator(Modifier.size(18.dp), color = Sizzle.colors.accent, strokeWidth = 2.dp)
+                        } else {
+                            Text(stringResource(R.string.editor_save_draft), color = Sizzle.colors.accentText, fontWeight = FontWeight.SemiBold,
+                                maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+                PrimaryButton(
+                    text = stringResource(if (vm.recipeId != null && !vm.isDraft) R.string.editor_save_changes else R.string.editor_publish),
+                    onClick = onPublish,
+                    enabled = missing == null && vm.busy == null,
+                    busy = vm.busy == Busy.Publish,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReadyLine(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Outlined.CheckCircle, null, tint = Sizzle.colors.success, modifier = Modifier.size(18.dp))
+        Text(text, color = Sizzle.colors.success, fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 6.dp))
+    }
+}
+
+/** Field colors that mark what the AI changed in its last edit. */
+@Composable
+private fun aiFieldColors(changed: Boolean): TextFieldColors {
+    if (!changed) return sizzleFieldColors()
+    val c = Sizzle.colors
+    return OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = c.accentSoft,
+        unfocusedContainerColor = c.accentSoft,
+        focusedBorderColor = c.accent,
+        unfocusedBorderColor = c.accent,
+        cursorColor = c.accent,
+        unfocusedPlaceholderColor = c.muted,
+        focusedPlaceholderColor = c.muted,
+    )
+}
+
+@Composable
+private fun ReviewBanner(review: ReviewNotice, vm: RecipeEditorViewModel) {
+    val c = Sizzle.colors
+    val tint = if (review.corrected) c.accent else c.danger
+    val shape = RoundedCornerShape(14.dp)
+    Column(
+        Modifier.fillMaxWidth().clip(shape).background(if (review.corrected) c.accentSoft else c.dangerSoft)
+            .border(1.dp, tint, shape).padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (review.corrected) Icons.Outlined.AutoAwesome else Icons.Outlined.Info, null, tint = tint, modifier = Modifier.size(20.dp))
+            Text(
+                stringResource(if (review.corrected) R.string.review_corrected_title else R.string.review_rejected_title),
+                fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp),
             )
         }
+        if (review.reason.isNotBlank()) Text(review.reason)
+        if (review.corrected) Text(stringResource(R.string.review_corrected_hint), color = c.muted, style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (review.corrected) SecondaryButton(stringResource(R.string.review_restore_mine), vm::restorePrevious)
+            androidx.compose.material3.TextButton(onClick = vm::dismissReview) {
+                Text(stringResource(R.string.review_dismiss), color = c.text)
+            }
+        }
+    }
+}
+
+@Composable
+private fun AiCoverButton(vm: RecipeEditorViewModel) {
+    val c = Sizzle.colors
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        OutlinedButton(
+            onClick = vm::generateCover,
+            enabled = vm.busy == null,
+            shape = RoundedCornerShape(10.dp),
+            border = BorderStroke(1.dp, c.borderStrong),
+        ) {
+            if (vm.busy == Busy.Image) {
+                CircularProgressIndicator(Modifier.size(16.dp), color = c.accent, strokeWidth = 2.dp)
+                Text(stringResource(R.string.ai_cover_generating), color = c.text, modifier = Modifier.padding(start = 8.dp))
+            } else {
+                Icon(Icons.Outlined.AutoAwesome, null, tint = c.accent, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.ai_cover_generate), color = c.text, fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(start = 6.dp, end = 8.dp))
+                PremiumTag(locked = vm.subscribed == false)
+            }
+        }
+    }
+}
+
+@Composable
+internal fun PremiumTag(locked: Boolean) {
+    val c = Sizzle.colors
+    Row(
+        Modifier.clip(CircleShape).background(c.accentSoft).padding(horizontal = 7.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (locked) Icon(Icons.Outlined.Lock, null, tint = c.accentText, modifier = Modifier.size(11.dp).padding(end = 2.dp))
+        Text(stringResource(R.string.ai_premium), color = c.accentText, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelSmall)
     }
 }
 
@@ -233,9 +379,20 @@ private fun CoverPicker(vm: RecipeEditorViewModel, onPick: () -> Unit) {
         } else {
             MediaThumbnail(current, Modifier.fillMaxSize())
         }
+        if (picked != null && vm.coverIsAI) {
+            Row(
+                Modifier.align(Alignment.TopStart).padding(10.dp).clip(CircleShape).background(Color.Black.copy(alpha = 0.6f))
+                    .padding(horizontal = 10.dp, vertical = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                Text(stringResource(R.string.ai_cover_is_ai), color = Color.White, fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 5.dp))
+            }
+        }
         Row(Modifier.align(Alignment.BottomEnd).padding(10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             OverlayButton(stringResource(R.string.media_replace), onPick)
-            if (picked != null) OverlayButton(stringResource(R.string.media_remove)) { vm.cover = null }
+            if (picked != null) OverlayButton(stringResource(R.string.media_remove)) { vm.pickCover(null) }
         }
     }
 }
@@ -273,12 +430,13 @@ private fun CategoryDropdown(vm: RecipeEditorViewModel) {
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
             modifier = Modifier.fillMaxWidth().menuAnchor(MenuAnchorType.PrimaryNotEditable),
             shape = FieldShape,
-            colors = sizzleFieldColors(),
+            colors = aiFieldColors(vm.isChanged("category")),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, containerColor = Sizzle.colors.surface) {
             vm.categories.forEach { category ->
                 DropdownMenuItem(text = { Text(category.name) }, onClick = {
                     vm.categoryId = category.id
+                    vm.unmark("category")
                     expanded = false
                 })
             }
@@ -293,11 +451,14 @@ private fun CookingTime(vm: RecipeEditorViewModel) {
         IconButton(onClick = { vm.adjustTime(-5) }) { Icon(Icons.Outlined.Remove, stringResource(R.string.editor_less_time)) }
         OutlinedTextField(
             value = vm.cookingTime.toString(),
-            onValueChange = { text -> vm.cookingTime = text.filter(Char::isDigit).take(4).toIntOrNull() ?: 0 },
+            onValueChange = { text ->
+                vm.cookingTime = text.filter(Char::isDigit).take(4).toIntOrNull() ?: 0
+                vm.unmark("time")
+            },
             modifier = Modifier.width(76.dp),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = FieldShape, colors = sizzleFieldColors(),
+            shape = FieldShape, colors = aiFieldColors(vm.isChanged("time")),
         )
         Text(stringResource(R.string.units_min_suffix), color = Sizzle.colors.muted, modifier = Modifier.padding(start = 6.dp))
         IconButton(onClick = { vm.adjustTime(5) }) { Icon(Icons.Outlined.Add, stringResource(R.string.editor_more_time)) }
@@ -307,7 +468,17 @@ private fun CookingTime(vm: RecipeEditorViewModel) {
 @Composable
 private fun IngredientsSection(vm: RecipeEditorViewModel) {
     SectionCard {
-        Text(stringResource(R.string.editor_ingredients), style = MaterialTheme.typography.titleLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(stringResource(R.string.editor_ingredients), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+            val calories = vm.calories
+            if (calories > 0) {
+                Text(
+                    kcal(calories), color = Sizzle.colors.accentText, fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.clip(CircleShape).background(Sizzle.colors.accentSoft).padding(horizontal = 10.dp, vertical = 4.dp),
+                )
+            }
+        }
         Text(stringResource(R.string.editor_ingredients_hint), color = Sizzle.colors.muted)
         IngredientPicker(
             placeholder = stringResource(R.string.editor_ingredient_search),
@@ -315,10 +486,19 @@ private fun IngredientsSection(vm: RecipeEditorViewModel) {
             onPicked = vm::addIngredient,
         )
         vm.ingredients.forEachIndexed { index, ingredient ->
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            val changed = vm.isChanged("ingredient-${ingredient.id}")
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp))
+                    .then(if (changed) Modifier.background(Sizzle.colors.accentSoft).border(1.dp, Sizzle.colors.accent, RoundedCornerShape(10.dp)) else Modifier)
+                    .padding(start = if (changed) 8.dp else 0.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Column(Modifier.weight(1f)) {
                     ingredient.parentName?.let { Text("$it ›", color = Sizzle.colors.muted, style = MaterialTheme.typography.bodySmall) }
                     Text(ingredient.name, fontWeight = FontWeight.SemiBold)
+                    vm.ingredientCalories(ingredient)?.let {
+                        Text(kcal(it), color = Sizzle.colors.muted, style = MaterialTheme.typography.bodySmall)
+                    }
                 }
                 QuantityField(ingredient.quantity) { vm.updateIngredient(index, it) }
                 Text(unitLabel(ingredient.unit), color = Sizzle.colors.muted, modifier = Modifier.padding(start = 6.dp).width(28.dp))
@@ -349,8 +529,11 @@ private fun QuantityField(value: String, onChange: (String) -> Unit) {
 @Composable
 private fun NewIngredientEditor(index: Int, draft: NewIngredientDraft, vm: RecipeEditorViewModel) {
     val c = Sizzle.colors
+    val changed = vm.isChanged("new-$index")
     Column(
-        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).border(1.dp, c.border, RoundedCornerShape(14.dp)).padding(12.dp),
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp))
+            .background(if (changed) c.accentSoft else Color.Transparent)
+            .border(1.dp, if (changed) c.accent else c.border, RoundedCornerShape(14.dp)).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -417,17 +600,17 @@ private fun StepEditor(index: Int, step: StepDraft, canRemove: Boolean, vm: Reci
         }
         OutlinedTextField(
             value = step.name,
-            onValueChange = { name -> vm.updateStep(index) { it.copy(name = name) } },
+            onValueChange = { name -> vm.updateStep(index) { it.copy(name = name) }; vm.unmark("step-$index-name") },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text(stringResource(R.string.editor_step_title_placeholder)) },
-            singleLine = true, shape = FieldShape, colors = sizzleFieldColors(),
+            singleLine = true, shape = FieldShape, colors = aiFieldColors(vm.isChanged("step-$index-name")),
         )
         OutlinedTextField(
             value = step.description,
-            onValueChange = { text -> vm.updateStep(index) { it.copy(description = text) } },
+            onValueChange = { text -> vm.updateStep(index) { it.copy(description = text) }; vm.unmark("step-$index-description") },
             modifier = Modifier.fillMaxWidth().height(110.dp),
             placeholder = { Text(stringResource(R.string.editor_step_description_placeholder)) },
-            shape = FieldShape, colors = sizzleFieldColors(),
+            shape = FieldShape, colors = aiFieldColors(vm.isChanged("step-$index-description")),
         )
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             step.files.forEachIndexed { fileIndex, media ->
