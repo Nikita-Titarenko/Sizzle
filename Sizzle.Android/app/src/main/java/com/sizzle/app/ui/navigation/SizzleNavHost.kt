@@ -9,10 +9,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Explore
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.Explore
+import androidx.compose.material.icons.outlined.People
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
@@ -49,6 +51,7 @@ import com.sizzle.app.ui.screens.auth.RegisterScreen
 import com.sizzle.app.ui.screens.editor.RecipeEditorScreen
 import com.sizzle.app.ui.screens.explore.ExploreScreen
 import com.sizzle.app.ui.screens.feed.FeedScreen
+import com.sizzle.app.ui.screens.following.FollowingScreen
 import com.sizzle.app.ui.screens.profile.ProfileScreen
 import com.sizzle.app.ui.screens.recipe.RecipeScreen
 import com.sizzle.app.ui.screens.user.UserScreen
@@ -60,6 +63,11 @@ class Navigator(private val nav: NavHostController, private val currentUserId: (
     fun back() = nav.popBackStack()
     fun recipe(id: String) = nav.navigate(RecipeRoute(id))
     fun editRecipe(id: String) = nav.navigate(RecipeEditorRoute(id))
+
+    /** From the drafts list: the draft's editor replaces the "new recipe" one. */
+    fun openDraft(id: String) = nav.navigate(RecipeEditorRoute(id)) {
+        popUpTo<RecipeEditorRoute> { inclusive = true }
+    }
 
     /** Your own user page is the profile tab. */
     fun user(id: String) = if (id == currentUserId()) tab(ProfileRoute) else nav.navigate(UserRoute(id))
@@ -98,7 +106,8 @@ private data class Tab(val route: Any, val type: KClass<*>, val label: Int, val 
 private val tabs = listOf(
     Tab(FeedRoute, FeedRoute::class, R.string.nav_for_you, Icons.Outlined.LocalFireDepartment, Icons.Filled.LocalFireDepartment),
     Tab(ExploreRoute, ExploreRoute::class, R.string.nav_explore, Icons.Outlined.Explore, Icons.Filled.Explore),
-    Tab(RecipeEditorRoute(), RecipeEditorRoute::class, R.string.nav_new_recipe, Icons.Outlined.AddCircleOutline, Icons.Filled.AddCircle),
+    Tab(FollowingRoute, FollowingRoute::class, R.string.nav_following, Icons.Outlined.People, Icons.Filled.People),
+    Tab(RecipeEditorRoute(), RecipeEditorRoute::class, R.string.nav_create, Icons.Outlined.AddCircleOutline, Icons.Filled.AddCircle),
     Tab(ProfileRoute, ProfileRoute::class, R.string.nav_profile, Icons.Outlined.Person, Icons.Filled.Person),
 )
 
@@ -126,7 +135,8 @@ fun SizzleNavHost(pendingLink: Any?, onLinkHandled: () -> Unit) {
     }
 
     // The bottom bar belongs to the main sections; detail and form screens use the whole height.
-    val showBar = destination == null || listOf(FeedRoute::class, ExploreRoute::class, ProfileRoute::class).any { destination.hasRoute(it) }
+    val showBar = destination == null ||
+        listOf(FeedRoute::class, ExploreRoute::class, FollowingRoute::class, ProfileRoute::class).any { destination.hasRoute(it) }
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbar) },
@@ -143,11 +153,12 @@ fun SizzleNavHost(pendingLink: Any?, onLinkHandled: () -> Unit) {
                             onClick = {
                                 when (tab.type) {
                                     RecipeEditorRoute::class -> navigator.newRecipe()
+                                    FollowingRoute::class -> if (session == null) navigator.login() else navigator.tab(tab.route)
                                     else -> navigator.tab(tab.route)
                                 }
                             },
                             icon = { Icon(if (selected) tab.selectedIcon else tab.icon, null) },
-                            label = { Text(stringResource(tab.label)) },
+                            label = { Text(stringResource(tab.label), maxLines = 1, softWrap = false) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Sizzle.colors.accent,
                                 selectedTextColor = Sizzle.colors.accent,
@@ -170,6 +181,13 @@ fun SizzleNavHost(pendingLink: Any?, onLinkHandled: () -> Unit) {
             ) {
                 composable<FeedRoute> { FeedScreen(navigator) }
                 composable<ExploreRoute> { ExploreScreen(navigator) }
+                composable<FollowingRoute> {
+                    if (session == null) {
+                        LaunchedEffect(Unit) { navigator.tab(FeedRoute); navigator.login() }
+                    } else {
+                        FollowingScreen(navigator)
+                    }
+                }
                 composable<ProfileRoute> { ProfileScreen(navigator) }
                 composable<RecipeRoute> { RecipeScreen(it.toRoute<RecipeRoute>().id, navigator) }
                 composable<RecipeEditorRoute> { entry ->

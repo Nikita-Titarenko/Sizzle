@@ -9,6 +9,7 @@
     </a>
     <a routerLink="/explore" routerLinkActive="active">{{ 'nav.explore' | t }}</a>
     @if (auth.isLoggedIn()) {
+      <a routerLink="/following" routerLinkActive="active">{{ 'nav.following' | t }}</a>
       <a routerLink="/recipes/new" routerLinkActive="active">{{ 'nav.newRecipe' | t }}</a>
       <a routerLink="/profile" routerLinkActive="active">{{ 'nav.profile' | t }}</a>
       <button class="link" (click)="logout()">{{ 'nav.logOut' | t }}</button>

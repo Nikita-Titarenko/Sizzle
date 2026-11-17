@@ -37,6 +37,20 @@ export class RecipesApi {
     });
   }
 
+  /** The signed-in user's unpublished drafts, newest first. */
+  getDrafts(query: RecipeQuery) {
+    return this.http.get<PageResponse<Recipe>>(`${this.baseUrl}/mine/drafts`, {
+      params: toParams(query),
+    });
+  }
+
+  /** Recipes from cooks the signed-in user follows, newest first. */
+  getFollowing(pageIndex: number, pageSize: number) {
+    return this.http.get<PageResponse<FeedRecipe>>(`${this.baseUrl}/following`, {
+      params: new HttpParams().set('PageIndex', pageIndex).set('PageSize', pageSize),
+    });
+  }
+
   getById(id: string) {
     return this.http.get<RecipeDetails>(`${this.baseUrl}/${id}`);
   }
@@ -82,7 +96,9 @@ function toParams(query: RecipeQuery): HttpParams {
     params = params.set('UserId', query.userId);
   }
   query.categoryIds?.forEach((id) => (params = params.append('CategoryIds', id)));
-  query.ingredientIds?.forEach((id) => (params = params.append('IngredientIds', id)));
+  query.ingredientIds?.forEach(
+    (id, i) => (params = params.set(`Ingredients[${i}].IngredientId`, id)),
+  );
   return params;
 }
 
@@ -93,8 +109,10 @@ function toFormData(value: RecipeFormValue): FormData {
   form.append('Description', value.description);
   form.append('CookingTimeMinutes', String(value.cookingTimeMinutes));
   form.append('CategoryId', value.categoryId);
+  form.append('IsDraft', String(value.isDraft));
   if (value.file) {
     form.append('File', value.file);
+    form.append('IsAIGeneratedImage', String(value.isAIGeneratedImage));
   }
   value.steps.forEach((step, i) => {
     form.append(`Steps[${i}].Name`, step.name);

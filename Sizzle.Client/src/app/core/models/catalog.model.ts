@@ -8,6 +8,8 @@ export interface Ingredient {
   id: string;
   name: string;
   unit: string;
+  /** Per 100 g / 100 ml, or per piece. */
+  calories?: number;
   children: Ingredient[];
 }
 
@@ -17,6 +19,8 @@ export interface IngredientChoice {
   name: string;
   unit: string;
   parentName: string | null;
+  parentId?: string | null;
+  calories?: number;
 }
 
 export type IngredientUnit = 'Grams' | 'Milliliters' | 'Pieces';

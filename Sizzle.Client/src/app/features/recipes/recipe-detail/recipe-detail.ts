@@ -1,10 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
 import { UsersApi } from '../../../core/api/users.api';
 import { AuthService } from '../../../core/auth/auth.service';
-import { RecipeDetails } from '../../../core/models';
+import { RecipeDetails, RecipeIngredient } from '../../../core/models';
 import { isVideoUrl } from '../../../core/utils/media';
 import { CommentSection } from '../../../shared/components/comment-section/comment-section';
 import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
@@ -34,6 +35,7 @@ import { StatusView } from '../../../shared/components/status-view/status-view';
 export class RecipeDetail {
   private readonly i18n = inject(I18n);
   private readonly recipesApi = inject(RecipesApi);
+  private readonly catalogApi = inject(CatalogApi);
   private readonly usersApi = inject(UsersApi);
   private readonly router = inject(Router);
   protected readonly auth = inject(AuthService);
@@ -42,6 +44,14 @@ export class RecipeDetail {
   readonly recipe = signal<RecipeDetails | null>(null);
   readonly error = signal('');
   readonly notice = signal('');
+
+  /** Quantities after the reader scaled the recipe to what they have; null when not scaled. */
+  readonly scaled = signal<Record<string, number> | null>(null);
+  /** How much the scaled recipe is of the original, for the calories. */
+  readonly scale = signal(1);
+  readonly scaling = signal(false);
+
+  readonly calories = computed(() => Math.round((this.recipe()?.calories ?? 0) * this.scale()));
 
   readonly isOwner = computed(
     () => !!this.recipe() && this.recipe()!.userId === this.auth.userId(),
@@ -52,6 +62,7 @@ export class RecipeDetail {
       const id = this.id();
       this.recipe.set(null);
       this.error.set('');
+      this.resetScale();
       this.recipesApi.getById(id).subscribe({
         next: (recipe) => {
           this.recipe.set(recipe);
@@ -62,6 +73,49 @@ export class RecipeDetail {
         error: (err) => this.error.set(this.i18n.error(err)),
       });
     });
+  }
+
+  quantityOf(ingredient: RecipeIngredient): number {
+    return this.scaled()?.[ingredient.id] ?? ingredient.quantity;
+  }
+
+  /**
+   * "I only have 150 g of cheese": the API scales every other ingredient to match.
+   * Scaling always starts from the original recipe, so repeated changes do not drift.
+   */
+  setQuantity(ingredient: RecipeIngredient, field: HTMLInputElement): void {
+    const r = this.recipe();
+    const quantity = Math.round(field.valueAsNumber);
+    if (!r || !(quantity >= 1)) {
+      field.value = String(this.quantityOf(ingredient));
+      return;
+    }
+    if (quantity === this.quantityOf(ingredient)) {
+      return;
+    }
+    this.scaling.set(true);
+    this.catalogApi
+      .getProportions(
+        r.ingredients.map(({ id, quantity }) => ({ id, quantity })),
+        { id: ingredient.id, quantity },
+      )
+      .subscribe({
+        next: (list) => {
+          this.scaling.set(false);
+          this.scaled.set(Object.fromEntries(list.map((p) => [p.id, p.quantity])));
+          this.scale.set(quantity / ingredient.quantity);
+        },
+        error: (err) => {
+          this.scaling.set(false);
+          field.value = String(this.quantityOf(ingredient));
+          this.error.set(this.i18n.error(err));
+        },
+      });
+  }
+
+  resetScale(): void {
+    this.scaled.set(null);
+    this.scale.set(1);
   }
 
   toggleLike(): void {

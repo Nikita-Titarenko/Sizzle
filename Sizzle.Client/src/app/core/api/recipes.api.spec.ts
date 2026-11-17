@@ -26,7 +26,7 @@ describe('RecipesApi', () => {
     const req = http.expectOne((r) => r.url === '/api/recipes');
     expect(req.request.params.get('Search')).toBe('pasta');
     expect(req.request.params.getAll('CategoryIds')).toEqual(['c1', 'c2']);
-    expect(req.request.params.getAll('IngredientIds')).toEqual(['i1']);
+    expect(req.request.params.get('Ingredients[0].IngredientId')).toBe('i1');
     expect(req.request.params.get('PageIndex')).toBe('1');
     req.flush({ data: [], totalSize: 0, pageIndex: 1, pageSize: 12 });
   });
@@ -36,6 +36,8 @@ describe('RecipesApi', () => {
   it('builds multipart fields in the shape the API binds', () => {
     const photo = (name: string) => new File(['x'], name, { type: 'image/jpeg' });
     const value: RecipeFormValue = {
+      isDraft: true,
+      isAIGeneratedImage: true,
       name: 'Borscht',
       description: 'Beet soup',
       cookingTimeMinutes: 90,
@@ -54,6 +56,8 @@ describe('RecipesApi', () => {
     expect(form.get('CookingTimeMinutes')).toBe('90');
     expect(form.get('CategoryId')).toBe('cat');
     expect((form.get('File') as File).name).toBe('cover.jpg');
+    expect(form.get('IsDraft')).toBe('true');
+    expect(form.get('IsAIGeneratedImage')).toBe('true');
     expect(form.get('Steps[0].Name')).toBe('Boil');
     expect(form.getAll('Steps[0].Files').map((f) => (f as File).name)).toEqual(['a.jpg', 'b.jpg']);
     expect(form.get('Ingredients[0].Id')).toBe('beet');
@@ -66,6 +70,8 @@ describe('RecipesApi', () => {
   it('omits optional fields instead of sending empty values', () => {
     api
       .update('r1', {
+        isDraft: false,
+        isAIGeneratedImage: true,
         name: 'n',
         description: 'd',
         cookingTimeMinutes: 5,
@@ -80,6 +86,9 @@ describe('RecipesApi', () => {
     const req = http.expectOne({ method: 'PUT', url: '/api/recipes/r1' });
     const form = req.request.body as FormData;
     expect(form.has('File')).toBe(false);
+    // The flag describes the uploaded cover, so it is only sent with one.
+    expect(form.has('IsAIGeneratedImage')).toBe(false);
+    expect(form.get('IsDraft')).toBe('false');
     expect(form.has('NewIngredients[0].ParentId')).toBe(false);
     req.flush({ id: 'r1' });
   });

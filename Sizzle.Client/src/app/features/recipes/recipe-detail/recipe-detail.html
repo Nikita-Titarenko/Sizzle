@@ -5,10 +5,26 @@
 }
 @if (recipe(); as r) {
   <article class="detail">
-    @if (isVideo(r.fileUrl)) {
-      <video class="cover" [src]="r.fileUrl" controls playsinline></video>
-    } @else if (r.fileUrl) {
-      <img class="cover" [src]="r.fileUrl" [alt]="r.name" />
+    @if (r.isDraft) {
+      <p class="draft-banner">
+        <app-icon name="file-text" />
+        {{ 'recipe.draftNotice' | t }}
+      </p>
+    }
+    @if (r.fileUrl) {
+      <div class="cover-wrap">
+        @if (isVideo(r.fileUrl)) {
+          <video class="cover" [src]="r.fileUrl" controls playsinline></video>
+        } @else {
+          <img class="cover" [src]="r.fileUrl" [alt]="r.name" />
+        }
+        @if (r.isAIGeneratedImage) {
+          <span class="ai-badge" [title]="'recipe.aiImageHint' | t">
+            <app-icon name="sparkles" />
+            {{ 'recipe.aiImage' | t }}
+          </span>
+        }
+      </div>
     }
     <div class="row title">
       <h1>{{ r.name }}</h1>
@@ -58,6 +74,12 @@
         <app-icon name="clock" />
         {{ 'common.minutes' | t: { count: r.cookingTimeMinutes } }}
       </span>
+      @if (calories()) {
+        <span class="meta-item" [title]="'recipe.caloriesHint' | t">
+          <app-icon name="flame" />
+          {{ 'common.kcal' | t: { count: calories() } }}
+        </span>
+      }
       <span class="meta-item">
         <app-icon name="eye" />
         {{ r.viewCount }}
@@ -75,12 +97,39 @@
 
     <div class="columns">
       <section class="card">
-        <h2>{{ 'recipe.ingredients' | t }}</h2>
-        <ul class="ingredients">
+        <div class="ingredients-head">
+          <h2>{{ 'recipe.ingredients' | t }}</h2>
+          @if (scaled()) {
+            <button type="button" class="btn small ghost" (click)="resetScale()">
+              <app-icon name="rotate-ccw" />
+              {{ 'recipe.resetScale' | t }}
+            </button>
+          }
+        </div>
+        @if (r.ingredients.length) {
+          <p class="scale-hint muted">
+            <app-icon name="scale" />
+            {{ (scaled() ? 'recipe.scaledHint' : 'recipe.scaleHint') | t }}
+          </p>
+        }
+        <ul class="ingredients" [class.busy]="scaling()">
           @for (i of r.ingredients; track i.id) {
-            <li>
+            <li [class.scaled]="scaled() && quantityOf(i) !== i.quantity">
               <span>{{ i.name }}</span>
-              <span class="muted">{{ i.quantity }} {{ i.unit | unitLabel }}</span>
+              <span class="amount">
+                <input
+                  #qty
+                  type="number"
+                  min="1"
+                  inputmode="numeric"
+                  [value]="quantityOf(i)"
+                  [disabled]="scaling()"
+                  [attr.aria-label]="'editor.quantityOf' | t: { name: i.name }"
+                  (change)="setQuantity(i, qty)"
+                  (keydown.enter)="qty.blur()"
+                />
+                <span class="muted">{{ i.unit | unitLabel }}</span>
+              </span>
             </li>
           }
         </ul>

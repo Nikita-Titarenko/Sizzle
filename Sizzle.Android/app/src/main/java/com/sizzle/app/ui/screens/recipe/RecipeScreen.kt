@@ -85,6 +85,32 @@ import com.sizzle.app.ui.theme.Sizzle
 import com.sizzle.app.ui.unitLabel
 import com.sizzle.app.ui.withLike
 import kotlinx.coroutines.launch
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Description
+import androidx.compose.material.icons.outlined.LocalFireDepartment
+import androidx.compose.material.icons.outlined.Replay
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.KeyboardType
+import com.sizzle.app.data.model.IngredientProportion
+import com.sizzle.app.data.model.ProportionsRequest
+import com.sizzle.app.data.model.RecipeIngredient
+import com.sizzle.app.ui.components.FieldShape
+import com.sizzle.app.ui.components.sizzleFieldColors
+import com.sizzle.app.ui.kcal
+import kotlin.math.roundToInt
 
 class RecipeViewModel(private val container: AppContainer, private val id: String) : ViewModel() {
     var recipe by mutableStateOf<RecipeDetails?>(null)
@@ -97,6 +123,49 @@ class RecipeViewModel(private val container: AppContainer, private val id: Strin
         private set
 
     private var viewRegistered = false
+
+    /** Quantities after the reader scaled the recipe to what they have; null when not scaled. */
+    var scaled by mutableStateOf<Map<String, Int>?>(null)
+        private set
+    /** How much the scaled recipe is of the original, for the calories. */
+    private var scale by mutableStateOf(1.0)
+    var scaling by mutableStateOf(false)
+        private set
+
+    val calories: Int get() = ((recipe?.calories ?: 0.0) * scale).roundToInt()
+
+    fun quantityOf(ingredient: RecipeIngredient): Int = scaled?.get(ingredient.id) ?: ingredient.quantity
+
+    /**
+     * "I only have 150 g of cheese": the API scales every other ingredient to match.
+     * Scaling always starts from the original recipe, so repeated changes do not drift.
+     */
+    fun setQuantity(ingredient: RecipeIngredient, quantity: Int) {
+        val current = recipe ?: return
+        if (quantity < 1 || quantity == quantityOf(ingredient) || scaling) return
+        scaling = true
+        viewModelScope.launch {
+            val result = runApi {
+                container.api.getProportions(
+                    ProportionsRequest(
+                        initial = current.ingredients.map { IngredientProportion(it.id, it.quantity) },
+                        changedIngredient = IngredientProportion(ingredient.id, quantity),
+                    ),
+                )
+            }
+            result.onSuccess { list ->
+                scaled = list.associate { it.id to it.quantity }
+                scale = quantity.toDouble() / ingredient.quantity
+            }
+            actionFailure = result.failure
+            scaling = false
+        }
+    }
+
+    fun resetScale() {
+        scaled = null
+        scale = 1.0
+    }
 
     init {
         load()
@@ -173,6 +242,7 @@ class RecipeViewModel(private val container: AppContainer, private val id: Strin
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun RecipeScreen(id: String, navigator: Navigator) {
     val vm = appViewModel(key = "recipe-$id") { RecipeViewModel(it, id) }
@@ -183,6 +253,10 @@ fun RecipeScreen(id: String, navigator: Navigator) {
     val recipe = vm.recipe
     val isOwner = recipe != null && recipe.userId == userId
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
+    var scaling by remember { mutableStateOf<RecipeIngredient?>(null) }
+    scaling?.let { ingredient ->
+        ScaleDialog(ingredient, vm.quantityOf(ingredient), onDismiss = { scaling = null }) { vm.setQuantity(ingredient, it) }
+    }
 
     Scaffold(
         containerColor = Sizzle.colors.background,
@@ -230,9 +304,34 @@ fun RecipeScreen(id: String, navigator: Navigator) {
                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 32.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp),
             ) {
+                if (recipe.isDraft) {
+                    item(key = "draft") {
+                        Row(
+                            Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Sizzle.colors.surface3).padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.Description, null, tint = Sizzle.colors.muted, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.recipe_draft_notice), color = Sizzle.colors.muted, fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(start = 8.dp))
+                        }
+                    }
+                }
                 recipe.fileUrl?.let { url ->
                     item(key = "cover") {
-                        MediaView(url, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)), recipe.name)
+                        Box {
+                            MediaView(url, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)), recipe.name)
+                            if (recipe.isAIGeneratedImage) {
+                                Row(
+                                    Modifier.align(Alignment.BottomStart).padding(12.dp).clip(CircleShape)
+                                        .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(Icons.Outlined.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                    Text(stringResource(R.string.recipe_ai_image), color = Color.White, fontWeight = FontWeight.SemiBold,
+                                        style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 5.dp))
+                                }
+                            }
+                        }
                     }
                 }
                 item(key = "title") {
@@ -271,8 +370,9 @@ fun RecipeScreen(id: String, navigator: Navigator) {
                                 FollowButton(recipe.isFollowed, vm::toggleFollow)
                             }
                         }
-                        Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             MetaItem(Icons.Outlined.Schedule, stringResource(R.string.common_minutes, recipe.cookingTimeMinutes))
+                            if (vm.calories > 0) MetaItem(Icons.Outlined.LocalFireDepartment, kcal(vm.calories))
                             MetaItem(Icons.Outlined.RemoveRedEye, recipe.viewCount.toString())
                             MetaItem(Icons.Outlined.FavoriteBorder, recipe.likeCount.toString())
                             MetaItem(Icons.Outlined.CalendarToday, formatDate(recipe.creationDate))
@@ -284,12 +384,37 @@ fun RecipeScreen(id: String, navigator: Navigator) {
                 }
                 item(key = "ingredients") {
                     SectionCard {
-                        Text(stringResource(R.string.recipe_ingredients), style = MaterialTheme.typography.titleLarge)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.recipe_ingredients), style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                            if (vm.scaled != null) {
+                                TextButton(onClick = vm::resetScale) {
+                                    Icon(Icons.Outlined.Replay, null, Modifier.size(16.dp), tint = Sizzle.colors.accentText)
+                                    Text(stringResource(R.string.recipe_reset_scale), color = Sizzle.colors.accentText,
+                                        modifier = Modifier.padding(start = 4.dp))
+                                }
+                            }
+                        }
+                        if (recipe.ingredients.isNotEmpty()) {
+                            Text(
+                                stringResource(if (vm.scaled != null) R.string.recipe_scaled_hint else R.string.recipe_scale_hint),
+                                color = Sizzle.colors.muted, style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         recipe.ingredients.forEachIndexed { index, ingredient ->
                             if (index > 0) HorizontalDivider(color = Sizzle.colors.border)
+                            val quantity = vm.quantityOf(ingredient)
+                            val scaled = quantity != ingredient.quantity
                             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                 Text(ingredient.name, modifier = Modifier.weight(1f))
-                                Text("${ingredient.quantity} ${unitLabel(ingredient.unit)}", color = Sizzle.colors.muted)
+                                Text(
+                                    "$quantity ${unitLabel(ingredient.unit)}",
+                                    color = if (scaled) Sizzle.colors.accentText else Sizzle.colors.muted,
+                                    fontWeight = if (scaled) FontWeight.Bold else FontWeight.Normal,
+                                    modifier = Modifier.clip(RoundedCornerShape(8.dp))
+                                        .border(1.dp, Sizzle.colors.border, RoundedCornerShape(8.dp))
+                                        .clickable(enabled = !vm.scaling) { scaling = ingredient }
+                                        .padding(horizontal = 10.dp, vertical = 6.dp),
+                                )
                             }
                         }
                     }
@@ -341,4 +466,43 @@ fun RecipeScreen(id: String, navigator: Navigator) {
             onDismiss = { confirmDelete = false },
         )
     }
+}
+
+/** Asks how much of an ingredient the reader has; the recipe is scaled to it. */
+@Composable
+private fun ScaleDialog(ingredient: RecipeIngredient, current: Int, onDismiss: () -> Unit, onScale: (Int) -> Unit) {
+    // Opens focused with the amount selected, so typing replaces it.
+    var field by remember { mutableStateOf(TextFieldValue(current.toString(), TextRange(0, current.toString().length))) }
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { focus.requestFocus() }
+    val quantity = field.text.toIntOrNull()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipe_scale_title, ingredient.name)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.recipe_scale_hint), color = Sizzle.colors.muted, style = MaterialTheme.typography.bodySmall)
+                OutlinedTextField(
+                    value = field,
+                    onValueChange = { value ->
+                        val digits = value.text.filter(Char::isDigit).take(6)
+                        field = if (digits == value.text) value else TextFieldValue(digits, TextRange(digits.length))
+                    },
+                    modifier = Modifier.focusRequester(focus),
+                    singleLine = true,
+                    suffix = { Text(unitLabel(ingredient.unit)) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = FieldShape,
+                    colors = sizzleFieldColors(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onDismiss(); quantity?.let(onScale) }, enabled = quantity != null && quantity > 0) {
+                Text(stringResource(R.string.recipe_scale_apply), color = Sizzle.colors.accentText)
+            }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
+        containerColor = Sizzle.colors.surface,
+    )
 }
