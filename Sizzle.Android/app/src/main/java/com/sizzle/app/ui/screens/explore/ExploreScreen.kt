@@ -47,6 +47,7 @@ import androidx.lifecycle.viewModelScope
 import com.sizzle.app.AppContainer
 import com.sizzle.app.R
 import com.sizzle.app.data.RecipeEvent
+import com.sizzle.app.data.api.ingredientFilter
 import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.Category
 import com.sizzle.app.data.model.IngredientChoice
@@ -83,7 +84,7 @@ class ExploreViewModel(private val container: AppContainer) : ViewModel() {
             pageSize = pageSize,
             search = search.trim().ifEmpty { null },
             categoryIds = selected.toList(),
-            ingredientIds = ingredients.map { it.id },
+            ingredients = ingredientFilter(ingredients.map { it.id }),
         )
     }
 

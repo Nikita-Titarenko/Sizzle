@@ -9,6 +9,7 @@ import com.sizzle.app.AppContainer
 import com.sizzle.app.data.RecipeEvent
 import com.sizzle.app.data.api.ApiFailure
 import com.sizzle.app.data.api.failure
+import com.sizzle.app.data.api.ingredientFilter
 import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.Category
 import com.sizzle.app.ui.withLike
@@ -171,7 +172,7 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
                     pageIndex = pageIndex,
                     pageSize = PAGE_SIZE,
                     categoryIds = listOfNotNull(category),
-                    ingredientIds = ingredients.map { it.id },
+                    ingredients = ingredientFilter(ingredients.map { it.id }),
                 )
             }
             result.onSuccess { page ->

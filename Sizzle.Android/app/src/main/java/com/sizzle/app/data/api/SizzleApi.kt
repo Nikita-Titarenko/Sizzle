@@ -33,6 +33,7 @@ import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.QueryMap
 
 /** The Sizzle REST API (Sizzle.WebApi). Failed calls throw retrofit2.HttpException or IOException. */
 interface SizzleApi {
@@ -58,7 +59,8 @@ interface SizzleApi {
         @Query("Search") search: String? = null,
         @Query("UserId") userId: String? = null,
         @Query("CategoryIds") categoryIds: List<String> = emptyList(),
-        @Query("IngredientIds") ingredientIds: List<String> = emptyList(),
+        /** Built with [ingredientFilter]. */
+        @QueryMap ingredients: Map<String, String> = emptyMap(),
     ): PageResponse<Recipe>
 
     /** The feed: recommendations for the signed-in user, or the public list for guests. */
@@ -67,7 +69,8 @@ interface SizzleApi {
         @Query("PageIndex") pageIndex: Int,
         @Query("PageSize") pageSize: Int,
         @Query("CategoryIds") categoryIds: List<String> = emptyList(),
-        @Query("IngredientIds") ingredientIds: List<String> = emptyList(),
+        /** Built with [ingredientFilter]. */
+        @QueryMap ingredients: Map<String, String> = emptyMap(),
     ): PageResponse<FeedRecipe>
 
     @GET("api/recipes/saved")
@@ -171,3 +174,7 @@ interface SizzleApi {
     @HTTP(method = "DELETE", path = "api/users/devices", hasBody = true)
     suspend fun unregisterDevice(@Body body: DeviceTokenRequest)
 }
+
+/** Ingredient filter in the shape ASP.NET binds: Ingredients[0].IngredientId=… */
+fun ingredientFilter(ids: List<String>): Map<String, String> =
+    ids.mapIndexed { i, id -> "Ingredients[$i].IngredientId" to id }.toMap()
