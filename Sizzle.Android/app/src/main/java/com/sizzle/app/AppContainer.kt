@@ -3,9 +3,11 @@ package com.sizzle.app
 import android.content.Context
 import coil.ImageLoader
 import coil.decode.VideoFrameDecoder
+import com.sizzle.app.data.IngredientCatalog
 import com.sizzle.app.data.RecipeEvents
 import com.sizzle.app.data.SessionStore
 import com.sizzle.app.data.SettingsStore
+import com.sizzle.app.data.api.AiStream
 import com.sizzle.app.data.api.ApiClient
 import com.sizzle.app.data.api.SizzleApi
 import com.sizzle.app.push.PushManager
@@ -26,6 +28,11 @@ class AppContainer(context: Context) {
 
     private val okHttp = ApiClient.okHttp(session)
     val api: SizzleApi = ApiClient.api(okHttp)
+
+    /** Streams AI-generated recipes; shares the HTTP client (auth, language) with [api]. */
+    val ai = AiStream(okHttp)
+
+    val catalog = IngredientCatalog(api)
 
     val push = PushManager(context, api, session, scope)
 

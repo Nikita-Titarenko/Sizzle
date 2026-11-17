@@ -28,6 +28,8 @@ data class Ingredient(
     val id: String,
     val name: String,
     val unit: String,
+    /** Per 100 g / 100 ml, or per piece. */
+    val calories: Int = 0,
     val children: List<Ingredient> = emptyList(),
 )
 
@@ -37,6 +39,8 @@ data class IngredientChoice(
     val name: String,
     val unit: String,
     val parentName: String?,
+    val parentId: String? = null,
+    val calories: Int = 0,
 )
 
 /** Values of the API's IngredientUnit enum, sent by name when creating a new ingredient. */
@@ -47,6 +51,9 @@ enum class IngredientUnit(val short: String) {
 
     companion object {
         fun fromShort(short: String): IngredientUnit? = entries.firstOrNull { it.short == short }
+
+        /** Accepts both forms the API uses: "g" on catalog items, "Grams" from the AI. */
+        fun parse(value: String): IngredientUnit? = fromShort(value) ?: entries.firstOrNull { it.name == value }
     }
 }
 
@@ -65,6 +72,10 @@ data class Recipe(
     val viewCount: Int = 0,
     val likeCount: Int = 0,
     val creationDate: String = "",
+    val isDraft: Boolean = false,
+    val isAIGeneratedImage: Boolean = false,
+    /** Sum of the ingredients' calories; 0 when the catalog has none for them. */
+    val calories: Double = 0.0,
 )
 
 /** A recipe in the personalized feed, with the signed-in user's like, follow and save state. */
@@ -83,6 +94,10 @@ data class FeedRecipe(
     val viewCount: Int = 0,
     val likeCount: Int = 0,
     val creationDate: String = "",
+    val isDraft: Boolean = false,
+    val isAIGeneratedImage: Boolean = false,
+    /** Sum of the ingredients' calories; 0 when the catalog has none for them. */
+    val calories: Double = 0.0,
     val isLiked: Boolean = false,
     val isSaved: Boolean = false,
 )
@@ -118,6 +133,10 @@ data class RecipeDetails(
     val viewCount: Int = 0,
     val likeCount: Int = 0,
     val creationDate: String = "",
+    val isDraft: Boolean = false,
+    val isAIGeneratedImage: Boolean = false,
+    /** Sum of the ingredients' calories; 0 when the catalog has none for them. */
+    val calories: Double = 0.0,
     val isLiked: Boolean = false,
     val isSaved: Boolean = false,
     val steps: List<RecipeStep> = emptyList(),
@@ -132,6 +151,76 @@ data class RecipeSave(val recipeId: String, val isSaved: Boolean)
 
 @Serializable
 data class RecipeShare(val recipeId: String, val isShared: Boolean = true)
+
+@Serializable
+data class SubscriptionStatus(val remainingSeconds: Long = 0)
+
+@Serializable
+data class IngredientProportion(val id: String, val quantity: Int)
+
+@Serializable
+data class ProportionsRequest(val initial: List<IngredientProportion>, val changedIngredient: IngredientProportion)
+
+/**
+ * A recipe as the AI reads and writes it (recipes/generate, generate-from-video, generate-image
+ * and the reviewer's correctedRecipe). Ingredients without an id are new to the catalog.
+ */
+@Serializable
+data class GeneratedRecipe(
+    val name: String = "",
+    val description: String = "",
+    val cookingTimeMinutes: Int = 0,
+    val categoryId: String = EMPTY_ID,
+    val steps: List<GeneratedStep> = emptyList(),
+    val ingredients: List<GeneratedIngredient> = emptyList(),
+) {
+    companion object {
+        const val EMPTY_ID = "00000000-0000-0000-0000-000000000000"
+    }
+}
+
+@Serializable
+data class GeneratedStep(val name: String = "", val description: String = "")
+
+@Serializable
+data class GeneratedIngredient(
+    val id: String? = null,
+    val name: String = "",
+    val parentId: String? = null,
+    /** API enum name: Grams, Milliliters or Pieces. */
+    val unit: String = "Grams",
+    val quantity: Int = 0,
+)
+
+@Serializable
+data class GenerateRecipeRequest(
+    val message: String,
+    /** Null (left out of the JSON) for an empty form: the AI then writes a new recipe. */
+    val recipe: GeneratedRecipe? = null,
+)
+
+/** One server-sent event of a generation stream: chunk (raw JSON text), completed or error. */
+@Serializable
+data class GenerationEvent(
+    val type: String = "",
+    val text: String? = null,
+    val result: GenerationResult? = null,
+    val errors: List<GenerationError>? = null,
+)
+
+@Serializable
+data class GenerationResult(val recipe: GeneratedRecipe, val message: String = "")
+
+/** Stream errors carry the key as a name ("Forbidden"), unlike [ApiError]. */
+@Serializable
+data class GenerationError(val message: String = "")
+
+/** 400 from create/update when the AI reviewer fixed the recipe instead of rejecting it. */
+@Serializable
+data class ReviewErrorBody(
+    val errors: List<ApiError> = emptyList(),
+    val correctedRecipe: GeneratedRecipe? = null,
+)
 
 @Serializable
 data class Comment(

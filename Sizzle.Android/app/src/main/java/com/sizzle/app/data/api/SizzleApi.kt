@@ -7,11 +7,14 @@ import com.sizzle.app.data.model.ConfirmEmailResult
 import com.sizzle.app.data.model.CreateCommentRequest
 import com.sizzle.app.data.model.DeviceTokenRequest
 import com.sizzle.app.data.model.FeedRecipe
+import com.sizzle.app.data.model.GeneratedRecipe
 import com.sizzle.app.data.model.GoogleTokenRequest
 import com.sizzle.app.data.model.Ingredient
+import com.sizzle.app.data.model.IngredientProportion
 import com.sizzle.app.data.model.LoginRequest
 import com.sizzle.app.data.model.LoginResult
 import com.sizzle.app.data.model.PageResponse
+import com.sizzle.app.data.model.ProportionsRequest
 import com.sizzle.app.data.model.Recipe
 import com.sizzle.app.data.model.RecipeDetails
 import com.sizzle.app.data.model.RecipeLike
@@ -19,10 +22,12 @@ import com.sizzle.app.data.model.RecipeSave
 import com.sizzle.app.data.model.RecipeShare
 import com.sizzle.app.data.model.RegisterRequest
 import com.sizzle.app.data.model.RegisterResult
+import com.sizzle.app.data.model.SubscriptionStatus
 import com.sizzle.app.data.model.UpdateCommentRequest
 import com.sizzle.app.data.model.User
 import com.sizzle.app.data.model.UserIdRequest
 import okhttp3.MultipartBody
+import okhttp3.ResponseBody
 import retrofit2.http.Body
 import retrofit2.http.DELETE
 import retrofit2.http.GET
@@ -49,6 +54,10 @@ interface SizzleApi {
         @Query("PageIndex") pageIndex: Int = 0,
         @Query("PageSize") pageSize: Int = 20,
     ): List<Ingredient>
+
+    /** Scales the other ingredients after one quantity changed; same order as `initial`. */
+    @POST("api/ingredients/proportions")
+    suspend fun getProportions(@Body body: ProportionsRequest): List<IngredientProportion>
 
     // Recipes
 
@@ -84,6 +93,24 @@ interface SizzleApi {
         @Query("PageIndex") pageIndex: Int,
         @Query("PageSize") pageSize: Int,
     ): PageResponse<Recipe>
+
+    /** The signed-in user's unpublished drafts. */
+    @GET("api/recipes/mine/drafts")
+    suspend fun getDraftRecipes(
+        @Query("PageIndex") pageIndex: Int,
+        @Query("PageSize") pageSize: Int,
+    ): PageResponse<Recipe>
+
+    /** Recipes from cooks the signed-in user follows, newest first. */
+    @GET("api/recipes/following")
+    suspend fun getFollowingRecipes(
+        @Query("PageIndex") pageIndex: Int,
+        @Query("PageSize") pageSize: Int,
+    ): PageResponse<FeedRecipe>
+
+    /** Draws a cover for the recipe; PNG or JPEG bytes. Needs an active subscription (403). */
+    @POST("api/recipes/generate-image")
+    suspend fun generateRecipeImage(@Body recipe: GeneratedRecipe): ResponseBody
 
     @GET("api/recipes/{id}")
     suspend fun getRecipe(@Path("id") id: String): RecipeDetails
@@ -165,6 +192,11 @@ interface SizzleApi {
 
     @GET("api/users/following")
     suspend fun getFollowing(): List<User>
+
+    // Subscriptions
+
+    @GET("api/subscriptions")
+    suspend fun getSubscription(): SubscriptionStatus
 
     // Push notifications
 
