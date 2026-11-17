@@ -35,11 +35,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.sizzle.app.R
+import com.sizzle.app.data.IngredientCatalog
 import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.Ingredient
 import com.sizzle.app.data.model.IngredientChoice
 import com.sizzle.app.ui.LocalAppContainer
 import com.sizzle.app.ui.theme.Sizzle
+import com.sizzle.app.ui.kcalRate
 import com.sizzle.app.ui.unitLabel
 import kotlinx.coroutines.delay
 
@@ -123,7 +125,11 @@ fun IngredientPicker(
                                     modifier = Modifier.weight(1f),
                                 )
                                 Text(
-                                    if (added) stringResource(R.string.ingredients_added) else unitLabel(choice.unit),
+                                    when {
+                                        added -> stringResource(R.string.ingredients_added)
+                                        choice.calories > 0 -> "${unitLabel(choice.unit)} · ${kcalRate(choice.unit, choice.calories)}"
+                                        else -> unitLabel(choice.unit)
+                                    },
                                     style = MaterialTheme.typography.bodySmall,
                                     color = Sizzle.colors.muted,
                                 )
@@ -141,7 +147,4 @@ private fun Hint(text: String) {
     Text(text, color = Sizzle.colors.muted, modifier = Modifier.padding(14.dp))
 }
 
-private fun flatten(ingredients: List<Ingredient>): List<IngredientChoice> = ingredients.flatMap { parent ->
-    listOf(IngredientChoice(parent.id, parent.name, parent.unit, null)) +
-        parent.children.map { IngredientChoice(it.id, it.name, it.unit, parent.name) }
-}
+private fun flatten(ingredients: List<Ingredient>): List<IngredientChoice> = IngredientCatalog.flatten(ingredients)
