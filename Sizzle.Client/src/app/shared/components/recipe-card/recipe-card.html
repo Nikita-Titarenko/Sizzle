@@ -16,6 +16,12 @@
     } @else {
       <div class="cover placeholder"><app-icon name="utensils" /></div>
     }
+    @if (recipe().isAIGeneratedImage) {
+      <span class="ai-badge" [title]="'recipe.aiImageHint' | t">
+        <app-icon name="sparkles" />
+        {{ 'recipe.aiImageShort' | t }}
+      </span>
+    }
   </a>
   <div class="body">
     <h3>

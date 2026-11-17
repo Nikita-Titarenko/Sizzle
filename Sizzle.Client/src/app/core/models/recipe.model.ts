@@ -58,6 +58,8 @@ export interface RecipeQuery {
   search?: string;
   categoryIds?: string[];
   ingredientIds?: string[];
+  /** Optional "I have at most this much" per ingredient id: only recipes that need no more match. */
+  ingredientQuantities?: Record<string, number | null>;
   userId?: string;
   pageIndex?: number;
   pageSize?: number;

@@ -12,14 +12,16 @@ import { RecipeGrid } from '../../../shared/components/recipe-grid/recipe-grid';
 import { Loader } from '../../../shared/components/loader/loader';
 import { StatusView } from '../../../shared/components/status-view/status-view';
 import { I18n } from '../../../core/i18n/i18n.service';
+import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
+import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
 
 const PAGE_SIZE = 12;
-import { TranslatePipe } from '../../../shared/pipes/translate.pipe';
 
 @Component({
   selector: 'app-explore',
   imports: [
     TranslatePipe,
+    UnitLabelPipe,
     FormsModule,
     RecipeGrid,
     Pager,
@@ -43,6 +45,7 @@ export class Explore {
   readonly search = signal('');
   readonly ingredients = signal<IngredientChoice[]>([]);
   readonly ingredientIds = computed(() => this.ingredients().map((i) => i.id));
+  readonly quantities = signal<Record<string, number | null>>({});
   readonly pageIndex = signal(0);
   readonly page = signal<PageResponse<Recipe> | null>(null);
   readonly error = signal('');
@@ -59,6 +62,7 @@ export class Explore {
               search: this.search(),
               categoryIds: [...this.selected()],
               ingredientIds: this.ingredientIds(),
+              ingredientQuantities: this.quantities(),
               pageIndex: this.pageIndex(),
               pageSize: PAGE_SIZE,
             })
@@ -106,6 +110,18 @@ export class Explore {
 
   removeIngredient(id: string): void {
     this.ingredients.update((list) => list.filter((i) => i.id !== id));
+    this.quantities.update(({ [id]: _, ...rest }) => rest);
+    this.pageIndex.set(0);
+    this.reload$.next();
+  }
+
+  /** Empty or zero means any amount. */
+  setQuantity(id: string, value: number | null): void {
+    const quantity = value && value > 0 ? value : null;
+    if ((this.quantities()[id] ?? null) === quantity) {
+      return;
+    }
+    this.quantities.update((map) => ({ ...map, [id]: quantity }));
     this.pageIndex.set(0);
     this.reload$.next();
   }

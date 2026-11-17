@@ -86,6 +86,16 @@
                   } @else {
                     <app-icon name="utensils" />
                   }
+                  @if (r.isAIGeneratedImage) {
+                    <span
+                      class="ai-mark"
+                      role="img"
+                      [title]="'recipe.aiImage' | t"
+                      [attr.aria-label]="'recipe.aiImage' | t"
+                    >
+                      <app-icon name="sparkles" />
+                    </span>
+                  }
                 </div>
               </a>
             </li>

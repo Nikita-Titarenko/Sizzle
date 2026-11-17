@@ -32,10 +32,20 @@ const VIEW_DELAY_MS = 2000;
 import { I18n } from '../../../core/i18n/i18n.service';
 import { Loader } from '../../../shared/components/loader/loader';
 import { StatusView } from '../../../shared/components/status-view/status-view';
+import { UnitLabelPipe } from '../../../shared/pipes/unit-label.pipe';
 
 @Component({
   selector: 'app-feed-page',
-  imports: [TranslatePipe, FeedItem, CommentsDrawer, Icon, IngredientPicker, Loader, StatusView],
+  imports: [
+    TranslatePipe,
+    UnitLabelPipe,
+    FeedItem,
+    CommentsDrawer,
+    Icon,
+    IngredientPicker,
+    Loader,
+    StatusView,
+  ],
   templateUrl: './feed-page.html',
   styleUrl: './feed-page.scss',
   host: { '(document:keydown)': 'onKeydown($event)' },
@@ -52,6 +62,7 @@ export class FeedPage {
   readonly categories = signal<Category[]>([]);
   readonly categoryId = signal<string | null>(null);
   readonly selectedIngredients = signal<IngredientChoice[]>([]);
+  readonly quantities = signal<Record<string, number | null>>({});
   readonly ingredientPanelOpen = signal(false);
   readonly activeIndex = signal(0);
   readonly loading = signal(false);
@@ -134,17 +145,31 @@ export class FeedPage {
 
   removeIngredientFilter(id: string): void {
     this.selectedIngredients.update((list) => list.filter((i) => i.id !== id));
+    this.quantities.update(({ [id]: _, ...rest }) => rest);
+    this.reload();
+  }
+
+  /** Applied on change (blur/Enter), not per keystroke, since the feed reloads at once. Empty means any amount. */
+  setIngredientQuantity(id: string, input: HTMLInputElement): void {
+    const value = input.valueAsNumber;
+    const quantity = Number.isFinite(value) && value > 0 ? value : null;
+    if ((this.quantities()[id] ?? null) === quantity) {
+      return;
+    }
+    this.quantities.update((map) => ({ ...map, [id]: quantity }));
     this.reload();
   }
 
   clearIngredientFilter(): void {
     this.selectedIngredients.set([]);
+    this.quantities.set({});
     this.reload();
   }
 
   clearFilters(): void {
     this.categoryId.set(null);
     this.selectedIngredients.set([]);
+    this.quantities.set({});
     this.reload();
   }
 
@@ -245,6 +270,7 @@ export class FeedPage {
         pageSize: PAGE_SIZE,
         categoryIds: categoryId ? [categoryId] : [],
         ingredientIds: this.selectedIngredientIds(),
+        ingredientQuantities: this.quantities(),
       })
       .subscribe({
         next: (page) => {

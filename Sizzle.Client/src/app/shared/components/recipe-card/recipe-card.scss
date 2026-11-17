@@ -13,7 +13,24 @@
 }
 
 .cover-link {
+  position: relative;
   display: block;
+}
+
+.ai-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--overlay);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
 }
 
 h3 a {

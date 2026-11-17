@@ -23,6 +23,19 @@
             <span class="chip-context">{{ ingredient.parentName }} ›</span>
           }
           {{ ingredient.name }}
+          <label class="chip-amount" [title]="'common.amountFor' | t: { name: ingredient.name }">
+            {{ 'common.upTo' | t }}
+            <input
+              type="number"
+              min="1"
+              inputmode="numeric"
+              placeholder="…"
+              [attr.aria-label]="'common.amountFor' | t: { name: ingredient.name }"
+              [ngModel]="quantities()[ingredient.id]"
+              (ngModelChange)="setQuantity(ingredient.id, $event)"
+            />
+            {{ ingredient.unit | unitLabel }}
+          </label>
           <button
             type="button"
             [attr.aria-label]="'common.remove' | t: { name: ingredient.name }"

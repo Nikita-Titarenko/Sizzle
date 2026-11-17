@@ -64,6 +64,8 @@ export const en = {
     loading: 'Loading…',
     tryAgain: 'Try again',
     clearAll: 'Clear all',
+    upTo: 'up to',
+    amountFor: 'How much {name} you have (optional): only recipes that need no more are shown',
     minutes: '{count} min',
     follow: 'Follow',
     following: 'Following',
@@ -121,6 +123,7 @@ export const en = {
   recipe: {
     draftNotice: 'This is a draft. Only you can see it.',
     aiImage: 'AI-generated image',
+    aiImageShort: 'AI image',
     aiImageHint: 'The cover photo was drawn by AI',
     caloriesHint: 'Total calories of the ingredients',
     scaleHint: 'Have less of something? Change its amount and the rest will scale to match.',
@@ -254,8 +257,8 @@ export const en = {
     following: 'following',
   },
   ai: {
-    title: 'Sizzle AI',
-    subtitle: 'Writes and edits the recipe in the form',
+    title: 'Basil',
+    subtitle: 'AI assistant · writes and edits the recipe in the form',
     restore: 'Previous version',
     restoreHint: 'Restore the recipe as it was before the last AI change',
     introNew:
@@ -305,7 +308,7 @@ export const en = {
   drafts: {
     intro: 'Pick up a draft where you left off, or start a new recipe.',
     startFresh: 'Start from scratch',
-    startFreshHint: 'Write it yourself or with Sizzle AI',
+    startFreshHint: 'Write it yourself or with Basil, our AI assistant',
     tag: 'Draft',
     created: 'Started {date}',
     delete: 'Delete draft “{name}”',

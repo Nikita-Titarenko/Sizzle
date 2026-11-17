@@ -62,6 +62,12 @@
           <app-icon name="clock" />
           {{ 'common.minutes' | t: { count: recipe().cookingTimeMinutes } }}
         </span>
+        @if (recipe().isAIGeneratedImage) {
+          <span class="tag" [title]="'recipe.aiImageHint' | t">
+            <app-icon name="sparkles" />
+            {{ 'recipe.aiImageShort' | t }}
+          </span>
+        }
       </div>
     </div>
   </div>

@@ -65,6 +65,8 @@ export const uk: Translations = {
     loading: 'Завантаження…',
     tryAgain: 'Спробувати ще раз',
     clearAll: 'Очистити все',
+    upTo: 'до',
+    amountFor: 'Скільки у вас є: {name} (необов’язково). Покажемо рецепти, яким вистачить',
     minutes: '{count} хв',
     follow: 'Стежити',
     following: 'Ви стежите',
@@ -122,6 +124,7 @@ export const uk: Translations = {
   recipe: {
     draftNotice: 'Це чернетка. Її бачите лише ви.',
     aiImage: 'Зображення згенероване ШІ',
+    aiImageShort: 'ШІ-фото',
     aiImageHint: 'Обкладинку намалював ШІ',
     caloriesHint: 'Загальна калорійність інгредієнтів',
     scaleHint: 'Маєте менше якогось інгредієнта? Змініть його кількість, і решта підлаштується.',
@@ -256,8 +259,8 @@ export const uk: Translations = {
     following: 'ви стежите',
   },
   ai: {
-    title: 'Sizzle AI',
-    subtitle: 'Пише й редагує рецепт у формі',
+    title: 'Basil',
+    subtitle: 'ШІ-помічник · пише й редагує рецепт у формі',
     restore: 'Попередня версія',
     restoreHint: 'Повернути рецепт до останньої зміни ШІ',
     introNew:
@@ -307,7 +310,7 @@ export const uk: Translations = {
   drafts: {
     intro: 'Продовжте чернетку з того місця, де зупинилися, або почніть новий рецепт.',
     startFresh: 'Почати з нуля',
-    startFreshHint: 'Напишіть самі або разом із Sizzle AI',
+    startFreshHint: 'Напишіть самі або разом із Basil, нашим ШІ-помічником',
     tag: 'Чернетка',
     created: 'Розпочато {date}',
     delete: 'Видалити чернетку «{name}»',

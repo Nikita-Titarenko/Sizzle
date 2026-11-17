@@ -96,9 +96,13 @@ function toParams(query: RecipeQuery): HttpParams {
     params = params.set('UserId', query.userId);
   }
   query.categoryIds?.forEach((id) => (params = params.append('CategoryIds', id)));
-  query.ingredientIds?.forEach(
-    (id, i) => (params = params.set(`Ingredients[${i}].IngredientId`, id)),
-  );
+  query.ingredientIds?.forEach((id, i) => {
+    params = params.set(`Ingredients[${i}].IngredientId`, id);
+    const quantity = query.ingredientQuantities?.[id];
+    if (quantity && quantity > 0) {
+      params = params.set(`Ingredients[${i}].Quantity`, Math.round(quantity));
+    }
+  });
   return params;
 }
 
