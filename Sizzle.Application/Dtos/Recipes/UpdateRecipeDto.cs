@@ -12,6 +12,8 @@ public class UpdateRecipeDto
 
     public bool? IsDraft { get; init; }
 
+    public bool IsAIGeneratedImage { get; init; }
+
     public required int CookingTimeMinutes { get; init; }
 
     public required Guid CategoryId { get; init; }

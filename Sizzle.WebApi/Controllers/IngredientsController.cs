@@ -25,10 +25,11 @@ public class IngredientsController(IIngredientService ingredientService, IMapper
     }
 
     /// <summary>Recalculate ingredient quantities when one ingredient's quantity changes.</summary>
-    /// <remarks>Scales every other ingredient proportionally and rounds to the nearest whole number, with halves rounded up. ErrorKey.BadRequest — invalid quantities, duplicate IDs, missing changed ingredient, or overflow.</remarks>
+    /// <remarks>Scales every other ingredient proportionally and rounds to the nearest whole number, with halves rounded up. ErrorKey.BadRequest — invalid quantities, duplicate IDs, missing changed ingredient, or overflow. Clients use POST: browsers and OkHttp cannot send a body with GET.</remarks>
     /// <param name="request">Initial ingredient IDs and quantities, plus the changed ingredient and its new quantity.</param>
     /// <returns>The recalculated quantities in the same order as the initial ingredients.</returns>
     [HttpGet("proportions")]
+    [HttpPost("proportions")]
     [ProducesResponseType(typeof(IEnumerable<IngredientProportionItemDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     public ActionResult<IEnumerable<IngredientProportionItemDto>> CalculateProportions([FromBody] CalculateIngredientProportionsRequestModel request)

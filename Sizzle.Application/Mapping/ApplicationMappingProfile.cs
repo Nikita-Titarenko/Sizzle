@@ -23,6 +23,7 @@ public class ApplicationMappingProfile : Profile
         CreateMap<UpdateRecipeDto, Recipe>()
             .ForMember(destination => destination.Id, options => options.Ignore())
             .ForMember(destination => destination.IsDraft, options => options.Ignore())
+            .ForMember(destination => destination.IsAIGeneratedImage, options => options.Ignore())
             .ForMember(destination => destination.ApplicationUserId, options => options.Ignore())
             .ForMember(destination => destination.ApplicationUser, options => options.Ignore())
             .ForMember(destination => destination.Category, options => options.Ignore())

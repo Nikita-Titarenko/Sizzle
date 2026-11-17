@@ -1056,6 +1056,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 }
 
                 recipe.FilePath = await SaveMediaAsync(dto.File, recipe.Id, savedPaths);
+                recipe.IsAIGeneratedImage = dto.IsAIGeneratedImage;
             }
 
             await SaveStepMediaAsync(newSteps, dto.Steps, recipe.Id, savedPaths);
