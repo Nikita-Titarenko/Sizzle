@@ -60,7 +60,10 @@
                 <span class="chip-context">{{ ingredient.parentName }} ›</span>
               }
               {{ ingredient.name }}
-              <label class="chip-amount" [title]="'common.amountFor' | t: { name: ingredient.name }">
+              <label
+                class="chip-amount"
+                [title]="'common.amountFor' | t: { name: ingredient.name }"
+              >
                 {{ 'common.upTo' | t }}
                 <input
                   #amount
