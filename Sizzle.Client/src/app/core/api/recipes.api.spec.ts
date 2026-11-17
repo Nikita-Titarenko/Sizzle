@@ -26,7 +26,7 @@ describe('RecipesApi', () => {
     const req = http.expectOne((r) => r.url === '/api/recipes');
     expect(req.request.params.get('Search')).toBe('pasta');
     expect(req.request.params.getAll('CategoryIds')).toEqual(['c1', 'c2']);
-    expect(req.request.params.getAll('IngredientIds')).toEqual(['i1']);
+    expect(req.request.params.get('Ingredients[0].IngredientId')).toBe('i1');
     expect(req.request.params.get('PageIndex')).toBe('1');
     req.flush({ data: [], totalSize: 0, pageIndex: 1, pageSize: 12 });
   });
