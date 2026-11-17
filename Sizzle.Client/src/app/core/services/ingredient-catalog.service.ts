@@ -1,6 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { CatalogApi } from '../api/catalog.api';
-import { Ingredient, IngredientChoice } from '../models';
+import { Ingredient, IngredientChoice, IngredientUnit } from '../models';
 
 /** Large enough to fetch the whole catalog (paging counts parents and variants together). */
 const CATALOG_SIZE = 10000;
@@ -82,6 +82,28 @@ export function toChoice(ingredient: Ingredient, parent: Ingredient | null): Ing
   };
 }
 
+/**
+ * Catalog items carry the unit in the request language's short form (the API's
+ * InitialData/ingredient-unit.json: "g"/"ml"/"pcs", "г"/"мл"/"шт"), while recipe creation
+ * and the AI endpoints use the enum names. Keep this in sync with that file.
+ */
+const UNIT_BY_LABEL: Record<string, IngredientUnit> = {
+  grams: 'Grams',
+  g: 'Grams',
+  г: 'Grams',
+  milliliters: 'Milliliters',
+  ml: 'Milliliters',
+  мл: 'Milliliters',
+  pieces: 'Pieces',
+  pcs: 'Pieces',
+  шт: 'Pieces',
+};
+
+/** The API enum name for any unit form the API returns, or null when it is not recognised. */
+export function toIngredientUnit(unit: string | null | undefined): IngredientUnit | null {
+  return unit ? (UNIT_BY_LABEL[unit.trim().toLowerCase()] ?? null) : null;
+}
+
 export function isPieces(unit: string): boolean {
-  return unit === 'pcs' || unit === 'Pieces';
+  return toIngredientUnit(unit) === 'Pieces';
 }

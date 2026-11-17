@@ -27,7 +27,10 @@ import {
   Recipe,
   RecipeFormValue,
 } from '../../../core/models';
-import { IngredientCatalog } from '../../../core/services/ingredient-catalog.service';
+import {
+  IngredientCatalog,
+  toIngredientUnit,
+} from '../../../core/services/ingredient-catalog.service';
 import { Icon } from '../../../shared/components/icon/icon';
 import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
 import { Loader } from '../../../shared/components/loader/loader';
@@ -76,13 +79,6 @@ interface ReviewNotice {
   kind: 'corrected' | 'rejected';
   reason: string;
 }
-
-/** The catalog returns short units; new ingredients are sent with the API enum names. */
-const UNIT_BY_SHORT: Record<string, IngredientUnit> = {
-  g: 'Grams',
-  ml: 'Milliliters',
-  pcs: 'Pieces',
-};
 
 const EMPTY_ID = '00000000-0000-0000-0000-000000000000';
 const DRAFTS_PAGE_SIZE = 24;
@@ -294,8 +290,9 @@ export class RecipeForm {
   /** A variant usually shares its parent's unit, so it is preselected. */
   setParent(draft: NewIngredientDraft, parent: IngredientChoice | null): void {
     draft.parent = parent;
-    if (parent && UNIT_BY_SHORT[parent.unit]) {
-      draft.unit = UNIT_BY_SHORT[parent.unit];
+    const parentUnit = toIngredientUnit(parent?.unit);
+    if (parentUnit) {
+      draft.unit = parentUnit;
     }
     this.newIngredients.update((list) => [...list]);
   }
@@ -610,7 +607,7 @@ export class RecipeForm {
           id: i.id,
           name: i.name,
           parentId: this.ingredientCatalog.find(i.id)?.parentId ?? null,
-          unit: UNIT_BY_SHORT[i.unit] ?? (i.unit as IngredientUnit),
+          unit: toIngredientUnit(i.unit) ?? 'Grams',
           quantity: i.quantity,
         })),
         ...this.newIngredients()
