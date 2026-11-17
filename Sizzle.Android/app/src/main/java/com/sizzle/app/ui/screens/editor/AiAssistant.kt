@@ -23,7 +23,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowUpward
-import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.SmartToy
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
@@ -78,7 +78,7 @@ fun AiAssistantCard(vm: RecipeEditorViewModel, onPickVideo: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Box(Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(c.accentSoft), contentAlignment = Alignment.Center) {
-                Icon(Icons.Outlined.AutoAwesome, null, tint = c.accentText, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.SmartToy, null, tint = c.accentText, modifier = Modifier.size(20.dp))
             }
             Column(Modifier.weight(1f).padding(start = 10.dp)) {
                 Text(stringResource(R.string.ai_title), fontWeight = FontWeight.Bold)

@@ -59,6 +59,7 @@ import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.FeedRecipe
 import com.sizzle.app.data.model.User
 import com.sizzle.app.ui.appViewModel
+import com.sizzle.app.ui.components.AiImageBadge
 import com.sizzle.app.ui.components.ErrorView
 import com.sizzle.app.ui.components.Loader
 import com.sizzle.app.ui.components.MediaThumbnail
@@ -298,6 +299,9 @@ private fun TimelineEntry(recipe: FeedRecipe, last: Boolean, onOpen: () -> Unit)
                     MediaThumbnail(recipe.fileUrl, Modifier.fillMaxSize(), recipe.name)
                 } else {
                     Icon(Icons.Outlined.Restaurant, null, tint = c.muted)
+                }
+                if (recipe.isAIGeneratedImage) {
+                    AiImageBadge(Modifier.align(Alignment.BottomStart).padding(5.dp), label = null)
                 }
             }
         }

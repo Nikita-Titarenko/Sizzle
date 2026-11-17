@@ -66,6 +66,7 @@ import com.sizzle.app.data.api.message
 import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.RecipeDetails
 import com.sizzle.app.ui.appViewModel
+import com.sizzle.app.ui.components.AiImageBadge
 import com.sizzle.app.ui.currentUserId
 import com.sizzle.app.ui.components.AlertBox
 import com.sizzle.app.ui.components.CommentsViewModel
@@ -89,7 +90,6 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.LocalFireDepartment
 import androidx.compose.material.icons.outlined.Replay
@@ -321,15 +321,7 @@ fun RecipeScreen(id: String, navigator: Navigator) {
                         Box {
                             MediaView(url, Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(18.dp)), recipe.name)
                             if (recipe.isAIGeneratedImage) {
-                                Row(
-                                    Modifier.align(Alignment.BottomStart).padding(12.dp).clip(CircleShape)
-                                        .background(Color.Black.copy(alpha = 0.6f)).padding(horizontal = 10.dp, vertical = 5.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(Icons.Outlined.AutoAwesome, null, tint = Color.White, modifier = Modifier.size(14.dp))
-                                    Text(stringResource(R.string.recipe_ai_image), color = Color.White, fontWeight = FontWeight.SemiBold,
-                                        style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(start = 5.dp))
-                                }
+                                AiImageBadge(Modifier.align(Alignment.BottomStart).padding(12.dp), stringResource(R.string.recipe_ai_image))
                             }
                         }
                     }

@@ -3,6 +3,7 @@ package com.sizzle.app.ui.components
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -44,7 +45,10 @@ fun RecipeCard(recipe: Recipe, onOpen: () -> Unit, onAuthor: () -> Unit, modifie
             .border(1.dp, c.border, shape)
             .clickable(onClick = onOpen),
     ) {
-        MediaThumbnail(recipe.fileUrl, Modifier.fillMaxWidth().aspectRatio(3f / 4f), recipe.name)
+        Box {
+            MediaThumbnail(recipe.fileUrl, Modifier.fillMaxWidth().aspectRatio(3f / 4f), recipe.name)
+            if (recipe.isAIGeneratedImage) AiImageBadge(Modifier.align(Alignment.BottomStart).padding(8.dp))
+        }
         Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
             Text(
                 recipe.name,

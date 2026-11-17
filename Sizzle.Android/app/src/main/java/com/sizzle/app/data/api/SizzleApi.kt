@@ -207,6 +207,14 @@ interface SizzleApi {
     suspend fun unregisterDevice(@Body body: DeviceTokenRequest)
 }
 
-/** Ingredient filter in the shape ASP.NET binds: Ingredients[0].IngredientId=… */
-fun ingredientFilter(ids: List<String>): Map<String, String> =
-    ids.mapIndexed { i, id -> "Ingredients[$i].IngredientId" to id }.toMap()
+/**
+ * Ingredient filter in the shape ASP.NET binds: Ingredients[0].IngredientId=…, plus an optional
+ * Ingredients[0].Quantity ("I have at most this much": only recipes that need no more match).
+ */
+fun ingredientFilter(ids: List<String>, quantities: Map<String, Int> = emptyMap()): Map<String, String> =
+    buildMap {
+        ids.forEachIndexed { i, id ->
+            put("Ingredients[$i].IngredientId", id)
+            quantities[id]?.takeIf { it > 0 }?.let { put("Ingredients[$i].Quantity", it.toString()) }
+        }
+    }

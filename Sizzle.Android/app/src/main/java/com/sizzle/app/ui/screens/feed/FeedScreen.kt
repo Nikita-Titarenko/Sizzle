@@ -33,9 +33,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.MenuBook
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material.icons.outlined.RemoveRedEye
@@ -48,7 +48,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -86,6 +85,7 @@ import com.sizzle.app.data.api.message
 import com.sizzle.app.data.model.FeedRecipe
 import com.sizzle.app.ui.appViewModel
 import com.sizzle.app.ui.currentUserId
+import com.sizzle.app.ui.components.IngredientFilterChip
 import com.sizzle.app.ui.components.CommentsViewModel
 import com.sizzle.app.ui.components.ErrorView
 import com.sizzle.app.ui.components.IngredientPicker
@@ -371,6 +371,7 @@ private fun FeedItem(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 categoryName?.let { Tag(null, it) }
                 Tag(Icons.Outlined.Schedule, stringResource(R.string.common_minutes, recipe.cookingTimeMinutes))
+                if (recipe.isAIGeneratedImage) Tag(Icons.Outlined.AutoAwesome, stringResource(R.string.recipe_ai_image_short))
             }
         }
 
@@ -454,14 +455,11 @@ private fun IngredientSheet(vm: FeedViewModel, onDismiss: () -> Unit) {
                     verticalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     vm.ingredients.forEach { ingredient ->
-                        InputChip(
-                            selected = true,
-                            onClick = { vm.removeIngredient(ingredient.id) },
-                            label = { Text(listOfNotNull(ingredient.parentName, ingredient.name).joinToString(" › ")) },
-                            trailingIcon = {
-                                Icon(Icons.Outlined.Close, stringResource(R.string.common_remove, ingredient.name), Modifier.size(16.dp))
-                            },
-                            shape = CircleShape,
+                        IngredientFilterChip(
+                            ingredient = ingredient,
+                            quantity = vm.quantities[ingredient.id],
+                            onQuantityChange = { vm.setQuantity(ingredient.id, it) },
+                            onRemove = { vm.removeIngredient(ingredient.id) },
                         )
                     }
                 }

@@ -33,6 +33,8 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
         private set
     var ingredients by mutableStateOf<List<IngredientChoice>>(emptyList())
         private set
+    var quantities by mutableStateOf<Map<String, Int>>(emptyMap())
+        private set
     var recipes by mutableStateOf<List<FeedRecipe>>(emptyList())
         private set
     var loading by mutableStateOf(false)
@@ -102,17 +104,27 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
 
     fun removeIngredient(id: String) {
         ingredients = ingredients.filter { it.id != id }
+        quantities = quantities - id
+        reload()
+    }
+
+    /** Null means any amount. */
+    fun setQuantity(id: String, quantity: Int?) {
+        if (quantities[id] == quantity) return
+        quantities = if (quantity == null) quantities - id else quantities + (id to quantity)
         reload()
     }
 
     fun clearIngredients() {
         ingredients = emptyList()
+        quantities = emptyMap()
         reload()
     }
 
     fun clearFilters() {
         categoryId = null
         ingredients = emptyList()
+        quantities = emptyMap()
         reload()
     }
 
@@ -172,7 +184,7 @@ class FeedViewModel(private val container: AppContainer) : ViewModel() {
                     pageIndex = pageIndex,
                     pageSize = PAGE_SIZE,
                     categoryIds = listOfNotNull(category),
-                    ingredients = ingredientFilter(ingredients.map { it.id }),
+                    ingredients = ingredientFilter(ingredients.map { it.id }, quantities),
                 )
             }
             result.onSuccess { page ->

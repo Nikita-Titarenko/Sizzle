@@ -25,7 +25,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.InputChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -52,6 +51,7 @@ import com.sizzle.app.data.api.runApi
 import com.sizzle.app.data.model.Category
 import com.sizzle.app.data.model.IngredientChoice
 import com.sizzle.app.ui.appViewModel
+import com.sizzle.app.ui.components.IngredientFilterChip
 import com.sizzle.app.ui.components.ErrorView
 import com.sizzle.app.ui.components.FieldShape
 import com.sizzle.app.ui.components.IngredientPicker
@@ -77,6 +77,8 @@ class ExploreViewModel(private val container: AppContainer) : ViewModel() {
         private set
     var ingredients by mutableStateOf<List<IngredientChoice>>(emptyList())
         private set
+    var quantities by mutableStateOf<Map<String, Int>>(emptyMap())
+        private set
 
     val list = RecipeListState(viewModelScope) { pageIndex, pageSize ->
         container.api.getRecipes(
@@ -84,7 +86,7 @@ class ExploreViewModel(private val container: AppContainer) : ViewModel() {
             pageSize = pageSize,
             search = search.trim().ifEmpty { null },
             categoryIds = selected.toList(),
-            ingredients = ingredientFilter(ingredients.map { it.id }),
+            ingredients = ingredientFilter(ingredients.map { it.id }, quantities),
         )
     }
 
@@ -124,6 +126,14 @@ class ExploreViewModel(private val container: AppContainer) : ViewModel() {
 
     fun removeIngredient(id: String) {
         ingredients = ingredients.filter { it.id != id }
+        quantities = quantities - id
+        list.reset()
+    }
+
+    /** Null means any amount. */
+    fun setQuantity(id: String, quantity: Int?) {
+        if (quantities[id] == quantity) return
+        quantities = if (quantity == null) quantities - id else quantities + (id to quantity)
         list.reset()
     }
 
@@ -194,14 +204,11 @@ fun ExploreScreen(navigator: Navigator) {
                     if (vm.ingredients.isNotEmpty()) {
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             vm.ingredients.forEach { ingredient ->
-                                InputChip(
-                                    selected = true,
-                                    onClick = { vm.removeIngredient(ingredient.id) },
-                                    label = { Text(listOfNotNull(ingredient.parentName, ingredient.name).joinToString(" › ")) },
-                                    trailingIcon = {
-                                        Icon(Icons.Outlined.Close, stringResource(R.string.common_remove, ingredient.name), Modifier.size(16.dp))
-                                    },
-                                    shape = CircleShape,
+                                IngredientFilterChip(
+                                    ingredient = ingredient,
+                                    quantity = vm.quantities[ingredient.id],
+                                    onQuantityChange = { vm.setQuantity(ingredient.id, it) },
+                                    onRemove = { vm.removeIngredient(ingredient.id) },
                                 )
                             }
                         }
