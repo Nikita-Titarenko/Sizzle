@@ -13,6 +13,10 @@ export interface Recipe {
   viewCount: number;
   likeCount: number;
   creationDate: string;
+  isDraft?: boolean;
+  isAIGeneratedImage?: boolean;
+  /** Sum of the ingredients' calories; 0 when the catalog has no calories for them. */
+  calories?: number;
 }
 
 export interface FeedRecipe extends Recipe {
@@ -73,4 +77,36 @@ export interface RecipeFormValue {
     unit: IngredientUnit;
     quantity: number;
   }[];
+}
+
+/**
+ * A recipe as the AI reads and writes it (recipes/generate, generate-from-video,
+ * generate-image and the reviewer's correctedRecipe). Ingredients without an id are new.
+ */
+export interface GeneratedRecipe {
+  name: string;
+  description: string;
+  cookingTimeMinutes: number;
+  categoryId: string;
+  steps: { name: string; description: string }[];
+  ingredients: GeneratedIngredient[];
+}
+
+export interface GeneratedIngredient {
+  id: string | null;
+  name: string;
+  parentId: string | null;
+  unit: IngredientUnit;
+  quantity: number;
+}
+
+/** One server-sent event from a generation stream. */
+export type GenerationEvent =
+  | { type: 'chunk'; text: string }
+  | { type: 'completed'; result: { recipe: GeneratedRecipe; message: string } }
+  | { type: 'error'; errors: { message: string; key?: number | string }[] };
+
+export interface IngredientProportion {
+  id: string;
+  quantity: number;
 }

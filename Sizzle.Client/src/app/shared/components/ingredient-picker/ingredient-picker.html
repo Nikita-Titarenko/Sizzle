@@ -36,7 +36,12 @@
                 {{ 'ingredients.added' | t }}
               </span>
             } @else {
-              <span class="muted unit">{{ row.choice.unit | unitLabel }}</span>
+              <span class="muted unit">
+                {{ row.choice.unit | unitLabel }}
+                @if (row.choice.calories) {
+                  · {{ row.choice | kcalRate }}
+                }
+              </span>
             }
           </button>
         </li>

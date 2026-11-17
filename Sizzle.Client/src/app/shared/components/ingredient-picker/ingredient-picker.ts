@@ -10,7 +10,8 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Ingredient, IngredientChoice } from '../../../core/models';
-import { IngredientCatalog } from '../../../core/services/ingredient-catalog.service';
+import { IngredientCatalog, toChoice } from '../../../core/services/ingredient-catalog.service';
+import { KcalRatePipe } from '../../pipes/kcal-rate.pipe';
 import { UnitLabelPipe } from '../../pipes/unit-label.pipe';
 import { Icon } from '../icon/icon';
 
@@ -32,7 +33,7 @@ const MAX_ROWS = 80;
 
 @Component({
   selector: 'app-ingredient-picker',
-  imports: [TranslatePipe, FormsModule, Icon, UnitLabelPipe],
+  imports: [TranslatePipe, FormsModule, Icon, UnitLabelPipe, KcalRatePipe],
   templateUrl: './ingredient-picker.html',
   styleUrl: './ingredient-picker.scss',
   host: { '(document:click)': 'onDocumentClick($event)' },
@@ -72,7 +73,7 @@ export class IngredientPicker {
       }
       rows.push(toRow(parent, null, 0, !rootsOnly && variants.length > 0, excluded));
       for (const variant of shownVariants) {
-        rows.push(toRow(variant, parent.name, 1, false, excluded));
+        rows.push(toRow(variant, parent, 1, false, excluded));
       }
       if (rows.length >= MAX_ROWS) {
         break;
@@ -129,13 +130,13 @@ function matchesExactly(row: Row, term: string): boolean {
 
 function toRow(
   ingredient: Ingredient,
-  parentName: string | null,
+  parent: Ingredient | null,
   depth: number,
   hasChildren: boolean,
   excluded: Set<string>,
 ): Row {
   return {
-    choice: { id: ingredient.id, name: ingredient.name, unit: ingredient.unit, parentName },
+    choice: toChoice(ingredient, parent),
     depth,
     hasChildren,
     disabled: excluded.has(ingredient.id),

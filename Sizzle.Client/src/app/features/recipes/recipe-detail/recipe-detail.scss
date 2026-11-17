@@ -4,7 +4,40 @@
   gap: 16px;
 }
 
+.cover-wrap {
+  position: relative;
+}
+
+.ai-badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--overlay);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  backdrop-filter: blur(6px);
+}
+
+.draft-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-3);
+  color: var(--muted);
+  font-weight: 600;
+}
+
 .cover {
+  display: block;
   width: 100%;
   max-height: 420px;
   object-fit: cover;
@@ -39,11 +72,83 @@
   margin: 0;
 }
 
+.ingredients-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  h2 {
+    margin: 0;
+  }
+
+  .btn {
+    white-space: nowrap;
+  }
+}
+
+.scale-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 6px 0 4px;
+  font-size: 0.82rem;
+
+  app-icon {
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+  }
+}
+
 .ingredients li {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  padding: 6px 0;
+  gap: 8px;
+  padding: 4px 0;
   border-bottom: 1px dashed var(--border);
+}
+
+.ingredients.busy {
+  opacity: 0.6;
+}
+
+.amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+
+  // Reads as plain text until hovered or focused, so the list stays calm.
+  input {
+    width: 64px;
+    padding: 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--muted);
+    font: inherit;
+    text-align: right;
+    appearance: textfield;
+
+    &:hover,
+    &:focus {
+      border-color: var(--border-strong);
+      background: var(--surface-2);
+      color: var(--text);
+    }
+
+    &::-webkit-inner-spin-button {
+      appearance: none;
+    }
+  }
+}
+
+.ingredients li.scaled .amount input {
+  color: var(--accent-dark);
+  font-weight: 700;
 }
 
 .steps {
