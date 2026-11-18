@@ -4,6 +4,8 @@ public class CreateRecipeDto
 {
     public required Guid ApplicationUserId { get; init; }
 
+    public string LanguageCode { get; init; } = "en";
+
     public required string Name { get; init; }
 
     public required string Description { get; init; }

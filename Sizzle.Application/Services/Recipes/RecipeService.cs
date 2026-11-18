@@ -678,11 +678,13 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private async Task<RecipeReviewOutcomeDto> ReviewRecipeAsync(CreateRecipeDto dto, CancellationToken cancellationToken)
     {
         var catalog = await ingredientRepository.GetAllWithTranslationsAsync(cancellationToken);
+        var preferredLocale = dto.LanguageCode.Trim();
         var locales = catalog.SelectMany(ingredient => ingredient.Translations)
             .Select(translation => translation.LanguageCode)
             .Where(code => !string.IsNullOrWhiteSpace(code))
             .Distinct(StringComparer.OrdinalIgnoreCase)
-            .Order(StringComparer.OrdinalIgnoreCase)
+            .OrderByDescending(code => code.Equals(preferredLocale, StringComparison.OrdinalIgnoreCase))
+            .ThenBy(code => code, StringComparer.OrdinalIgnoreCase)
             .ToArray();
         var known = catalog.ToDictionary(ingredient => ingredient.Id);
         if (dto.Ingredients.Any(ingredient => ingredient == null || !known.ContainsKey(ingredient.Id)))
@@ -803,7 +805,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                     steps = dto.Steps.Select(step => new { step.Name, step.Description }), dto.Ingredients, dto.NewIngredients },
                 catalog = catalog.Select(ingredient => new { ingredient.Id, ingredient.ParentId, ingredient.Unit, ingredient.Calories,
                     translations = ingredient.Translations.Select(translation => new { translation.LanguageCode, translation.Name }) }),
-                locales
+                locales,
+                languageCode = dto.LanguageCode
             }, AiJsonOptions))
         };
         var uploadedVideos = new List<string>();
@@ -983,7 +986,8 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             {
                 ApplicationUserId = dto.ApplicationUserId, Name = dto.Name, Description = dto.Description,
                 CookingTimeMinutes = dto.CookingTimeMinutes, CategoryId = dto.CategoryId, File = dto.File,
-                Steps = dto.Steps, Ingredients = dto.Ingredients, NewIngredients = dto.NewIngredients
+                Steps = dto.Steps, Ingredients = dto.Ingredients, NewIngredients = dto.NewIngredients,
+                LanguageCode = dto.LanguageCode
             };
             var outcome = await ReviewRecipeAsync(reviewInput, cancellationToken);
             if (outcome.Error != null)

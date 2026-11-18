@@ -22,12 +22,16 @@ public class RequestMappingProfile : Profile
         CreateMap<GetRecipeIngredientRequestModel, RecipeIngredientFilterDto>();
         CreateMap<CreateRecipeRequestModel, CreateRecipeDto>()
             .ForMember(destination => destination.ApplicationUserId,
-                options => options.MapFrom((_, _, _, context) => (Guid)context.Items["ApplicationUserId"]));
+                options => options.MapFrom((_, _, _, context) => (Guid)context.Items["ApplicationUserId"]))
+            .ForMember(destination => destination.LanguageCode,
+                options => options.MapFrom((_, _, _, context) => (string)context.Items["LanguageCode"]));
         CreateMap<UpdateRecipeRequestModel, UpdateRecipeDto>()
             .ForMember(destination => destination.Id,
                 options => options.MapFrom((_, _, _, context) => (Guid)context.Items["RecipeId"]))
             .ForMember(destination => destination.ApplicationUserId,
-                options => options.MapFrom((_, _, _, context) => (Guid)context.Items["ApplicationUserId"]));
+                options => options.MapFrom((_, _, _, context) => (Guid)context.Items["ApplicationUserId"]))
+            .ForMember(destination => destination.LanguageCode,
+                options => options.MapFrom((_, _, _, context) => (string)context.Items["LanguageCode"]));
         CreateMap<RecipeStepRequestModel, RecipeStepInputDto>();
         CreateMap<RecipeIngredientRequestModel, RecipeIngredientInputDto>();
         CreateMap<NewIngredientRequestModel, NewIngredientDto>();

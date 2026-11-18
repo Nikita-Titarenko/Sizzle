@@ -149,7 +149,11 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper, ILo
     public async Task<ActionResult<RecipeDto>> CreateRecipe([FromForm] CreateRecipeRequestModel request, CancellationToken cancellationToken)
     {
         var result = await recipeService.CreateRecipeAsync(mapper.Map<CreateRecipeDto>(request,
-            options => options.Items["ApplicationUserId"] = GetUserId()), cancellationToken);
+            options =>
+            {
+                options.Items["ApplicationUserId"] = GetUserId();
+                options.Items["LanguageCode"] = GetLanguageCode();
+            }), cancellationToken);
 
         if (result.CorrectedRecipe != null)
         {
@@ -261,6 +265,7 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper, ILo
         {
             options.Items["RecipeId"] = recipeId;
             options.Items["ApplicationUserId"] = GetUserId();
+            options.Items["LanguageCode"] = GetLanguageCode();
         }), cancellationToken);
 
         if (result.CorrectedRecipe != null)
