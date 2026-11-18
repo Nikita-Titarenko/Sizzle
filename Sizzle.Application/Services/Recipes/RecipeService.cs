@@ -707,8 +707,7 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
             return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.RecipeRejected, Message = review.Reason });
         }
 
-        if (review.Status == RecipeReviewStatus.Correction && review.CorrectedRecipe != null &&
-            IsValidCorrection(review.CorrectedRecipe, dto, known))
+        if (review.Status == RecipeReviewStatus.Correction && review.CorrectedRecipe != null)
         {
             return new RecipeReviewOutcomeDto([], new Error { Key = ErrorKey.RecipeNeedsCorrection, Message = review.Reason },
                 review.CorrectedRecipe);
@@ -899,28 +898,6 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
                 string.Equals(translation.Key, canonicalLocale, StringComparison.OrdinalIgnoreCase) &&
                 string.Equals(translation.Value.Trim(), entry.Name.Trim(), StringComparison.OrdinalIgnoreCase))) &&
             entries.Select(entry => entry.Name.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Count() == entries.Count;
-    }
-
-    private static bool IsValidCorrection(GeneratedRecipeDto corrected, CreateRecipeDto input,
-        Dictionary<Guid, Ingredient> catalog)
-    {
-        if (corrected.CategoryId != input.CategoryId || corrected.CookingTimeMinutes <= 0 ||
-            string.IsNullOrWhiteSpace(corrected.Name) || corrected.Steps == null ||
-            corrected.Steps.Count != input.Steps.Length || corrected.Ingredients == null ||
-            corrected.Ingredients.Count != input.Ingredients.Length + input.NewIngredients.Length ||
-            corrected.Ingredients.Any(ingredient => ingredient.Quantity <= 0 ||
-                (ingredient.Id.HasValue && (!catalog.TryGetValue(ingredient.Id.Value, out var existing) ||
-                    existing.Unit != ingredient.Unit || existing.ParentId != ingredient.ParentId ||
-                    !existing.Translations.Any(translation => string.Equals(translation.Name, ingredient.Name,
-                        StringComparison.OrdinalIgnoreCase)))) ||
-                (!ingredient.Id.HasValue && (string.IsNullOrWhiteSpace(ingredient.Name) ||
-                    (ingredient.ParentId.HasValue && (!catalog.TryGetValue(ingredient.ParentId.Value, out var parent) || parent.ParentId.HasValue))))))
-        {
-            return false;
-        }
-
-        return input.Ingredients.All(selected => corrected.Ingredients.Any(ingredient =>
-            ingredient.Id == selected.Id && ingredient.Quantity == selected.Quantity));
     }
 
     public async Task<Result<RecipeDetailsDto>> GetRecipeByIdAsync(GetRecipeByIdDto dto, CancellationToken cancellationToken = default)
