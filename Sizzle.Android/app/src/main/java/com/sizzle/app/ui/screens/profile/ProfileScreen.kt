@@ -51,6 +51,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import coil.annotation.ExperimentalCoilApi
@@ -79,6 +80,7 @@ import com.sizzle.app.ui.components.UserAvatar
 import com.sizzle.app.ui.components.recipeItems
 import com.sizzle.app.ui.components.sizzleFieldColors
 import com.sizzle.app.ui.navigation.Navigator
+import com.sizzle.app.ui.screens.premium.PremiumCard
 import com.sizzle.app.ui.screens.RecipeListState
 import com.sizzle.app.ui.theme.Sizzle
 import kotlinx.coroutines.launch
@@ -100,6 +102,10 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
     var failure by mutableStateOf<ApiFailure?>(null)
         private set
     var problem by mutableStateOf<String?>(null)
+        private set
+
+    /** Whole days of Premium left: 0 without it, null until known. */
+    var premiumDaysLeft by mutableStateOf<Int?>(null)
         private set
 
     val recipes = RecipeListState(viewModelScope, pageSize = 9) { pageIndex, pageSize ->
@@ -126,7 +132,16 @@ class ProfileViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun loadPremium() {
+        viewModelScope.launch {
+            runApi { container.api.getSubscription() }.onSuccess {
+                premiumDaysLeft = kotlin.math.ceil(it.remainingSeconds / 86_400.0).toInt()
+            }
+        }
+    }
+
     fun refresh() {
+        loadPremium()
         loadUser()
         loadPeople()
         recipes.reset(pullToRefresh = recipes.loaded)
@@ -233,6 +248,11 @@ private fun SignedInProfile(vm: ProfileViewModel, navigator: Navigator) {
     val savedEmptyText = stringResource(R.string.profile_no_saved)
     var peopleTab by rememberSaveable { mutableIntStateOf(0) }
     var recipesTab by rememberSaveable { mutableIntStateOf(0) }
+    // Back from the Premium screen, show the time just bought.
+    LifecycleResumeEffect(Unit) {
+        vm.loadPremium()
+        onPauseOrDispose { }
+    }
 
     PullToRefreshBox(
         isRefreshing = vm.recipes.refreshing,
@@ -330,6 +350,7 @@ private fun SignedInProfile(vm: ProfileViewModel, navigator: Navigator) {
                     }
                 }
             }
+            item(span = { GridItemSpan(maxLineSpan) }) { PremiumCard(vm.premiumDaysLeft, navigator::premium) }
             item(span = { GridItemSpan(maxLineSpan) }) { SettingsCard(showNotifications = true) }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 TabRow(

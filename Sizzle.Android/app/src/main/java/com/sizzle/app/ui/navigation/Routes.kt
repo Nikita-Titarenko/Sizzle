@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable data object ExploreRoute
 @Serializable data object FollowingRoute
 @Serializable data object ProfileRoute
+@Serializable data object PremiumRoute
 @Serializable data class RecipeRoute(val id: String)
 @Serializable data class RecipeEditorRoute(val id: String? = null)
 @Serializable data class UserRoute(val id: String)

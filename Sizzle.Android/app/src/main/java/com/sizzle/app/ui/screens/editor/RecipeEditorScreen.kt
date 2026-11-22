@@ -68,6 +68,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -99,6 +100,11 @@ private const val MAX_STEP_FILES = 10
 fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
     val vm = appViewModel(key = "editor-${recipeId ?: "new"}") { RecipeEditorViewModel(it, recipeId) }
     val context = LocalContext.current
+    // Back from the Premium screen after paying: unlock the tools without leaving the editor.
+    LifecycleResumeEffect(Unit) {
+        vm.refreshSubscription()
+        onPauseOrDispose { }
+    }
 
     val pickCover = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         if (uri != null) vm.accept(listOf(MediaFiles.describe(context, uri)), allowVideo = true).firstOrNull()?.let(vm::pickCover)
@@ -163,12 +169,16 @@ fun RecipeEditorScreen(recipeId: String?, navigator: Navigator) {
         ) {
             Text(stringResource(R.string.editor_intro), color = Sizzle.colors.muted)
 
-            AiAssistantCard(vm, onPickVideo = { pickVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)) })
+            AiAssistantCard(vm, onPickVideo = {
+                // Locked for non-subscribers: the button leads to the plans instead of the gallery.
+                if (vm.subscribed == false) navigator.premium()
+                else pickVideo.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly))
+            })
 
             vm.review?.let { ReviewBanner(it, vm) }
 
             CoverPicker(vm, onPick = { pickCover.launch(imageAndVideo) })
-            AiCoverButton(vm)
+            AiCoverButton(vm, onLocked = navigator::premium)
 
             SectionCard {
                 OutlinedTextField(
@@ -319,11 +329,11 @@ private fun ReviewBanner(review: ReviewNotice, vm: RecipeEditorViewModel) {
 }
 
 @Composable
-private fun AiCoverButton(vm: RecipeEditorViewModel) {
+private fun AiCoverButton(vm: RecipeEditorViewModel, onLocked: () -> Unit) {
     val c = Sizzle.colors
     Row(verticalAlignment = Alignment.CenterVertically) {
         OutlinedButton(
-            onClick = vm::generateCover,
+            onClick = { if (vm.subscribed == false) onLocked() else vm.generateCover() },
             enabled = vm.busy == null,
             shape = RoundedCornerShape(10.dp),
             border = BorderStroke(1.dp, c.borderStrong),

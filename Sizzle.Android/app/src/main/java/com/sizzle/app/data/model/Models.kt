@@ -158,8 +158,34 @@ data class RecipeSave(val recipeId: String, val isSaved: Boolean)
 @Serializable
 data class RecipeShare(val recipeId: String, val isShared: Boolean = true)
 
+/** [id] is the API's SubscriptionPlan enum: 1 monthly, 2 half-yearly, 3 yearly. */
 @Serializable
-data class SubscriptionStatus(val remainingSeconds: Long = 0)
+data class SubscriptionPlan(
+    val id: Int,
+    val name: String = "",
+    val durationMonths: Int,
+    val price: Double,
+    val currency: String = "UAH",
+)
+
+/** A paid order. */
+@Serializable
+data class SubscriptionPayment(
+    val orderId: String,
+    val plan: Int,
+    val amount: Double,
+    val currency: String = "UAH",
+    val startsAt: String,
+    val expiresAt: String,
+)
+
+/** [remainingSeconds] is 0 without an active subscription; [history] is newest first. */
+@Serializable
+data class SubscriptionStatus(val remainingSeconds: Long = 0, val history: List<SubscriptionPayment> = emptyList())
+
+/** A Stripe Payment Intent for one order. */
+@Serializable
+data class SubscriptionCheckout(val orderId: String, val clientSecret: String, val publishableKey: String)
 
 @Serializable
 data class IngredientProportion(val id: String, val quantity: Int)

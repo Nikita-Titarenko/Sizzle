@@ -170,9 +170,6 @@ class RecipeEditorViewModel(private val container: AppContainer, initialId: Stri
 
     init {
         viewModelScope.launch { runApi { container.api.getCategories() }.onSuccess { categories = it } }
-        viewModelScope.launch {
-            subscribed = runApi { container.api.getSubscription() }.getOrNull()?.let { it.remainingSeconds > 0 }
-        }
         viewModelScope.launch { container.catalog.ensureLoaded() }
         if (initialId != null) load(initialId) else loadDrafts()
     }
@@ -410,6 +407,14 @@ class RecipeEditorViewModel(private val container: AppContainer, initialId: Stri
         restore(previous)
         changed = emptySet()
         review = null
+    }
+
+    /** Runs on every resume (also the first), so a subscription bought meanwhile unlocks the AI tools. */
+    fun refreshSubscription() {
+        if (subscribed == true) return
+        viewModelScope.launch {
+            runApi { container.api.getSubscription() }.onSuccess { subscribed = it.remainingSeconds > 0 }
+        }
     }
 
     fun generateCover() {

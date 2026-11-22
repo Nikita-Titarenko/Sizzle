@@ -22,6 +22,8 @@ import com.sizzle.app.data.model.RecipeSave
 import com.sizzle.app.data.model.RecipeShare
 import com.sizzle.app.data.model.RegisterRequest
 import com.sizzle.app.data.model.RegisterResult
+import com.sizzle.app.data.model.SubscriptionCheckout
+import com.sizzle.app.data.model.SubscriptionPlan
 import com.sizzle.app.data.model.SubscriptionStatus
 import com.sizzle.app.data.model.UpdateCommentRequest
 import com.sizzle.app.data.model.User
@@ -197,6 +199,16 @@ interface SizzleApi {
 
     @GET("api/subscriptions")
     suspend fun getSubscription(): SubscriptionStatus
+
+    @GET("api/subscriptions/plans")
+    suspend fun getSubscriptionPlans(): List<SubscriptionPlan>
+
+    /**
+     * Creates an order and its Stripe Payment Intent. The subscription starts when Stripe
+     * reports the payment to the API's webhook, not when the payment sheet closes.
+     */
+    @POST("api/subscriptions/{planId}/checkout")
+    suspend fun startCheckout(@Path("planId") planId: Int): SubscriptionCheckout
 
     // Push notifications
 
