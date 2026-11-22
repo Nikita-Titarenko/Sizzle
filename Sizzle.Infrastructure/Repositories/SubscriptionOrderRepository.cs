@@ -46,12 +46,19 @@ public sealed class SubscriptionOrderRepository(ApplicationDbContext dbContext, 
             return null;
         }
 
-        order.StartsAt = now;
+        // Buying while subscribed extends the subscription: the new period starts when the
+        // current one ends, so the time already paid for is not lost.
+        var currentEnd = await dbContext.SubscriptionOrders
+            .Where(item => item.UserId == order.UserId && item.IsPaid && item.ExpiresAt > now)
+            .MaxAsync(item => item.ExpiresAt, cancellationToken);
+        var startsAt = currentEnd ?? now;
+
+        order.StartsAt = startsAt;
         order.ExpiresAt = order.Plan switch
         {
-            SubscriptionPlan.Monthly => now.AddMonths(1),
-            SubscriptionPlan.HalfYearly => now.AddMonths(6),
-            SubscriptionPlan.Yearly => now.AddYears(1),
+            SubscriptionPlan.Monthly => startsAt.AddMonths(1),
+            SubscriptionPlan.HalfYearly => startsAt.AddMonths(6),
+            SubscriptionPlan.Yearly => startsAt.AddYears(1),
             _ => throw new InvalidOperationException("Unknown subscription plan")
         };
         order.IsPaid = true;
