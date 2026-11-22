@@ -1,0 +1,200 @@
+<header class="head">
+  <h1>
+    {{ 'premium.title' | t }}
+    <span class="premium">{{ 'ai.premium' | t }}</span>
+  </h1>
+  <p class="muted">{{ 'premium.subtitle' | t }}</p>
+</header>
+
+@if (loadError() && !plans().length) {
+  <app-status-view [heading]="'errors.title' | t" [message]="loadError()">
+    <button type="button" class="btn" (click)="load()">{{ 'common.tryAgain' | t }}</button>
+  </app-status-view>
+} @else if (!plans().length || !status()) {
+  <app-loader />
+} @else {
+  <section class="card state" [class.on]="active()">
+    <app-icon [name]="active() ? 'check' : 'sparkles'" />
+    <div>
+      @if (active()) {
+        <strong>
+          {{ 'premium.activeUntil' | t: { date: (expiresAt() | date: 'longDate') ?? '' } }}
+        </strong>
+        <p class="muted">{{ 'premium.daysLeft' | t: { count: daysLeft() } }}</p>
+      } @else {
+        <strong>{{ 'premium.inactive' | t }}</strong>
+        <p class="muted">{{ 'premium.inactiveHint' | t }}</p>
+      }
+    </div>
+  </section>
+
+  <ul class="perks">
+    <li>
+      <app-icon name="image" />
+      <div>
+        <strong>{{ 'premium.perks.covers' | t }}</strong>
+        <p class="muted">{{ 'premium.perks.coversHint' | t }}</p>
+      </div>
+    </li>
+    <li>
+      <app-icon name="film" />
+      <div>
+        <strong>{{ 'premium.perks.video' | t }}</strong>
+        <p class="muted">{{ 'premium.perks.videoHint' | t }}</p>
+      </div>
+    </li>
+  </ul>
+
+  @switch (stage()) {
+    @case ('choose') {
+      <h2>{{ (active() ? 'premium.extend' : 'premium.choose') | t }}</h2>
+      <div class="plans">
+        @for (plan of plans(); track plan.id) {
+          <article class="card plan" [class.best]="plan.durationMonths === 12">
+            @if (savings(plan) > 0) {
+              <span class="badge">{{ 'premium.save' | t: { percent: savings(plan) } }}</span>
+            }
+            <h3>{{ planName(plan.id) }}</h3>
+            <p class="price">
+              {{ plan.price | currency: plan.currency : 'symbol-narrow' : '1.0-2' }}
+            </p>
+            <p class="muted">
+              @if (plan.durationMonths > 1) {
+                {{
+                  'premium.perMonth'
+                    | t
+                      : {
+                          price:
+                            (perMonth(plan)
+                              | currency: plan.currency : 'symbol-narrow' : '1.0-2') ?? '',
+                        }
+                }}
+              } @else {
+                {{ 'premium.billedOnce' | t }}
+              }
+            </p>
+            <button
+              type="button"
+              class="btn block"
+              [class.outline]="plan.durationMonths !== 12"
+              [disabled]="!!busy()"
+              (click)="choose(plan)"
+            >
+              {{
+                (busy() === 'checkout' && selected() === plan.id
+                  ? 'premium.opening'
+                  : 'premium.select'
+                ) | t
+              }}
+            </button>
+          </article>
+        }
+      </div>
+      <p class="muted note">{{ 'premium.oneOff' | t }}</p>
+    }
+    @case ('activating') {
+      <section class="card result">
+        <app-loader [label]="'premium.activating' | t" />
+      </section>
+    }
+    @case ('activated') {
+      <section class="card result on">
+        <app-icon name="check" />
+        <h2>{{ 'premium.activated' | t }}</h2>
+        <p class="muted">
+          {{ 'premium.activeUntil' | t: { date: (expiresAt() | date: 'longDate') ?? '' } }}
+        </p>
+        <button type="button" class="btn" (click)="openEditor()">
+          {{ 'premium.tryIt' | t }}
+        </button>
+      </section>
+    }
+    @case ('pending') {
+      <section class="card result">
+        <app-icon name="clock" />
+        <h2>{{ 'premium.pendingTitle' | t }}</h2>
+        <p class="muted">{{ 'premium.pendingHint' | t }}</p>
+        <button type="button" class="btn outline" (click)="refreshStatus()">
+          {{ 'premium.checkAgain' | t }}
+        </button>
+      </section>
+    }
+  }
+
+  <!-- Kept in the DOM so Stripe's form can be mounted as soon as the order exists. -->
+  <section class="card checkout" [hidden]="stage() !== 'pay'">
+    @if (selectedPlan(); as plan) {
+      <div class="row summary">
+        <div>
+          <strong>{{ planName(plan.id) }}</strong>
+          <p class="muted">
+            {{ plan.price | currency: plan.currency : 'symbol-narrow' : '1.0-2' }}
+          </p>
+        </div>
+        <span class="spacer"></span>
+        <button type="button" class="link" [disabled]="busy() === 'confirm'" (click)="back()">
+          {{ 'premium.changePlan' | t }}
+        </button>
+      </div>
+    }
+    @if (busy() === 'form') {
+      <app-loader />
+    }
+    <div #paymentHost class="payment"></div>
+    @if (error()) {
+      <p class="alert">{{ error() }}</p>
+    }
+    <button
+      type="button"
+      class="btn block large"
+      [disabled]="!!busy() || !formComplete()"
+      (click)="pay()"
+    >
+      @if (busy() === 'confirm') {
+        {{ 'premium.paying' | t }}
+      } @else if (selectedPlan(); as plan) {
+        {{
+          'premium.pay'
+            | t: { price: (plan.price | currency: plan.currency : 'symbol-narrow' : '1.0-2') ?? '' }
+        }}
+      }
+    </button>
+    <p class="muted secure">
+      <app-icon name="lock" />
+      {{ 'premium.secure' | t }}
+    </p>
+  </section>
+
+  @if (error() && stage() !== 'pay') {
+    <p class="alert">{{ error() }}</p>
+  }
+
+  @if (status()!.history.length) {
+    <section class="history">
+      <h2>{{ 'premium.history' | t }}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>{{ 'premium.plan' | t }}</th>
+            <th>{{ 'premium.period' | t }}</th>
+            <th class="amount">{{ 'premium.amount' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of status()!.history; track order.orderId) {
+            <tr>
+              <td>{{ planName(order.plan) }}</td>
+              <td>
+                {{ order.startsAt | date: 'mediumDate' }} –
+                {{ order.expiresAt | date: 'mediumDate' }}
+              </td>
+              <td class="amount">
+                {{ order.amount | currency: order.currency : 'symbol-narrow' : '1.0-2' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  }
+}

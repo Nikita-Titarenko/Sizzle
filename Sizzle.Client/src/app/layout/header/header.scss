@@ -109,3 +109,15 @@
     scrollbar-width: none;
   }
 }
+
+.premium-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+
+  app-icon {
+    width: 15px;
+    height: 15px;
+    color: var(--accent);
+  }
+}

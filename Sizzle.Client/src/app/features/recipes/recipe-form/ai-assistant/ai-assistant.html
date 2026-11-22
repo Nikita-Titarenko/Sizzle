@@ -85,7 +85,7 @@
         class="tool"
         [disabled]="busy()"
         [title]="(subscribed() === false ? 'ai.videoLocked' : 'ai.videoHint') | t"
-        (click)="videoInput.click()"
+        (click)="pickVideo(videoInput)"
       >
         <app-icon name="film" />
         {{ 'ai.fromVideo' | t }}

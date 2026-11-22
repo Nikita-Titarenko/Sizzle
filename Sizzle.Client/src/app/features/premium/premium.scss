@@ -1,0 +1,229 @@
+:host {
+  display: block;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.head {
+  margin-bottom: 18px;
+
+  h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 4px;
+    font-size: 1.9rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+h2 {
+  margin: 28px 0 12px;
+  font-size: 1.2rem;
+}
+
+p {
+  margin: 0;
+}
+
+// Whether Premium is on, and until when.
+.state {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  > app-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    padding: 9px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    color: var(--muted);
+  }
+
+  &.on {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+
+    > app-icon {
+      background: var(--accent-soft);
+      color: var(--accent-dark);
+    }
+  }
+}
+
+.perks {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+
+  app-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    color: var(--accent-dark);
+  }
+}
+
+.plans {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.plan {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  h3 {
+    margin: 0;
+    font-size: 1rem;
+  }
+
+  .price {
+    margin-top: 6px;
+    font-size: 1.8rem;
+    font-weight: 800;
+  }
+
+  .btn {
+    margin-top: auto;
+  }
+
+  .muted {
+    margin-bottom: 16px;
+  }
+
+  &.best {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+}
+
+.badge {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.note {
+  margin-top: 12px;
+}
+
+.checkout {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 520px;
+  margin: 28px auto 0;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.summary {
+  align-items: center;
+}
+
+.payment:empty {
+  display: none;
+}
+
+.secure {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 0.8rem;
+
+  app-icon {
+    width: 13px;
+    height: 13px;
+  }
+}
+
+.result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 28px;
+  text-align: center;
+
+  h2 {
+    margin: 4px 0 0;
+  }
+
+  > app-icon {
+    width: 44px;
+    height: 44px;
+    padding: 10px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    color: var(--muted);
+  }
+
+  &.on > app-icon {
+    background: color-mix(in srgb, var(--success) 18%, transparent);
+    color: var(--success);
+  }
+
+  .btn {
+    margin-top: 8px;
+  }
+}
+
+.alert {
+  margin-top: 12px;
+}
+
+.history {
+  margin-top: 12px;
+  overflow-x: auto;
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .amount {
+    text-align: right;
+  }
+}

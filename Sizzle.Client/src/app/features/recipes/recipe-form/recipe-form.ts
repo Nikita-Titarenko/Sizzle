@@ -13,6 +13,8 @@ import { FormsModule } from '@angular/forms';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { fromEvent } from 'rxjs';
 import { AiApi } from '../../../core/api/ai.api';
 import { CatalogApi } from '../../../core/api/catalog.api';
 import { RecipesApi } from '../../../core/api/recipes.api';
@@ -31,6 +33,7 @@ import {
   IngredientCatalog,
   toIngredientUnit,
 } from '../../../core/services/ingredient-catalog.service';
+import { openPremium } from '../../../core/utils/premium';
 import { Icon } from '../../../shared/components/icon/icon';
 import { IngredientPicker } from '../../../shared/components/ingredient-picker/ingredient-picker';
 import { Loader } from '../../../shared/components/loader/loader';
@@ -165,10 +168,15 @@ export class RecipeForm {
   constructor() {
     this.ingredientCatalog.ensureLoaded();
     this.catalogApi.getCategories().subscribe((categories) => this.categories.set(categories));
-    this.aiApi.getSubscription().subscribe({
-      next: (active) => this.subscribed.set(active),
-      error: () => this.subscribed.set(null),
-    });
+    this.checkSubscription();
+    // Plans open in another tab; coming back after paying unlocks the tools without a reload.
+    fromEvent(window, 'focus')
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => {
+        if (this.subscribed() === false) {
+          this.checkSubscription();
+        }
+      });
     effect(() => {
       const id = this.id();
       if (id) {
@@ -400,9 +408,16 @@ export class RecipeForm {
     this.review.set(null);
   }
 
+  private checkSubscription(): void {
+    this.aiApi.getSubscription().subscribe({
+      next: (active) => this.subscribed.set(active),
+      error: () => this.subscribed.set(null),
+    });
+  }
+
   generateCover(): void {
     if (this.subscribed() === false) {
-      this.error.set(this.i18n.t('ai.subscriptionRequired'));
+      openPremium();
       return;
     }
     if (!this.name.trim()) {
