@@ -19,6 +19,7 @@ googleServices = "4.4.2"
 credentials = "1.3.0"
 googleid = "1.1.1"
 junit = "4.13.2"
+stripe = "21.29.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +51,7 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 coil-video = { group = "io.coil-kt", name = "coil-video", version.ref = "coil" }
 firebase-bom = { group = "com.google.firebase", name = "firebase-bom", version.ref = "firebaseBom" }
 firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging" }
+stripe-paymentsheet = { group = "com.stripe", name = "paymentsheet", version.ref = "stripe" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]

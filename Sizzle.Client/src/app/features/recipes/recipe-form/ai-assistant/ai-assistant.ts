@@ -17,6 +17,7 @@ import { I18n } from '../../../../core/i18n/i18n.service';
 import { TranslationKey } from '../../../../core/i18n/translations';
 import { ErrorKeys, GeneratedRecipe, GenerationEvent } from '../../../../core/models';
 import { parsePartialJson } from '../../../../core/utils/partial-json';
+import { openPremium } from '../../../../core/utils/premium';
 import { Icon } from '../../../../shared/components/icon/icon';
 import { TranslatePipe } from '../../../../shared/pipes/translate.pipe';
 
@@ -120,6 +121,15 @@ export class AiAssistant {
     if (!(event as KeyboardEvent).shiftKey) {
       event.preventDefault();
       this.send();
+    }
+  }
+
+  /** Locked for non-subscribers: the button leads to the plans instead of the file picker. */
+  pickVideo(input: HTMLInputElement): void {
+    if (this.subscribed() === false) {
+      openPremium();
+    } else {
+      input.click();
     }
   }
 

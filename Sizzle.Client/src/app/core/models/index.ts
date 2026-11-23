@@ -4,3 +4,4 @@ export * from './recipe.model';
 export * from './comment.model';
 export * from './user.model';
 export * from './notification.model';
+export * from './subscription.model';

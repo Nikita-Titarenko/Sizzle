@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.coil.video)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)
+    implementation(libs.stripe.paymentsheet)
 
     debugImplementation(libs.androidx.compose.ui.tooling)
 
