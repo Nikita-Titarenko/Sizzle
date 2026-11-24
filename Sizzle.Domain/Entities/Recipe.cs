@@ -26,6 +26,8 @@ public class Recipe
 
     public int ViewCount { get; set; }
 
+    public int AdViewCount { get; set; }
+
     public int LikeCount { get; set; }
 
     public DateTime CreationDate { get; set; }

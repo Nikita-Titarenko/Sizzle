@@ -34,6 +34,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     public DbSet<DeviceToken> DeviceTokens { get; set; }
 
+    public DbSet<AdEarning> AdEarnings { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -111,6 +113,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<SubscriptionOrder>()
             .HasIndex(order => new { order.UserId, order.IsPaid, order.ExpiresAt });
+
+        builder.Entity<ApplicationUser>()
+            .Property(user => user.StripeConnectedAccountId)
+            .HasMaxLength(255);
+
+        builder.Entity<AdEarning>()
+            .HasOne(earning => earning.User)
+            .WithMany(user => user.AdEarnings)
+            .HasForeignKey(earning => earning.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<AdEarning>()
+            .Property(earning => earning.Amount)
+            .HasPrecision(12, 2);
+
+        builder.Entity<AdEarning>()
+            .Property(earning => earning.Currency)
+            .HasMaxLength(3);
+
+        builder.Entity<AdEarning>()
+            .Property(earning => earning.StripeTransferId)
+            .HasMaxLength(255);
+
+        builder.Entity<AdEarning>()
+            .HasIndex(earning => new { earning.UserId, earning.CreatedAt });
 
         builder.Entity<DeviceToken>()
             .HasKey(device => device.Token);

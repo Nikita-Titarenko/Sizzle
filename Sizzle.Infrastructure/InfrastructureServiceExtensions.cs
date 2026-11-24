@@ -87,6 +87,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ICommentRepository, CommentRepository>();
         services.AddScoped<IUserFollowerRepository, UserFollowerRepository>();
         services.AddScoped<IRecipeRepository, RecipeRepository>();
+        services.AddScoped<IAdEarningRepository, AdEarningRepository>();
         services.AddOptions<RecipeCacheOptions>()
             .Bind(configuration.GetSection("Cache"))
             .Validate(options => options.DurationSeconds > 0, "Cache:DurationSeconds must be greater than zero.")
@@ -121,6 +122,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ISubscriptionOrderRepository, SubscriptionOrderRepository>();
         services.AddScoped<IStripeGateway, StripeGateway>();
         services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
+        services.AddHostedService<AdEarningsPayoutWorker>();
 
         services.AddHttpClient(nameof(FcmPushNotificationSender));
         services.AddSingleton<IPushNotificationSender, FcmPushNotificationSender>();

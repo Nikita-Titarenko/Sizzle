@@ -18,6 +18,8 @@ public class ApplicationUserRecipe
 
     public DateTime? ViewUpdatedAt { get; set; }
 
+    public DateTime? AdViewUpdatedAt { get; set; }
+
     public ApplicationUser? ApplicationUser { get; set; }
 
     public Recipe? Recipe { get; set; }

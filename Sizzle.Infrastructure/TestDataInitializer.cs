@@ -13,6 +13,8 @@ namespace Sizzle.Infrastructure;
 
 public static class TestDataInitializer
 {
+    private const int SeedUserCount = 20;
+
     public static async Task InitializeAsync(ApplicationDbContext context, UserManager<ApplicationUser> userManager, IFileService fileService)
     {
         var users = await ReadAsync<List<UserSeedDto>>("app-users.json");
@@ -20,7 +22,7 @@ public static class TestDataInitializer
         var ingredientCatalog = await ReadCatalogIdsAsync("ingredients.json");
         var categoryCatalog = await ReadCatalogIdsAsync("categories.json");
 
-        if (users.Count != 20 || users.Any(user => user.Id == Guid.Empty || string.IsNullOrWhiteSpace(user.Name)
+        if (users.Count != SeedUserCount || users.Any(user => user.Id == Guid.Empty || string.IsNullOrWhiteSpace(user.Name)
             || string.IsNullOrWhiteSpace(user.Email) || string.IsNullOrWhiteSpace(user.Password)
             || string.IsNullOrWhiteSpace(user.Description))
             || users.Select(user => user.Id).Distinct().Count() != users.Count
@@ -107,6 +109,7 @@ public static class TestDataInitializer
                 Description = recipe.Description,
                 CookingTimeMinutes = recipe.CookingTimeMinutes,
                 ViewCount = recipe.ViewCount,
+                AdViewCount = recipe.ViewCount,
                 LikeCount = recipe.LikeCount,
                 CreationDate = DateTime.UtcNow,
                 RecipeIngredients = recipe.Ingredients.Select(ingredient => new RecipeIngredient
@@ -123,6 +126,16 @@ public static class TestDataInitializer
                 }).ToList()
             }).ToList();
         await context.Recipes.AddRangeAsync(newRecipes);
+
+        foreach (var recipeSeed in recipes)
+        {
+            if (!existingRecipes.TryGetValue(recipeSeed.Id, out var existingRecipe))
+            {
+                continue;
+            }
+
+            existingRecipe.AdViewCount = existingRecipe.ViewCount;
+        }
 
         var seededRecipes = existingRecipes.Values.Concat(newRecipes).ToDictionary(recipe => recipe.Id);
         foreach (var asset in media)

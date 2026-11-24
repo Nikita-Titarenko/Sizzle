@@ -3,6 +3,7 @@ using Sizzle.Application.Services.Categories;
 using Sizzle.Application.Services.Comments;
 using Sizzle.Application.Services.Devices;
 using Sizzle.Application.Services.Ingredients;
+using Sizzle.Application.Services.Monetization;
 using Sizzle.Application.Services.Recipes;
 using Sizzle.Application.Services.Subscriptions;
 using Sizzle.Application.Services.Users;
@@ -20,6 +21,7 @@ public static class ApplicationServiceExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<IUserFollowerService, UserFollowerService>();
         services.AddScoped<ISubscriptionService, SubscriptionService>();
+        services.AddScoped<IMonetizationService, MonetizationService>();
         services.AddScoped<IDeviceTokenService, DeviceTokenService>();
         return services;
     }

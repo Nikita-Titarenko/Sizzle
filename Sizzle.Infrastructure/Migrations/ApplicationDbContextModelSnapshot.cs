@@ -145,6 +145,42 @@ namespace Sizzle.Infrastructure.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.AdEarning", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("AdViewCount")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("varchar(3)");
+
+                    b.Property<string>("StripeTransferId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("AdEarnings");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUser", b =>
                 {
                     b.Property<Guid>("Id")
@@ -168,6 +204,9 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("tinyint(1)");
 
+                    b.Property<bool>("IsStripeProfileConfigured")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("tinyint(1)");
 
@@ -186,6 +225,9 @@ namespace Sizzle.Infrastructure.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("varchar(256)");
 
+                    b.Property<int>("PaidAdViewCount")
+                        .HasColumnType("int");
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("longtext");
 
@@ -197,6 +239,13 @@ namespace Sizzle.Infrastructure.Migrations
 
                     b.Property<string>("SecurityStamp")
                         .HasColumnType("longtext");
+
+                    b.Property<string>("StripeConnectedAccountId")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<DateTime?>("StripeProfileConfiguredAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("tinyint(1)");
@@ -227,6 +276,9 @@ namespace Sizzle.Infrastructure.Migrations
 
                     b.Property<Guid>("RecipeId")
                         .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("AdViewUpdatedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsLiked")
                         .HasColumnType("tinyint(1)");
@@ -382,6 +434,9 @@ namespace Sizzle.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
+
+                    b.Property<int>("AdViewCount")
+                        .HasColumnType("int");
 
                     b.Property<Guid>("ApplicationUserId")
                         .HasColumnType("char(36)");
@@ -601,6 +656,17 @@ namespace Sizzle.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Sizzle.Domain.Entities.AdEarning", b =>
+                {
+                    b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "User")
+                        .WithMany("AdEarnings")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUserRecipe", b =>
                 {
                     b.HasOne("Sizzle.Domain.Entities.ApplicationUser", "ApplicationUser")
@@ -781,6 +847,8 @@ namespace Sizzle.Infrastructure.Migrations
 
             modelBuilder.Entity("Sizzle.Domain.Entities.ApplicationUser", b =>
                 {
+                    b.Navigation("AdEarnings");
+
                     b.Navigation("ApplicationUserRecipes");
 
                     b.Navigation("Comments");

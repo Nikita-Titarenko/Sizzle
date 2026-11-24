@@ -386,4 +386,20 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper, ILo
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    [HttpPost("{recipeId:guid}/update-ad-view")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAdView(Guid recipeId, CancellationToken cancellationToken)
+    {
+        var result = await recipeService.UpdateAdViewAsync(new UpdateRecipeViewDto
+        {
+            RecipeId = recipeId,
+            ApplicationUserId = GetUserId()
+        }, cancellationToken);
+
+        return !result.IsSuccess ? HandleErrors(result) : NoContent();
+    }
+
 }

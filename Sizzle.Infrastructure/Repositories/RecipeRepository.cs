@@ -318,6 +318,26 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
         return query.FirstOrDefaultAsync(r => r.Id == recipeId && (!r.IsDraft || r.ApplicationUserId == applicationUserId), cancellationToken);
     }
 
+    public Task<int> GetRecentViewCountByAuthorAsync(Guid authorId, DateTime sinceUtc, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("db.recipes.get_recent_view_count_by_author");
+        return DbSet.AsNoTracking()
+            .Where(recipe => !recipe.IsDraft
+                && recipe.ApplicationUserId == authorId
+                && recipe.CreationDate >= sinceUtc)
+            .SumAsync(recipe => recipe.ViewCount, cancellationToken);
+    }
+
+    public async Task<int> GetAdViewCountByAuthorAsync(Guid authorId, DateTime profileConfiguredAtUtc, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("db.recipes.get_ad_view_count_by_author");
+        return await DbSet.AsNoTracking()
+            .Where(recipe => !recipe.IsDraft
+                && recipe.ApplicationUserId == authorId
+                && recipe.CreationDate >= profileConfiguredAtUtc)
+            .SumAsync(recipe => recipe.AdViewCount, cancellationToken);
+    }
+
     public void AddSteps(IEnumerable<RecipeStep> steps)
     {
         logger.LogInformation("db.recipes.add_steps");

@@ -24,6 +24,12 @@ using StackExchange.Redis;
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddJsonFile("appsettings.Secrets.json", optional: true, reloadOnChange: true);
 builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.None);
+builder.Logging.AddSimpleConsole(options =>
+{
+    options.TimestampFormat = "yyyy-MM-dd HH:mm:ss.fff ";
+    options.UseUtcTimestamp = true;
+    options.SingleLine = true;
+});
 
 var logsRoot = Path.Combine(builder.Environment.ContentRootPath, "logs");
 var generalLogsPath = Path.Combine(logsRoot, "general");
@@ -32,10 +38,11 @@ Directory.CreateDirectory(generalLogsPath);
 Directory.CreateDirectory(personalizedLogsPath);
 
 var dateFileName = $"{DateTime.UtcNow:yyyyMMdd}.log";
+var logOutputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff} [{Level:u3}] {SourceContext} {Message:lj}{NewLine}{Exception}";
 builder.Logging.AddSerilog(new LoggerConfiguration()
     .MinimumLevel.Information()
     .Filter.ByExcluding(Matching.FromSource<PersonalizedRecipesLog>())
-    .WriteTo.File(Path.Combine(generalLogsPath, dateFileName), shared: true)
+    .WriteTo.File(Path.Combine(generalLogsPath, dateFileName), outputTemplate: logOutputTemplate, shared: true)
     .CreateLogger(), dispose: true);
 
 if (builder.Configuration.GetValue<bool>("Logging:PersonalizedRecipesLogging"))
@@ -47,7 +54,7 @@ if (builder.Configuration.GetValue<bool>("Logging:PersonalizedRecipesLogging"))
     builder.Logging.AddSerilog(new LoggerConfiguration()
         .MinimumLevel.Information()
         .Filter.ByIncludingOnly(Matching.FromSource<PersonalizedRecipesLog>())
-        .WriteTo.File(Path.Combine(personalizedLogsPath, dateFileName), shared: true)
+        .WriteTo.File(Path.Combine(personalizedLogsPath, dateFileName), outputTemplate: logOutputTemplate, shared: true)
         .CreateLogger(), dispose: true);
 }
 

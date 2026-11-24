@@ -1308,6 +1308,47 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
         return new Result();
     }
 
+    public async Task<Result> UpdateAdViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default)
+    {
+        var recipe = await recipeRepository.GetAsync(cancellationToken, dto.RecipeId);
+        if (recipe == null || recipe.IsDraft)
+        {
+            return ViewNotFound(dto);
+        }
+
+        var userRecipe = await recipeRepository.GetUserRecipeAsync(dto.ApplicationUserId, dto.RecipeId, cancellationToken);
+        var now = DateTime.UtcNow;
+
+        if (userRecipe == null)
+        {
+            userRecipe = new ApplicationUserRecipe
+            {
+                ApplicationUserId = dto.ApplicationUserId,
+                RecipeId = dto.RecipeId,
+                IsLiked = false,
+                AdViewUpdatedAt = now
+            };
+            recipeRepository.AddUserRecipe(userRecipe);
+            recipe.AdViewCount += 1;
+            await unitOfWork.CommitAsync(cancellationToken);
+            return new Result();
+        }
+
+        var canUpdateAdView = !userRecipe.AdViewUpdatedAt.HasValue
+            || now >= userRecipe.AdViewUpdatedAt.Value.AddMinutes(businessLogicOptions.Value.AdViewUpdateIntervalMinutes);
+
+        if (!canUpdateAdView)
+        {
+            return new Result();
+        }
+
+        recipe.AdViewCount += 1;
+        userRecipe.AdViewUpdatedAt = now;
+        await unitOfWork.CommitAsync(cancellationToken);
+
+        return new Result();
+    }
+
     private Result ViewNotFound(UpdateRecipeViewDto dto)
     {
         operationLogger.LogWarning("Recipe update view rejected for recipe {RecipeId} and user {UserId}: {ErrorKey}",

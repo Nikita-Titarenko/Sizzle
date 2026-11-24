@@ -28,6 +28,10 @@ public interface IRecipeRepository : IRepository<Recipe>
 
 	Task<Recipe?> GetWithFullDetailsAsync(Guid recipeId, Guid? applicationUserId, CancellationToken cancellationToken = default);
 
+	Task<int> GetRecentViewCountByAuthorAsync(Guid authorId, DateTime sinceUtc, CancellationToken cancellationToken = default);
+
+	Task<int> GetAdViewCountByAuthorAsync(Guid authorId, DateTime profileConfiguredAtUtc, CancellationToken cancellationToken = default);
+
 	void AddSteps(IEnumerable<RecipeStep> steps);
 
 	void RemoveSteps(IEnumerable<RecipeStep> steps);

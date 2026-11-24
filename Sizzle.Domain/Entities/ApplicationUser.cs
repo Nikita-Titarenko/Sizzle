@@ -8,6 +8,14 @@ public class ApplicationUser : IdentityUser<Guid>
 
     public string? Description { get; set; }
 
+    public string? StripeConnectedAccountId { get; set; }
+
+    public bool IsStripeProfileConfigured { get; set; }
+
+    public DateTime? StripeProfileConfiguredAt { get; set; }
+
+    public int PaidAdViewCount { get; set; }
+
     public string? VerificationCode { get; set; }
 
     public ICollection<Recipe> Recipes { get; set; } = [];
@@ -21,4 +29,6 @@ public class ApplicationUser : IdentityUser<Guid>
     public ICollection<UserFollower> Following { get; set; } = [];
 
     public ICollection<SubscriptionOrder> SubscriptionOrders { get; set; } = [];
+
+    public ICollection<AdEarning> AdEarnings { get; set; } = [];
 }

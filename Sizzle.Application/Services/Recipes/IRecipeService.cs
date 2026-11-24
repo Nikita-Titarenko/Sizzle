@@ -40,4 +40,6 @@ public interface IRecipeService
 
     Task<Result> UpdateViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default);
 
+    Task<Result> UpdateAdViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default);
+
 }
