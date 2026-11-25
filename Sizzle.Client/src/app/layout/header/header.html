@@ -16,6 +16,7 @@
         <app-icon name="sparkles" />
         {{ 'nav.premium' | t }}
       </a>
+      <a routerLink="/payouts" routerLinkActive="active">{{ 'nav.payouts' | t }}</a>
       <button class="link" (click)="logout()">{{ 'nav.logOut' | t }}</button>
     } @else {
       <a routerLink="/login" routerLinkActive="active">{{ 'nav.logIn' | t }}</a>

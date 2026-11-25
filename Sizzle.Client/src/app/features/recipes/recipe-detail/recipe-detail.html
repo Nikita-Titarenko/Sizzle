@@ -159,6 +159,9 @@
 
     <app-comment-section [recipeId]="r.id" />
   </article>
+  @if (adFor() === r.id) {
+    <app-ad-interstitial (closed)="adClosed($event)" />
+  }
 } @else if (!error()) {
   <app-loader />
 }

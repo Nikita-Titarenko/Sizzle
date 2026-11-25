@@ -5,3 +5,4 @@ export * from './comment.model';
 export * from './user.model';
 export * from './notification.model';
 export * from './subscription.model';
+export * from './monetization.model';

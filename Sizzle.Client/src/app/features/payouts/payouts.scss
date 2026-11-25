@@ -1,0 +1,211 @@
+:host {
+  display: block;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.head {
+  margin-bottom: 18px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 1.9rem;
+  }
+}
+
+h2 {
+  margin: 28px 0 12px;
+  font-size: 1.2rem;
+}
+
+p {
+  margin: 0;
+}
+
+// Where the user stands: not eligible, ready to set up, or being paid.
+.state {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+
+  > app-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    padding: 9px;
+    border-radius: 50%;
+    background: var(--surface-3);
+    color: var(--muted);
+  }
+
+  > div:not(.actions) {
+    flex: 1 1 260px;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  &.ready > app-icon {
+    background: var(--accent-soft);
+    color: var(--accent-dark);
+  }
+
+  &.on {
+    border-color: color-mix(in srgb, var(--success) 45%, var(--border));
+
+    > app-icon {
+      background: color-mix(in srgb, var(--success) 18%, transparent);
+      color: var(--success);
+    }
+  }
+
+  .btn app-icon {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.alert {
+  margin-top: 12px;
+}
+
+.goals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.goal {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .row {
+    align-items: center;
+    gap: 8px;
+  }
+
+  app-icon {
+    width: 18px;
+    height: 18px;
+    color: var(--muted);
+  }
+
+  .count {
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  &.done {
+    app-icon,
+    .count {
+      color: var(--success);
+    }
+
+    .bar span {
+      background: var(--success);
+    }
+  }
+}
+
+.bar {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent);
+    transition: width 0.4s ease-out;
+  }
+}
+
+.how {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+  }
+
+  app-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    color: var(--accent-dark);
+  }
+
+  p {
+    font-size: 0.92rem;
+  }
+}
+
+.history {
+  margin-top: 12px;
+
+  .table {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.92rem;
+  }
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th {
+    color: var(--muted);
+    font-weight: 600;
+  }
+
+  .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .amount {
+    font-weight: 700;
+  }
+
+  .transfer {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+  }
+
+  .empty a {
+    margin-left: 4px;
+  }
+}

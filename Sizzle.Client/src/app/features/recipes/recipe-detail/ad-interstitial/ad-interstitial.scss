@@ -1,0 +1,193 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgb(0 0 0 / 0.78);
+  backdrop-filter: blur(6px);
+  animation: fade 0.2s ease-out;
+}
+
+.ad {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 41;
+  display: flex;
+  flex-direction: column;
+  width: min(460px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  translate: -50% -50%;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) + 4px);
+  background: var(--bg);
+  box-shadow: var(--shadow);
+  animation: pop 0.25s ease-out;
+  outline: none;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  min-height: 52px;
+  padding: 8px 10px 8px 16px;
+}
+
+.label {
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.countdown,
+.close {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+}
+
+.countdown {
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+
+  svg {
+    position: absolute;
+    inset: 0;
+    rotate: -90deg;
+  }
+
+  circle {
+    fill: none;
+    stroke-width: 3;
+  }
+
+  .track {
+    stroke: var(--surface-3);
+  }
+
+  .progress {
+    stroke: var(--accent);
+    stroke-dasharray: 100;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.1s linear;
+  }
+}
+
+.close {
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--text);
+  cursor: pointer;
+  animation: fade 0.2s ease-out;
+
+  &:hover {
+    background: var(--border-strong);
+  }
+
+  app-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.creative {
+  --tint: var(--accent);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 0 16px;
+  padding: 36px 24px 28px;
+  border-radius: var(--radius);
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--tint) 32%, transparent),
+      transparent 70%
+    ),
+    var(--surface-2);
+  text-align: center;
+
+  &[data-kind='create'] {
+    --tint: var(--success);
+  }
+
+  &[data-kind='payouts'] {
+    --tint: #f5b942;
+  }
+
+  h2 {
+    margin: 6px 0 0;
+    font-size: 1.45rem;
+    line-height: 1.2;
+  }
+
+  p {
+    margin: 0;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .btn {
+    margin-top: 12px;
+  }
+}
+
+.art {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--tint) 20%, var(--surface));
+  color: var(--tint);
+  box-shadow: 0 10px 30px color-mix(in srgb, var(--tint) 30%, transparent);
+
+  app-icon {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+.foot {
+  margin: 0;
+  padding: 12px 16px 16px;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    scale: 0.96;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .ad,
+  .close {
+    animation: none;
+  }
+}
