@@ -80,6 +80,7 @@ import com.sizzle.app.ui.components.UserAvatar
 import com.sizzle.app.ui.components.recipeItems
 import com.sizzle.app.ui.components.sizzleFieldColors
 import com.sizzle.app.ui.navigation.Navigator
+import com.sizzle.app.ui.screens.payouts.PayoutsCard
 import com.sizzle.app.ui.screens.premium.PremiumCard
 import com.sizzle.app.ui.screens.RecipeListState
 import com.sizzle.app.ui.theme.Sizzle
@@ -351,6 +352,7 @@ private fun SignedInProfile(vm: ProfileViewModel, navigator: Navigator) {
                 }
             }
             item(span = { GridItemSpan(maxLineSpan) }) { PremiumCard(vm.premiumDaysLeft, navigator::premium) }
+            item(span = { GridItemSpan(maxLineSpan) }) { PayoutsCard(navigator::payouts) }
             item(span = { GridItemSpan(maxLineSpan) }) { SettingsCard(showNotifications = true) }
             item(span = { GridItemSpan(maxLineSpan) }) {
                 TabRow(

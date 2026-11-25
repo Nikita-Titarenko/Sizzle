@@ -66,6 +66,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/premium/premium').then((m) => m.Premium),
   },
   {
+    path: 'payouts',
+    canActivate: [authGuard],
+    loadComponent: () => import('./features/payouts/payouts').then((m) => m.Payouts),
+  },
+  {
     path: 'users/:id',
     loadComponent: () => import('./features/users/user-page/user-page').then((m) => m.UserPage),
   },

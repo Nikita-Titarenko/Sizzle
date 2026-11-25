@@ -1,0 +1,189 @@
+<header class="head">
+  <h1>{{ 'payouts.title' | t }}</h1>
+  <p class="muted">{{ 'payouts.subtitle' | t }}</p>
+</header>
+
+@if (loadError() && !status()) {
+  <app-status-view [heading]="'errors.title' | t" [message]="loadError()">
+    <button type="button" class="btn" (click)="load()">{{ 'common.tryAgain' | t }}</button>
+  </app-status-view>
+} @else if (status(); as s) {
+  @if (s.isStripeProfileConfigured) {
+    <section class="card state on">
+      <app-icon name="check" />
+      <div>
+        <strong>{{ 'payouts.activeTitle' | t }}</strong>
+        <p class="muted">{{ 'payouts.activeHint' | t }}</p>
+      </div>
+      <span class="spacer"></span>
+      <button
+        type="button"
+        class="btn"
+        [disabled]="busy() === 'dashboard'"
+        (click)="openDashboard()"
+      >
+        <app-icon name="external-link" />
+        {{ (busy() === 'dashboard' ? 'payouts.opening' : 'payouts.dashboard') | t }}
+      </button>
+    </section>
+  } @else if (s.isEligible) {
+    <section class="card state ready">
+      <app-icon name="wallet" />
+      <div>
+        @if (returned()) {
+          <strong>{{ 'payouts.checkingTitle' | t }}</strong>
+          <p class="muted">{{ 'payouts.checkingHint' | t }}</p>
+        } @else {
+          <strong>{{ 'payouts.eligibleTitle' | t }}</strong>
+          <p class="muted">{{ 'payouts.eligibleHint' | t }}</p>
+        }
+      </div>
+      <span class="spacer"></span>
+      <div class="actions">
+        @if (returned()) {
+          <button type="button" class="btn outline" [disabled]="!!busy()" (click)="refresh()">
+            {{ (busy() === 'refresh' ? 'payouts.checking' : 'payouts.checkAgain') | t }}
+          </button>
+        }
+        <button
+          type="button"
+          class="btn"
+          [class.outline]="returned()"
+          [disabled]="!!busy()"
+          (click)="startOnboarding()"
+        >
+          {{
+            (busy() === 'onboarding'
+              ? 'payouts.opening'
+              : returned()
+                ? 'payouts.continueSetup'
+                : 'payouts.setup'
+            ) | t
+          }}
+        </button>
+      </div>
+    </section>
+  } @else {
+    <section class="card state">
+      <app-icon name="lock" />
+      <div>
+        <strong>{{ 'payouts.notEligibleTitle' | t }}</strong>
+        <p class="muted">{{ 'payouts.notEligibleHint' | t }}</p>
+      </div>
+    </section>
+  }
+
+  @if (error()) {
+    <p class="alert">{{ error() }}</p>
+  }
+
+  <div class="goals">
+    <div class="card goal" [class.done]="s.followersCount >= s.requiredFollowersCount">
+      <div class="row">
+        <app-icon name="users" />
+        <strong>{{ 'payouts.followers' | t }}</strong>
+        <span class="spacer"></span>
+        <span class="count">
+          {{ s.followersCount | number }} / {{ s.requiredFollowersCount | number }}
+        </span>
+      </div>
+      <div
+        class="bar"
+        role="progressbar"
+        [attr.aria-label]="'payouts.followers' | t"
+        [attr.aria-valuenow]="followersProgress()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <span [style.width.%]="followersProgress()"></span>
+      </div>
+    </div>
+    <div class="card goal" [class.done]="s.recipeViewsLast90Days >= s.requiredViewsLast90Days">
+      <div class="row">
+        <app-icon name="eye" />
+        <strong>{{ 'payouts.views' | t }}</strong>
+        <span class="spacer"></span>
+        <span class="count">
+          {{ s.recipeViewsLast90Days | number }} / {{ s.requiredViewsLast90Days | number }}
+        </span>
+      </div>
+      <div
+        class="bar"
+        role="progressbar"
+        [attr.aria-label]="'payouts.views' | t"
+        [attr.aria-valuenow]="viewsProgress()"
+        aria-valuemin="0"
+        aria-valuemax="100"
+      >
+        <span [style.width.%]="viewsProgress()"></span>
+      </div>
+    </div>
+  </div>
+
+  <h2>{{ 'payouts.howTitle' | t }}</h2>
+  <ol class="how">
+    <li>
+      <app-icon name="film" />
+      <p>{{ 'payouts.how.ads' | t }}</p>
+    </li>
+    <li>
+      <app-icon name="sparkles" />
+      <p>{{ 'payouts.how.premium' | t }}</p>
+    </li>
+    <li>
+      <app-icon name="wallet" />
+      <p>{{ 'payouts.how.monthly' | t }}</p>
+    </li>
+  </ol>
+
+  <section class="history">
+    <h2>{{ 'payouts.history' | t }}</h2>
+    @if (earnings(); as page) {
+      @if (page.data.length) {
+        <div class="table">
+          <table>
+            <thead>
+              <tr>
+                <th>{{ 'payouts.date' | t }}</th>
+                <th class="num">{{ 'payouts.adViews' | t }}</th>
+                <th class="num">{{ 'payouts.amount' | t }}</th>
+                <th>{{ 'payouts.transfer' | t }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (earning of page.data; track earning.id) {
+                <tr>
+                  <td>{{ earning.createdAt | date: 'mediumDate' }}</td>
+                  <td class="num">{{ earning.adViewCount | number }}</td>
+                  <td class="num amount">
+                    {{
+                      earning.amount | currency: earning.currency.toUpperCase() : 'symbol-narrow'
+                    }}
+                  </td>
+                  <td class="transfer" [title]="earning.stripeTransferId">
+                    {{ earning.stripeTransferId }}
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <app-pager
+          [pageIndex]="page.pageIndex"
+          [pageSize]="page.pageSize"
+          [total]="page.totalSize"
+          (change)="loadEarnings($event)"
+        />
+      } @else {
+        <p class="muted empty">
+          {{ 'payouts.noHistory' | t }}
+          <a routerLink="/recipes/new">{{ 'payouts.writeRecipe' | t }}</a>
+        </p>
+      }
+    } @else {
+      <app-loader />
+    }
+  </section>
+} @else {
+  <app-loader />
+}

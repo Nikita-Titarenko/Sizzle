@@ -83,6 +83,15 @@ export class RecipesApi {
   registerView(id: string) {
     return this.http.post<void>(`${this.baseUrl}/${id}/update-view`, null);
   }
+
+  /**
+   * Counts an ad view towards the author's payout: after the reader watched the ad, or
+   * straight away for Premium readers, who see no ads. The API counts one per reader and
+   * recipe every few minutes.
+   */
+  registerAdView(id: string) {
+    return this.http.post<void>(`${this.baseUrl}/${id}/update-ad-view`, null);
+  }
 }
 
 function toParams(query: RecipeQuery): HttpParams {

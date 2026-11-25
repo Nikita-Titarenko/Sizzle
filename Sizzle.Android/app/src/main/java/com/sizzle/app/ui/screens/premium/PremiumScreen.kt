@@ -27,6 +27,7 @@ import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material.icons.outlined.Lock
 import androidx.compose.material.icons.outlined.Movie
 import androidx.compose.material.icons.outlined.Schedule
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -233,6 +234,7 @@ fun PremiumScreen(navigator: Navigator) {
         StatusCard(status)
         Perk(Icons.Outlined.Image, R.string.premium_perk_covers, R.string.premium_perk_covers_hint)
         Perk(Icons.Outlined.Movie, R.string.premium_perk_video, R.string.premium_perk_video_hint)
+        Perk(Icons.Outlined.VisibilityOff, R.string.premium_perk_no_ads, R.string.premium_perk_no_ads_hint)
 
         when (vm.stage) {
             PremiumStage.Choose -> Plans(vm, active = status.remainingSeconds > 0)
@@ -417,9 +419,9 @@ private fun expiryDate(remainingSeconds: Long): String = formatDate(Instant.now(
 
 /** "₴399.99" / "399,99 ₴", without ".00" on whole amounts. */
 @Composable
-private fun money(amount: Double, currency: String): String {
+internal fun money(amount: Double, currency: String): String {
     val format = NumberFormat.getCurrencyInstance(LocalConfiguration.current.locales[0])
-    runCatching { format.currency = Currency.getInstance(currency) }
+    runCatching { format.currency = Currency.getInstance(currency.uppercase()) }
     if (amount % 1.0 == 0.0) format.maximumFractionDigits = 0
     return format.format(amount)
 }
