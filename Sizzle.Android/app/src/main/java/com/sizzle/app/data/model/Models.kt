@@ -183,6 +183,35 @@ data class SubscriptionPayment(
 @Serializable
 data class SubscriptionStatus(val remainingSeconds: Long = 0, val history: List<SubscriptionPayment> = emptyList())
 
+/** Whether the user can be paid for ad views on their recipes, and how far along they are. */
+@Serializable
+data class ConnectedAccountStatus(
+    val isEligible: Boolean = false,
+    val followersCount: Int = 0,
+    val recipeViewsLast90Days: Int = 0,
+    val requiredFollowersCount: Int = 0,
+    val requiredViewsLast90Days: Int = 0,
+    /** Stripe reported the payout profile as able to receive money. */
+    val isStripeProfileConfigured: Boolean = false,
+    val payoutsEnabled: Boolean = false,
+    val connectedAccountId: String? = null,
+    /** Single-use Stripe link to create or finish the payout profile. */
+    val onboardingLink: String? = null,
+    /** Single-use link to the Stripe Express dashboard; only once the profile is configured. */
+    val expressDashboardLoginLink: String? = null,
+)
+
+/** One monthly transfer to the author for the ad views on their recipes. */
+@Serializable
+data class AdEarning(
+    val id: String,
+    val adViewCount: Int,
+    val amount: Double,
+    val currency: String = "usd",
+    val stripeTransferId: String = "",
+    val createdAt: String,
+)
+
 /** A Stripe Payment Intent for one order. */
 @Serializable
 data class SubscriptionCheckout(val orderId: String, val clientSecret: String, val publishableKey: String)

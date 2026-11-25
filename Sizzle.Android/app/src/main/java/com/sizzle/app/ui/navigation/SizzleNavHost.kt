@@ -52,6 +52,7 @@ import com.sizzle.app.ui.screens.editor.RecipeEditorScreen
 import com.sizzle.app.ui.screens.explore.ExploreScreen
 import com.sizzle.app.ui.screens.feed.FeedScreen
 import com.sizzle.app.ui.screens.following.FollowingScreen
+import com.sizzle.app.ui.screens.payouts.PayoutsScreen
 import com.sizzle.app.ui.screens.premium.PremiumScreen
 import com.sizzle.app.ui.screens.profile.ProfileScreen
 import com.sizzle.app.ui.screens.recipe.RecipeScreen
@@ -77,6 +78,8 @@ class Navigator(private val nav: NavHostController, private val currentUserId: (
     fun confirmEmail(userId: String) = nav.navigate(ConfirmEmailRoute(userId))
 
     fun premium() = if (currentUserId() == null) login() else nav.navigate(PremiumRoute) { launchSingleTop = true }
+
+    fun payouts() = if (currentUserId() == null) login() else nav.navigate(PayoutsRoute) { launchSingleTop = true }
 
     fun newRecipe() = if (currentUserId() == null) login() else nav.navigate(RecipeEditorRoute())
 
@@ -205,6 +208,13 @@ fun SizzleNavHost(pendingLink: Any?, onLinkHandled: () -> Unit) {
                         LaunchedEffect(Unit) { navigator.back(); navigator.login() }
                     } else {
                         PremiumScreen(navigator)
+                    }
+                }
+                composable<PayoutsRoute> {
+                    if (session == null) {
+                        LaunchedEffect(Unit) { navigator.back(); navigator.login() }
+                    } else {
+                        PayoutsScreen(navigator)
                     }
                 }
                 composable<UserRoute> { UserScreen(it.toRoute<UserRoute>().id, navigator) }

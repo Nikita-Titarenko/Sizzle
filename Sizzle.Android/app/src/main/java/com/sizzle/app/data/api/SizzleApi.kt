@@ -1,9 +1,11 @@
 package com.sizzle.app.data.api
 
+import com.sizzle.app.data.model.AdEarning
 import com.sizzle.app.data.model.Category
 import com.sizzle.app.data.model.Comment
 import com.sizzle.app.data.model.ConfirmEmailRequest
 import com.sizzle.app.data.model.ConfirmEmailResult
+import com.sizzle.app.data.model.ConnectedAccountStatus
 import com.sizzle.app.data.model.CreateCommentRequest
 import com.sizzle.app.data.model.DeviceTokenRequest
 import com.sizzle.app.data.model.FeedRecipe
@@ -141,6 +143,14 @@ interface SizzleApi {
     @POST("api/recipes/{id}/update-view")
     suspend fun registerView(@Path("id") id: String)
 
+    /**
+     * Counts an ad view towards the author's payout: after the reader watched the ad, or
+     * straight away for Premium readers, who see no ads. The API counts one per reader and
+     * recipe every few minutes.
+     */
+    @POST("api/recipes/{id}/update-ad-view")
+    suspend fun registerAdView(@Path("id") id: String)
+
     // Comments
 
     @GET("api/recipes/{recipeId}/comments")
@@ -209,6 +219,22 @@ interface SizzleApi {
      */
     @POST("api/subscriptions/{planId}/checkout")
     suspend fun startCheckout(@Path("planId") planId: Int): SubscriptionCheckout
+
+    // Creator payouts
+
+    /**
+     * Eligibility and the Stripe payout profile. Once the user is eligible the API creates
+     * their Stripe account on this call, and every call returns fresh single-use links.
+     */
+    @GET("api/monetization/connected-account/status")
+    suspend fun getPayoutStatus(): ConnectedAccountStatus
+
+    /** Payouts made to the signed-in user, newest first. */
+    @GET("api/monetization/earnings")
+    suspend fun getEarnings(
+        @Query("PageIndex") pageIndex: Int,
+        @Query("PageSize") pageSize: Int,
+    ): PageResponse<AdEarning>
 
     // Push notifications
 

@@ -124,6 +124,11 @@ class RecipeViewModel(private val container: AppContainer, private val id: Strin
 
     private var viewRegistered = false
 
+    /** The full-screen ad is showing over the recipe. */
+    var showAd by mutableStateOf(false)
+        private set
+    private var adHandled = false
+
     /** Quantities after the reader scaled the recipe to what they have; null when not scaled. */
     var scaled by mutableStateOf<Map<String, Int>?>(null)
         private set
@@ -182,8 +187,39 @@ class RecipeViewModel(private val container: AppContainer, private val id: Strin
                     viewRegistered = true
                     runApi { container.api.registerView(id) }
                 }
+                startAd(it)
             }
             failure = result.failure
+        }
+    }
+
+    /**
+     * Readers without Premium see a full-screen ad; watching it earns the author an ad view.
+     * Premium readers skip it and the view is counted straight away. Authors reading their own
+     * recipes and drafts earn nothing.
+     */
+    private suspend fun startAd(recipe: RecipeDetails) {
+        if (adHandled) return
+        adHandled = true
+        val userId = container.session.userId
+        if (recipe.isDraft || recipe.userId == userId) return
+        if (userId != null) {
+            val premium = runApi { container.api.getSubscription() }.getOrNull()?.let { it.remainingSeconds > 0 } ?: false
+            if (premium) {
+                runApi { container.api.registerAdView(id) }
+                return
+            }
+        }
+        if (!AdViews.seenRecently(id)) showAd = true
+    }
+
+    fun adClosed(watched: Boolean) {
+        showAd = false
+        if (!watched) return
+        AdViews.remember(id)
+        // Signed-out readers see the ad too, but the API only counts signed-in views.
+        if (container.session.userId != null) {
+            viewModelScope.launch { runApi { container.api.registerAdView(id) } }
         }
     }
 
@@ -450,6 +486,19 @@ fun RecipeScreen(id: String, navigator: Navigator) {
         }
     }
 
+    if (vm.showAd) {
+        AdInterstitial(
+            onClosed = vm::adClosed,
+            onFollow = { target ->
+                when (target) {
+                    AdTarget.Premium -> navigator.premium()
+                    AdTarget.NewRecipe -> navigator.newRecipe()
+                    AdTarget.Payouts -> navigator.payouts()
+                }
+            },
+        )
+    }
+
     if (confirmDelete && recipe != null) {
         ConfirmDialog(
             text = stringResource(R.string.recipe_confirm_delete, recipe.name),
@@ -497,4 +546,20 @@ private fun ScaleDialog(ingredient: RecipeIngredient, current: Int, onDismiss: (
         dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
         containerColor = Sizzle.colors.surface,
     )
+}
+
+/**
+ * Recipes whose ad was watched lately. The API counts one ad view per reader and recipe every
+ * 10 minutes (BusinessLogic:AdViewUpdateIntervalMinutes), so the ad is not shown again sooner.
+ */
+private object AdViews {
+    private const val INTERVAL_MS = 10 * 60 * 1000L
+    private val seenAt = mutableMapOf<String, Long>()
+
+    fun seenRecently(recipeId: String): Boolean =
+        seenAt[recipeId]?.let { System.currentTimeMillis() - it < INTERVAL_MS } ?: false
+
+    fun remember(recipeId: String) {
+        seenAt[recipeId] = System.currentTimeMillis()
+    }
 }
