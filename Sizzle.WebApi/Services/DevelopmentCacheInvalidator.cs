@@ -4,18 +4,8 @@ namespace Sizzle.WebApi.Services;
 
 public static class DevelopmentCacheInvalidator
 {
-    private static readonly string[] Patterns =
-    [
-        "sizzle:recipes:cache:entries:*",
-        "sizzle:recipes:cache:list-registry:*",
-        "sizzle:users:read:v*",
-        "sizzle:users:read:registry:*",
-        "sizzle:ingredients:pages:v*",
-        "sizzle:ingredients:pages:registry:*",
-        "sizzle:subscriptions:history:v*",
-        "sizzle:comments:pages:v*",
-        "sizzle:comments:pages:registry:v*"
-    ];
+    private const int BatchSize = 500;
+    private const string MatchAllPattern = "*";
 
     public static async Task<long> InvalidateAsync(IConnectionMultiplexer connection)
     {
@@ -27,13 +17,20 @@ public static class DevelopmentCacheInvalidator
             var server = connection.GetServer(endpoint);
             if (!server.IsConnected || server.IsReplica) continue;
 
-            foreach (var pattern in Patterns)
+            try
             {
-                var matchingKeys = server.Keys(database.Database, pattern, pageSize: 500).ToArray();
-                foreach (var keys in matchingKeys.Chunk(500))
-                {
-                    deleted += await database.KeyDeleteAsync(keys);
-                }
+                deleted += server.DatabaseSize(database.Database);
+                await server.FlushDatabaseAsync(database.Database);
+                continue;
+            }
+            catch
+            {
+            }
+
+            var matchingKeys = server.Keys(database.Database, MatchAllPattern, pageSize: BatchSize).ToArray();
+            foreach (var keys in matchingKeys.Chunk(BatchSize))
+            {
+                deleted += await database.KeyDeleteAsync(keys);
             }
         }
 

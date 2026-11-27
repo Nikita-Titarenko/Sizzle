@@ -72,6 +72,26 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationDataByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        logger.LogInformation("db.recipes.get_recommendation_data_by_ids");
+        if (ids.Count == 0)
+        {
+            return [];
+        }
+
+        return await DbSet.AsNoTracking()
+            .Where(recipe => !recipe.IsDraft && ids.Contains(recipe.Id))
+            .Select(recipe => new RecipeRecommendationData(
+                recipe.Id,
+                recipe.ApplicationUserId,
+                recipe.CategoryId,
+                recipe.Name,
+                recipe.RecipeIngredients.Select(ingredient => ingredient.IngredientId).ToArray()))
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Recipe>> GetByIdsWithAuthorAsync(IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken cancellationToken = default)
     {
         logger.LogInformation("db.recipes.get_by_ids_with_author");
@@ -178,7 +198,28 @@ public class RecipeRepository(ApplicationDbContext dbContext, ILogger<RecipeRepo
             .OrderByDescending(recipe => recipe.CreationDate)
             .ThenBy(recipe => recipe.Id)
             .Take(take)
-            .Select(recipe => new FollowingFeedCacheEntry(recipe.Id, recipe.ApplicationUserId, recipe.CreationDate))
+            .Select(recipe => new FollowingFeedCacheEntry(new FeedRecipeDto
+            {
+                Id = recipe.Id,
+                UserId = recipe.ApplicationUserId,
+                UserName = recipe.ApplicationUser.Name,
+                UserImageUrl = null,
+                Name = recipe.Name,
+                Description = recipe.Description,
+                IsDraft = recipe.IsDraft,
+                IsAIGeneratedImage = recipe.IsAIGeneratedImage,
+                CookingTimeMinutes = recipe.CookingTimeMinutes,
+                Calories = 0,
+                CategoryId = recipe.CategoryId,
+                FileUrl = null,
+                ViewCount = recipe.ViewCount,
+                LikeCount = recipe.LikeCount,
+                CreationDate = recipe.CreationDate,
+                IsFollowed = true,
+                IsLiked = false,
+                IsSaved = false,
+                IsSavedAt = null
+            }))
             .ToListAsync(cancellationToken);
     }
 

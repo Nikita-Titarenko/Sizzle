@@ -42,4 +42,6 @@ public interface IRecipeService
 
     Task<Result> UpdateAdViewAsync(UpdateRecipeViewDto dto, CancellationToken cancellationToken = default);
 
+    Task<Result<bool>> SetAiValidationAsync(bool enabled, CancellationToken cancellationToken = default);
+
 }

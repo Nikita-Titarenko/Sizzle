@@ -20,6 +20,8 @@ public interface IRecipeRepository : IRepository<Recipe>
 
 	Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationCandidatesAsync(GetRecipesDto dto, CancellationToken cancellationToken = default);
 
+	Task<IReadOnlyList<RecipeRecommendationData>> GetRecommendationDataByIdsAsync(IReadOnlyCollection<Guid> ids, CancellationToken cancellationToken = default);
+
 	Task<IReadOnlyList<Recipe>> GetByIdsWithAuthorAsync(IReadOnlyCollection<Guid> ids, Guid userId, CancellationToken cancellationToken = default);
 
 	Task<Recipe?> GetWithDetailsAsync(Guid recipeId, Guid? userId = null, CancellationToken cancellationToken = default);

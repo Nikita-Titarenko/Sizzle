@@ -122,6 +122,7 @@ public static class InfrastructureServiceExtensions
         services.AddScoped<ISubscriptionOrderRepository, SubscriptionOrderRepository>();
         services.AddScoped<IStripeGateway, StripeGateway>();
         services.AddScoped<IDeviceTokenRepository, DeviceTokenRepository>();
+        services.AddSingleton<IAiValidationRuntimeToggle, AiValidationRuntimeToggle>();
         services.AddHostedService<AdEarningsPayoutWorker>();
 
         services.AddHttpClient(nameof(FcmPushNotificationSender));

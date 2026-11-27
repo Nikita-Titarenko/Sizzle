@@ -42,7 +42,7 @@ public class RecipeRepositoryTests : InMemoryRepositoryTest
         Assert.Equal(1, draftPage.TotalSize);
         Assert.Empty(savedPage.Data);
         Assert.Equal(published.Id, Assert.Single(followingPage.Data).Id);
-        Assert.Equal(published.Id, Assert.Single(followingEntries).RecipeId);
+        Assert.Equal(published.Id, Assert.Single(followingEntries).Recipe.Id);
         Assert.Equal(published.Id, Assert.Single(candidates).Id);
         Assert.Empty(recent);
         Assert.Null(await repository.GetWithFullDetailsAsync(ownDraft.Id, viewer.Id));
@@ -198,7 +198,7 @@ public class RecipeRepositoryTests : InMemoryRepositoryTest
 
         Assert.Equal(2, page.TotalSize);
         Assert.Equal([latest.Id, first.Id], page.Data.Select(recipe => recipe.Id));
-        Assert.Equal([latest.Id, first.Id], entries.Select(item => item.RecipeId));
+        Assert.Equal([latest.Id, first.Id], entries.Select(item => item.Recipe.Id));
     }
 
     [Fact]

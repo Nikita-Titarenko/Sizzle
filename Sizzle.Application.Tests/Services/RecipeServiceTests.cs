@@ -70,11 +70,14 @@ public class RecipeServiceTests
     private readonly IAIService ai = Substitute.For<IAIService>();
     private readonly IAIVideoStorage videoStorage = Substitute.For<IAIVideoStorage>();
     private readonly ISubscriptionService subscriptions = Substitute.For<ISubscriptionService>();
+    private readonly IAiValidationRuntimeToggle aiValidationRuntimeToggle = Substitute.For<IAiValidationRuntimeToggle>();
     private readonly Guid userId = Guid.NewGuid();
 
     private RecipeService CreateService(int cooldownMinutes = 10, MediaOptions? mediaOptions = null, bool hasSubscription = true,
         bool aiValidation = true)
     {
+        aiValidationRuntimeToggle.IsEnabled(Arg.Any<bool>()).Returns(call => call.Arg<bool>());
+        aiValidationRuntimeToggle.IsDevelopmentEnvironment().Returns(true);
         subscriptions.GetStatusAsync(userId, Arg.Any<CancellationToken>())
             .Returns(new SubscriptionStatusDto(hasSubscription ? 60 : 0, []));
         videoStorage.UploadAsync(Arg.Any<RecipeMediaUploadDto>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
@@ -89,7 +92,7 @@ public class RecipeServiceTests
             NullLogger<PersonalizedRecipesLog>.Instance, Microsoft.Extensions.Options.Options.Create(new RecipeLoggingOptions()), cache,
             followingCache, interactions, ingredientCache, commentCache, mapper, NullLogger<RecipeService>.Instance, ai, videoStorage,
             Microsoft.Extensions.Options.Options.Create(mediaOptions ?? new MediaOptions { VideoExtensions = [".mp4", ".webm", ".mov", ".avi", ".mkv"] }),
-            subscriptions);
+                subscriptions, aiValidationRuntimeToggle);
     }
 
     private async Task<IAsyncEnumerable<RecipeGenerationEvent>> GenerateVideoAsync(GenerateRecipeFromVideoRequestDto request,

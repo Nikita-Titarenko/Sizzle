@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using Sizzle.Application.Dtos.Recipes;
 using Sizzle.Application.Options;
 using Sizzle.Application.Services.Recipes;
 using StackExchange.Redis;
@@ -40,7 +41,7 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
             _ = transaction.KeyDeleteAsync(key);
             foreach (var entry in entries)
             {
-                _ = transaction.SortedSetAddAsync(key, Serialize(entry), Score(entry.CreatedAt));
+                _ = transaction.SortedSetAddAsync(key, Serialize(entry), Score(entry.Recipe.CreationDate));
             }
 
             _ = transaction.SortedSetRemoveRangeByRankAsync(key, options.Value.FollowingFeedMaxEntries, -1);
@@ -52,7 +53,7 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
         }
     }
 
-    public async Task AddRecipeToFollowersAsync(Guid authorId, Guid recipeId, DateTime createdAt, IReadOnlyCollection<Guid> followerIds,
+    public async Task AddRecipeToFollowersAsync(FeedRecipeDto recipe, IReadOnlyCollection<Guid> followerIds,
         CancellationToken cancellationToken = default)
     {
         if (!options.Value.Enabled || redis == null || followerIds.Count == 0)
@@ -60,8 +61,9 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
             return;
         }
 
-        var value = Serialize(new FollowingFeedCacheEntry(recipeId, authorId, createdAt));
-        var score = Score(createdAt);
+        var entry = new FollowingFeedCacheEntry(recipe);
+        var value = Serialize(entry);
+        var score = Score(recipe.CreationDate);
         foreach (var followerId in followerIds)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -73,7 +75,7 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
         }
     }
 
-    public async Task AddCelebrityRecipeAsync(Guid authorId, Guid recipeId, DateTime createdAt, CancellationToken cancellationToken = default)
+    public async Task AddCelebrityRecipeAsync(FeedRecipeDto recipe, CancellationToken cancellationToken = default)
     {
         if (!options.Value.Enabled || redis == null)
         {
@@ -81,9 +83,10 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
         }
 
         cancellationToken.ThrowIfCancellationRequested();
-        var key = CelebrityFeedKey(authorId);
+        var key = CelebrityFeedKey(recipe.UserId);
+        var entry = new FollowingFeedCacheEntry(recipe);
         var transaction = redis.CreateTransaction();
-        _ = transaction.SortedSetAddAsync(key, Serialize(new FollowingFeedCacheEntry(recipeId, authorId, createdAt)), Score(createdAt));
+        _ = transaction.SortedSetAddAsync(key, Serialize(entry), Score(recipe.CreationDate));
         _ = transaction.SortedSetRemoveRangeByRankAsync(key, options.Value.FollowingFeedMaxEntries, -1);
         await transaction.ExecuteAsync();
     }
@@ -98,7 +101,12 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
             var token = await AcquireUserLockAsync(followerId, cancellationToken);
             try
             {
-                await redis.SortedSetRemoveAsync(UserFeedKey(followerId), Serialize(new FollowingFeedCacheEntry(recipeId, authorId, default)));
+                var existing = await redis.SortedSetRangeByRankWithScoresAsync(UserFeedKey(followerId), 0, -1, Order.Ascending);
+                var matches = existing.Where(item => Map(item)?.Recipe.Id == recipeId).Select(item => item.Element).ToArray();
+                if (matches.Length > 0)
+                {
+                    await redis.SortedSetRemoveAsync(UserFeedKey(followerId), matches);
+                }
             }
             finally
             {
@@ -106,7 +114,13 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
             }
         }
 
-        await redis.SortedSetRemoveAsync(CelebrityFeedKey(authorId), Serialize(new FollowingFeedCacheEntry(recipeId, authorId, default)));
+        var celebrityKey = CelebrityFeedKey(authorId);
+        var celebrityExisting = await redis.SortedSetRangeByRankWithScoresAsync(celebrityKey, 0, -1, Order.Ascending);
+        var celebrityMatches = celebrityExisting.Where(item => Map(item)?.Recipe.Id == recipeId).Select(item => item.Element).ToArray();
+        if (celebrityMatches.Length > 0)
+        {
+            await redis.SortedSetRemoveAsync(celebrityKey, celebrityMatches);
+        }
     }
 
     public async Task<IReadOnlyList<FollowingFeedCacheEntry>> GetCelebrityRecipesAsync(IReadOnlyCollection<Guid> authorIds, DateTime newerThan,
@@ -140,16 +154,16 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
             return null;
         }
 
-        var value = JsonSerializer.Deserialize<SerializedEntry>(raw);
-        if (value == null)
+        var value = JsonSerializer.Deserialize<FollowingFeedCacheEntry>(raw);
+        if (value?.Recipe == null)
         {
             return null;
         }
 
-        return new FollowingFeedCacheEntry(value.RecipeId, value.AuthorId, DateTimeOffset.FromUnixTimeMilliseconds(-(long)item.Score).UtcDateTime);
+        return value;
     }
 
-    private static string Serialize(FollowingFeedCacheEntry entry) => JsonSerializer.Serialize(new SerializedEntry(entry.RecipeId, entry.AuthorId));
+    private static string Serialize(FollowingFeedCacheEntry entry) => JsonSerializer.Serialize(entry);
 
     private static string UserFeedKey(Guid userId) => $"{UserFeedPrefix}{userId:N}";
     private static string CelebrityFeedKey(Guid authorId) => $"{CelebrityFeedPrefix}{authorId:N}";
@@ -166,5 +180,4 @@ public sealed class FollowingFeedCache(IOptions<RecipeCacheOptions> options, ICo
         return token;
     }
 
-    private sealed record SerializedEntry(Guid RecipeId, Guid AuthorId);
 }

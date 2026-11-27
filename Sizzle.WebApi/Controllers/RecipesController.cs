@@ -402,4 +402,13 @@ public class RecipesController(IRecipeService recipeService, IMapper mapper, ILo
         return !result.IsSuccess ? HandleErrors(result) : NoContent();
     }
 
+    [HttpPost("dev/ai-validation")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult> SetAiValidation([FromBody] SetAiValidationRequestModel request, CancellationToken cancellationToken)
+    {
+        var result = await recipeService.SetAiValidationAsync(request.Enabled, cancellationToken);
+        return !result.IsSuccess ? HandleErrors(result) : Ok(new { AiValidation = result.Value });
+    }
+
 }
