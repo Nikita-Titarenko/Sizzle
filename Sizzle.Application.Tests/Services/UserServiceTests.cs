@@ -41,17 +41,20 @@ public class UserServiceTests
 
     [Theory]
     [InlineData("DuplicateUserName", ErrorKey.AlreadyExists)]
-    [InlineData("InvalidPassword", ErrorKey.UnexpectedError)]
+    [InlineData("PasswordRequiresUpper", ErrorKey.BadRequest)]
+    [InlineData("InvalidEmail", ErrorKey.BadRequest)]
     public async Task RegisterUserAsync_IdentityFailureDoesNotSendEmail(string identityError, ErrorKey expected)
     {
         var input = new RegisterUserDto { Email = "chef@example.test", Name = "Chef", Password = "password" };
         var user = new ApplicationUser { Email = input.Email };
         mapper.Map<ApplicationUser>(input).Returns(user);
-        users.CreateAsync(user, input.Password).Returns(IdentityResult.Failed(new IdentityError { Code = identityError }));
+        users.CreateAsync(user, input.Password).Returns(IdentityResult.Failed(new IdentityError { Code = identityError, Description = "Reason" }));
 
         var result = await CreateService().RegisterUserAsync(input);
 
-        Assert.Equal(expected, Assert.Single(result.Errors).Key);
+        var error = Assert.Single(result.Errors);
+        Assert.Equal(expected, error.Key);
+        Assert.Equal(identityError.StartsWith("Password") ? "Password" : "Email", error.Field);
         await emails.DidNotReceive().SendEmailAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string>());
     }
 

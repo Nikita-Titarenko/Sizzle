@@ -30,19 +30,29 @@ public class UserService(
         var result = await userManager.CreateAsync(user, dto.Password);
         if (!result.Succeeded)
         {
-            var duplicate = result.Errors.Any(e => e.Code == "DuplicateUserName");
-            logger.LogWarning("User registration failed: {Reason}", duplicate ? "duplicate username" : "identity creation failed");
+            if (result.Errors.Any(e => e.Code == "DuplicateUserName"))
+            {
+                logger.LogWarning("User registration failed: duplicate username");
+                return new Result<RegisterResultDto>
+                {
+                    Errors =
+                    [
+                        new Error { Message = "User with this email already exists", Field = "Email", Key = ErrorKey.AlreadyExists }
+                    ]
+                };
+            }
+
+            // Identity explains what is wrong (a weak password, an invalid email), so pass that on
+            // instead of a generic failure the user can do nothing about.
+            logger.LogWarning("User registration failed: {Codes}", string.Join(", ", result.Errors.Select(e => e.Code)));
             return new Result<RegisterResultDto>
             {
-                Errors =
-                [
-                    new Error
-                    {
-                        Message = duplicate ? "User with this email already exists" : "Failed to register user",
-                        Field = "Email",
-                        Key = duplicate ? ErrorKey.AlreadyExists : ErrorKey.UnexpectedError
-                    }
-                ]
+                Errors = result.Errors.Select(e => new Error
+                {
+                    Message = e.Description,
+                    Field = e.Code.StartsWith("Password", StringComparison.Ordinal) ? "Password" : "Email",
+                    Key = ErrorKey.BadRequest
+                }).ToList()
             };
         }
 

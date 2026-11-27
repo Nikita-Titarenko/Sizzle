@@ -18,13 +18,24 @@
         name="password"
         autocomplete="new-password"
         [(ngModel)]="password"
+        aria-describedby="password-rules"
+        [attr.aria-invalid]="!!password && !strongPassword() ? true : null"
         required
       />
+      <small
+        id="password-rules"
+        class="field-hint"
+        [class.invalid]="!!password && !strongPassword()"
+      >
+        {{ 'auth.register.passwordRules' | t }}
+      </small>
     </label>
     @if (error()) {
       <div class="alert" role="alert">{{ error() }}</div>
     }
-    <button class="btn block large" [disabled]="busy()">{{ 'auth.register.submit' | t }}</button>
+    <button class="btn block large" [disabled]="busy() || !strongPassword()">
+      {{ 'auth.register.submit' | t }}
+    </button>
   </form>
   <p class="auth-switch">
     {{ 'auth.register.haveAccount' | t }}

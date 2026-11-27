@@ -24,6 +24,7 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions, 
     /// <remarks>
     /// <para>ErrorKey.BadRequest — the plan does not exist.</para>
     /// <para>ErrorKey.NotFound — the current user does not exist.</para>
+    /// <para>ErrorKey.AlreadyExists — the user's Premium is still active (409).</para>
     /// <para>ErrorKey.Incorrect — missing or invalid JWT (401).</para>
     /// </remarks>
     [HttpPost("{planId:int}/checkout")]
@@ -31,6 +32,7 @@ public sealed class SubscriptionsController(ISubscriptionService subscriptions, 
     [ProducesResponseType(typeof(SubscriptionCheckoutDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(List<Error>), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(List<Error>), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<SubscriptionCheckoutDto>> Checkout(int planId, CancellationToken cancellationToken)
     {
         var result = await subscriptions.StartCheckoutAsync(GetUserId(), (SubscriptionPlan)planId, cancellationToken);
