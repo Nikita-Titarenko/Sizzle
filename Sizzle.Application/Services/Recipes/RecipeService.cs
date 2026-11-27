@@ -5,6 +5,7 @@ using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Encodings.Web;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sizzle.Application.Dtos;
@@ -28,9 +29,13 @@ public class RecipeService(IRecipeRepository recipeRepository, IIngredientReposi
     private const int MinNameWordLengthForPersonalization = 3;
     private const string DefaultIngredientTranslationLanguageCode = "en";
     private const int DefaultIngredientCaloriesWithoutAIValidation = 0;
+    // The JSON only goes into AI prompts, never into HTML, so non-ASCII text is written as is.
+    // The default encoder turns every Cyrillic letter into a six-character \uXXXX escape,
+    // which inflates Ukrainian recipes about sixfold against the length limits and the model's tokens.
     private static readonly JsonSerializerOptions AiJsonOptions = new(JsonSerializerDefaults.Web)
     {
-        Converters = { new JsonStringEnumConverter() }
+        Converters = { new JsonStringEnumConverter() },
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
     private static readonly Lazy<string> RecipeSystemPrompt = new(() => LoadRecipeSystemPrompt("RecipeGeneration.md"));
     private static readonly Lazy<string> VideoSystemPrompt = new(() => LoadRecipeSystemPrompt("RecipeVideoGeneration.md"));

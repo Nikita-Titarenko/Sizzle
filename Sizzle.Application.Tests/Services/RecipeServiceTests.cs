@@ -132,6 +132,24 @@ public class RecipeServiceTests
     }
 
     [Fact]
+    public async Task GenerateRecipeImageAsync_AcceptsUkrainianRecipeThatFitsTheLimit()
+    {
+        ai.GenerateImageAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(new GeneratedRecipeImage([1], "image/png"));
+        // About 3000 Cyrillic letters: well under 8000 characters, but over it if each letter were escaped as \uXXXX.
+        var step = new string('и', 300);
+        var recipe = new GeneratedRecipeDto
+        {
+            Name = "Запіканка з куркою",
+            Steps = Enumerable.Range(1, 10).Select(n => new GeneratedRecipeStepDto { Name = $"Крок {n}", Description = step }).ToList()
+        };
+
+        var result = await CreateService().GenerateRecipeImageAsync(recipe, userId);
+
+        Assert.True(result.IsSuccess);
+        await ai.Received(1).GenerateImageAsync(Arg.Is<string>(prompt => prompt.Contains("Запіканка з куркою")), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task GenerateRecipeImageAsync_RejectsUserWithoutSubscriptionBeforeCallingAI()
     {
         var result = await CreateService(hasSubscription: false).GenerateRecipeImageAsync(new GeneratedRecipeDto { Name = "Pasta" }, userId);
