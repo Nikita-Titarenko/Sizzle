@@ -77,8 +77,7 @@ public class UsersController(IUserService userService, IUserFollowerService foll
     /// <summary>Register a user and send a confirmation email.</summary>
     /// <remarks>
     /// <para>ErrorKey.AlreadyExists — the email is already registered.</para>
-    /// <para>ErrorKey.UnexpectedError — registration failed (400).</para>
-    /// <para>ErrorKey.BadRequest — invalid request data (400).</para>
+    /// <para>ErrorKey.BadRequest — the password breaks the password rules or the email is invalid (400). There is one error per broken rule, with Field set to "Password" or "Email".</para>
     /// </remarks>
     [HttpPost("register")]
     [ProducesResponseType(typeof(RegisterResultDto), StatusCodes.Status202Accepted)]

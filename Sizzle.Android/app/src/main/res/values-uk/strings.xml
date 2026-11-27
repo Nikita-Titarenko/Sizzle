@@ -34,6 +34,7 @@
     <string name="auth_login_sign_up">Зареєструватися</string>
     <string name="auth_register_title">Створити акаунт</string>
     <string name="auth_register_submit">Зареєструватися</string>
+    <string name="auth_password_rules">Щонайменше 6 символів, серед них велика й мала літери та цифра.</string>
     <string name="auth_register_have_account">Вже маєте акаунт?</string>
     <string name="auth_register_log_in">Увійти</string>
     <string name="auth_confirm_title">Підтвердіть email</string>
@@ -222,7 +223,8 @@
     <string name="premium_plan_half_yearly">6 місяців</string>
     <string name="premium_plan_yearly">12 місяців</string>
     <string name="premium_choose">Оберіть план</string>
-    <string name="premium_extend">Придбати ще</string>
+    <string name="premium_next_payment">Наступний платіж: %1$s</string>
+    <string name="premium_next_payment_hint">Нічого не списується автоматично. Плани знову з’являться тут, коли ваш Преміум закінчиться.</string>
     <string name="premium_save">Економія %1$d%%</string>
     <string name="premium_per_month">%1$s на місяць</string>
     <string name="premium_billed_once">Разова оплата</string>

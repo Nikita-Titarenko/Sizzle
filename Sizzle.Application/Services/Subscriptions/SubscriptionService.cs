@@ -51,6 +51,16 @@ public sealed class SubscriptionService(
             };
         }
 
+        // Plans are one-off payments: the next one can be bought once the current one runs out.
+        if ((await GetStatusAsync(userId, cancellationToken)).RemainingSeconds > 0)
+        {
+            logger.LogWarning("Checkout rejected for user {UserId}: Premium is still active", userId);
+            return new Result<SubscriptionCheckoutDto>
+            {
+                Errors = [new Error { Key = ErrorKey.AlreadyExists, Message = "Premium is already active" }]
+            };
+        }
+
         var order = new SubscriptionOrder
         {
             Id = Guid.NewGuid(),

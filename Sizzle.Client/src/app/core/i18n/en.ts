@@ -41,6 +41,8 @@ export const en = {
     register: {
       title: 'Create account',
       submit: 'Sign up',
+      passwordRules:
+        'At least 6 characters, with an uppercase letter, a lowercase letter and a digit.',
       haveAccount: 'Already registered?',
       logIn: 'Log in',
     },
@@ -353,7 +355,9 @@ export const en = {
       yearly: '12 months',
     },
     choose: 'Choose a plan',
-    extend: 'Buy more time',
+    nextPayment: 'Next payment: {date}',
+    nextPaymentHint:
+      'Nothing is charged automatically. The plans will show up here again when your Premium ends.',
     save: 'Save {percent}%',
     perMonth: '{price} per month',
     billedOnce: 'Paid once',

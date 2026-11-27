@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -47,9 +48,11 @@ import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -66,6 +69,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
@@ -73,6 +77,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -297,6 +303,24 @@ private fun FeedItem(
             )
         }
 
+        // Photos and videos can be bright anywhere, so the text gets its own darkened backdrop:
+        // a tall scrim behind the caption and the action rail, and a light one under the status bar.
+        Box(
+            Modifier.align(Alignment.TopCenter).fillMaxWidth().height(160.dp)
+                .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.55f), Color.Transparent))),
+        )
+        Box(
+            Modifier.align(Alignment.BottomCenter).fillMaxWidth().fillMaxHeight(0.6f)
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.Transparent,
+                        0.25f to Color.Black.copy(alpha = 0.4f),
+                        0.6f to Color.Black.copy(alpha = 0.7f),
+                        1f to Color.Black.copy(alpha = 0.9f),
+                    ),
+                ),
+        )
+
         if (isVideo && paused) {
             Icon(
                 Icons.Filled.PlayArrow, null, tint = Color.White.copy(alpha = 0.85f),
@@ -318,84 +342,87 @@ private fun FeedItem(
         }
         HeartBurst(burst, Modifier.align(Alignment.Center))
 
-        // Caption over a dark gradient, like the website's overlay.
-        Column(
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))))
-                .padding(start = 16.dp, end = 84.dp, top = 48.dp, bottom = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(
-                    Modifier.clip(CircleShape).clickable(onClick = onAuthor).padding(end = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    UserAvatar(recipe.userName, recipe.userImageUrl, size = 34.dp)
-                    Text(recipe.userName, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+        // A soft shadow keeps white text legible where the scrim is still thin.
+        ProvideTextStyle(LocalTextStyle.current.merge(OverlayTextStyle)) {
+            Column(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 84.dp, top = 48.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        Modifier.clip(CircleShape).clickable(onClick = onAuthor).padding(end = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        UserAvatar(recipe.userName, recipe.userImageUrl, size = 34.dp)
+                        Text(recipe.userName, color = Color.White, fontWeight = FontWeight.Bold, modifier = Modifier.padding(start = 8.dp))
+                    }
+                    if (canFollow) {
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            stringResource(if (recipe.isFollowed) R.string.common_following else R.string.common_follow),
+                            color = Color.White,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .clip(CircleShape)
+                                .then(
+                                    if (recipe.isFollowed) Modifier.background(Color.White.copy(alpha = 0.2f))
+                                    else Modifier.border(1.dp, Color.White, CircleShape),
+                                )
+                                .clickable(onClick = onFollow)
+                                .padding(horizontal = 12.dp, vertical = 5.dp),
+                        )
+                    }
                 }
-                if (canFollow) {
-                    Spacer(Modifier.width(8.dp))
+                Text(
+                    recipe.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleLarge.merge(OverlayTextStyle),
+                    modifier = Modifier.clickable(onClick = onOpen),
+                )
+                if (recipe.description.isNotBlank()) {
                     Text(
-                        stringResource(if (recipe.isFollowed) R.string.common_following else R.string.common_follow),
-                        color = Color.White,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 13.sp,
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .then(
-                                if (recipe.isFollowed) Modifier.background(Color.White.copy(alpha = 0.2f))
-                                else Modifier.border(1.dp, Color.White, CircleShape),
-                            )
-                            .clickable(onClick = onFollow)
-                            .padding(horizontal = 12.dp, vertical = 5.dp),
+                        recipe.description,
+                        color = Color.White.copy(alpha = 0.85f),
+                        maxLines = if (expanded) Int.MAX_VALUE else 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { expanded = !expanded },
                     )
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    categoryName?.let { Tag(null, it) }
+                    Tag(Icons.Outlined.Schedule, stringResource(R.string.common_minutes, recipe.cookingTimeMinutes))
+                    if (recipe.isAIGeneratedImage) Tag(Icons.Outlined.AutoAwesome, stringResource(R.string.recipe_ai_image_short))
+                }
             }
-            Text(
-                recipe.name,
-                color = Color.White,
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.clickable(onClick = onOpen),
-            )
-            if (recipe.description.isNotBlank()) {
-                Text(
-                    recipe.description,
-                    color = Color.White.copy(alpha = 0.85f),
-                    maxLines = if (expanded) Int.MAX_VALUE else 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clickable { expanded = !expanded },
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                categoryName?.let { Tag(null, it) }
-                Tag(Icons.Outlined.Schedule, stringResource(R.string.common_minutes, recipe.cookingTimeMinutes))
-                if (recipe.isAIGeneratedImage) Tag(Icons.Outlined.AutoAwesome, stringResource(R.string.recipe_ai_image_short))
-            }
-        }
 
-        Column(
-            Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            RailAction(
-                if (recipe.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                recipe.likeCount.toString(),
-                tint = if (recipe.isLiked) Sizzle.colors.like else Color.White,
-                onClick = {
-                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                    onLike()
-                },
-            )
-            RailAction(Icons.Outlined.ChatBubbleOutline, stringResource(R.string.feed_comments), onClick = onComments)
-            RailAction(Icons.Outlined.Share, stringResource(R.string.feed_share), onClick = onShare)
-            RailAction(Icons.AutoMirrored.Outlined.MenuBook, stringResource(R.string.feed_recipe), onClick = onOpen)
-            RailAction(Icons.Outlined.RemoveRedEye, recipe.viewCount.toString(), onClick = null)
+            Column(
+                Modifier.align(Alignment.BottomEnd).padding(end = 10.dp, bottom = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                RailAction(
+                    if (recipe.isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    recipe.likeCount.toString(),
+                    tint = if (recipe.isLiked) Sizzle.colors.like else Color.White,
+                    onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                        onLike()
+                    },
+                )
+                RailAction(Icons.Outlined.ChatBubbleOutline, stringResource(R.string.feed_comments), onClick = onComments)
+                RailAction(Icons.Outlined.Share, stringResource(R.string.feed_share), onClick = onShare)
+                RailAction(Icons.AutoMirrored.Outlined.MenuBook, stringResource(R.string.feed_recipe), onClick = onOpen)
+                RailAction(Icons.Outlined.RemoveRedEye, recipe.viewCount.toString(), onClick = null)
+            }
         }
     }
 }
+
+private val OverlayTextStyle = TextStyle(shadow = Shadow(Color.Black.copy(alpha = 0.6f), Offset(0f, 1f), blurRadius = 6f))
 
 @Composable
 private fun HeartBurst(trigger: Int, modifier: Modifier) {
@@ -415,7 +442,7 @@ private fun HeartBurst(trigger: Int, modifier: Modifier) {
 @Composable
 private fun Tag(icon: ImageVector?, text: String) {
     Row(
-        Modifier.clip(CircleShape).background(Color.White.copy(alpha = 0.2f)).padding(horizontal = 10.dp, vertical = 4.dp),
+        Modifier.clip(CircleShape).background(Color.Black.copy(alpha = 0.4f)).padding(horizontal = 10.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (icon != null) Icon(icon, null, tint = Color.White, modifier = Modifier.size(14.dp).padding(end = 2.dp))

@@ -11,6 +11,16 @@
     font-size: 0.9rem;
     font-weight: 600;
   }
+
+  .field-hint {
+    color: var(--muted);
+    font-size: 0.8rem;
+    font-weight: 400;
+
+    &.invalid {
+      color: var(--danger);
+    }
+  }
 }
 
 input,
