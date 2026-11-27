@@ -42,6 +42,7 @@ export const uk: Translations = {
     register: {
       title: 'Створити акаунт',
       submit: 'Зареєструватися',
+      passwordRules: 'Щонайменше 6 символів, серед них велика й мала літери та цифра.',
       haveAccount: 'Вже маєте акаунт?',
       logIn: 'Увійти',
     },
@@ -356,7 +357,9 @@ export const uk: Translations = {
       yearly: '12 місяців',
     },
     choose: 'Оберіть план',
-    extend: 'Придбати ще',
+    nextPayment: 'Наступний платіж: {date}',
+    nextPaymentHint:
+      'Нічого не списується автоматично. Плани знову з’являться тут, коли ваш Преміум закінчиться.',
     save: 'Економія {percent}%',
     perMonth: '{price} на місяць',
     billedOnce: 'Разова оплата',

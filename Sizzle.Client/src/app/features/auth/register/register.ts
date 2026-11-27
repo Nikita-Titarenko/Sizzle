@@ -25,6 +25,12 @@ export class Register {
   readonly error = signal('');
   readonly busy = signal(false);
 
+  /** The API's password rules (ASP.NET Identity defaults, symbols not required). */
+  strongPassword(): boolean {
+    const p = this.password;
+    return p.length >= 6 && /\d/.test(p) && /[A-Z]/.test(p) && /[a-z]/.test(p);
+  }
+
   submit(): void {
     this.busy.set(true);
     this.error.set('');

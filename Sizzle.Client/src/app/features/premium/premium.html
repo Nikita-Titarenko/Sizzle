@@ -54,50 +54,63 @@
 
   @switch (stage()) {
     @case ('choose') {
-      <h2>{{ (active() ? 'premium.extend' : 'premium.choose') | t }}</h2>
-      <div class="plans">
-        @for (plan of plans(); track plan.id) {
-          <article class="card plan" [class.best]="plan.durationMonths === 12">
-            @if (savings(plan) > 0) {
-              <span class="badge">{{ 'premium.save' | t: { percent: savings(plan) } }}</span>
-            }
-            <h3>{{ planName(plan.id) }}</h3>
-            <p class="price">
-              {{ plan.price | currency: plan.currency : 'symbol-narrow' : '1.0-2' }}
-            </p>
-            <p class="muted">
-              @if (plan.durationMonths > 1) {
-                {{
-                  'premium.perMonth'
-                    | t
-                      : {
-                          price:
-                            (perMonth(plan)
-                              | currency: plan.currency : 'symbol-narrow' : '1.0-2') ?? '',
-                        }
-                }}
-              } @else {
-                {{ 'premium.billedOnce' | t }}
+      @if (active()) {
+        <!-- Plans are one-off payments: nothing to buy until this one ends. -->
+        <section class="card state next">
+          <app-icon name="clock" />
+          <div>
+            <strong>
+              {{ 'premium.nextPayment' | t: { date: (expiresAt() | date: 'longDate') ?? '' } }}
+            </strong>
+            <p class="muted">{{ 'premium.nextPaymentHint' | t }}</p>
+          </div>
+        </section>
+      } @else {
+        <h2>{{ 'premium.choose' | t }}</h2>
+        <div class="plans">
+          @for (plan of plans(); track plan.id) {
+            <article class="card plan" [class.best]="plan.durationMonths === 12">
+              @if (savings(plan) > 0) {
+                <span class="badge">{{ 'premium.save' | t: { percent: savings(plan) } }}</span>
               }
-            </p>
-            <button
-              type="button"
-              class="btn block"
-              [class.outline]="plan.durationMonths !== 12"
-              [disabled]="!!busy()"
-              (click)="choose(plan)"
-            >
-              {{
-                (busy() === 'checkout' && selected() === plan.id
-                  ? 'premium.opening'
-                  : 'premium.select'
-                ) | t
-              }}
-            </button>
-          </article>
-        }
-      </div>
-      <p class="muted note">{{ 'premium.oneOff' | t }}</p>
+              <h3>{{ planName(plan.id) }}</h3>
+              <p class="price">
+                {{ plan.price | currency: plan.currency : 'symbol-narrow' : '1.0-2' }}
+              </p>
+              <p class="muted">
+                @if (plan.durationMonths > 1) {
+                  {{
+                    'premium.perMonth'
+                      | t
+                        : {
+                            price:
+                              (perMonth(plan)
+                                | currency: plan.currency : 'symbol-narrow' : '1.0-2') ?? '',
+                          }
+                  }}
+                } @else {
+                  {{ 'premium.billedOnce' | t }}
+                }
+              </p>
+              <button
+                type="button"
+                class="btn block"
+                [class.outline]="plan.durationMonths !== 12"
+                [disabled]="!!busy()"
+                (click)="choose(plan)"
+              >
+                {{
+                  (busy() === 'checkout' && selected() === plan.id
+                    ? 'premium.opening'
+                    : 'premium.select'
+                  ) | t
+                }}
+              </button>
+            </article>
+          }
+        </div>
+        <p class="muted note">{{ 'premium.oneOff' | t }}</p>
+      }
     }
     @case ('activating') {
       <section class="card result">
