@@ -36,6 +36,7 @@
     <string name="auth_login_sign_up">Sign up</string>
     <string name="auth_register_title">Create account</string>
     <string name="auth_register_submit">Sign up</string>
+    <string name="auth_password_rules">At least 6 characters, with an uppercase letter, a lowercase letter and a digit.</string>
     <string name="auth_register_have_account">Already registered?</string>
     <string name="auth_register_log_in">Log in</string>
     <string name="auth_confirm_title">Confirm your email</string>
@@ -224,7 +225,8 @@
     <string name="premium_plan_half_yearly">6 months</string>
     <string name="premium_plan_yearly">12 months</string>
     <string name="premium_choose">Choose a plan</string>
-    <string name="premium_extend">Buy more time</string>
+    <string name="premium_next_payment">Next payment: %1$s</string>
+    <string name="premium_next_payment_hint">Nothing is charged automatically. The plans will show up here again when your Premium ends.</string>
     <string name="premium_save">Save %1$d%%</string>
     <string name="premium_per_month">%1$s per month</string>
     <string name="premium_billed_once">Paid once</string>

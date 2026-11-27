@@ -237,7 +237,7 @@ fun PremiumScreen(navigator: Navigator) {
         Perk(Icons.Outlined.VisibilityOff, R.string.premium_perk_no_ads, R.string.premium_perk_no_ads_hint)
 
         when (vm.stage) {
-            PremiumStage.Choose -> Plans(vm, active = status.remainingSeconds > 0)
+            PremiumStage.Choose -> if (status.remainingSeconds > 0) NextPayment(status.remainingSeconds) else Plans(vm)
             PremiumStage.Activating -> SectionCard { Loader(label = stringResource(R.string.premium_activating)) }
             PremiumStage.Activated -> ResultCard(
                 Icons.Outlined.CheckCircle, colors.success,
@@ -330,13 +330,10 @@ private fun Perk(icon: ImageVector, title: Int, hint: Int) {
 }
 
 @Composable
-private fun Plans(vm: PremiumViewModel, active: Boolean) {
+private fun Plans(vm: PremiumViewModel) {
     val c = Sizzle.colors
     val monthly = vm.plans.firstOrNull { it.durationMonths == 1 }?.price
-    Text(
-        stringResource(if (active) R.string.premium_extend else R.string.premium_choose),
-        style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp),
-    )
+    Text(stringResource(R.string.premium_choose), style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
     vm.plans.forEach { plan ->
         val best = plan.durationMonths == 12
         val savings = if (monthly != null && plan.durationMonths > 1) {
@@ -377,6 +374,22 @@ private fun Plans(vm: PremiumViewModel, active: Boolean) {
         Text(stringResource(R.string.premium_secure), color = c.muted, style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(start = 6.dp))
     }
     Text(stringResource(R.string.premium_one_off), color = c.muted, style = MaterialTheme.typography.bodySmall)
+}
+
+/** Plans are one-off payments, so while Premium is on there is nothing to buy, only a date to remember. */
+@Composable
+private fun NextPayment(remainingSeconds: Long) {
+    val c = Sizzle.colors
+    Row(
+        Modifier.fillMaxWidth().clip(RoundedCornerShape(16.dp)).background(c.surface2).padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Outlined.Schedule, null, tint = c.accentText, modifier = Modifier.size(22.dp))
+        Column(Modifier.padding(start = 12.dp)) {
+            Text(stringResource(R.string.premium_next_payment, expiryDate(remainingSeconds)), fontWeight = FontWeight.SemiBold)
+            Text(stringResource(R.string.premium_next_payment_hint), color = c.muted, style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }
 
 @Composable

@@ -181,6 +181,8 @@ private fun AuthField(
     label: String,
     keyboardType: KeyboardType = KeyboardType.Text,
     password: Boolean = false,
+    hint: String? = null,
+    hintIsError: Boolean = false,
 ) {
     var visible by rememberSaveable { mutableStateOf(false) }
     OutlinedTextField(
@@ -188,6 +190,8 @@ private fun AuthField(
         onValueChange = onChange,
         label = { Text(label) },
         singleLine = true,
+        isError = hintIsError,
+        supportingText = hint?.let { { Text(it) } },
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         shape = FieldShape,
         colors = sizzleFieldColors(),
@@ -248,6 +252,10 @@ fun LoginScreen(navigator: Navigator) {
     }
 }
 
+/** The API's password rules (ASP.NET Identity defaults, symbols not required). Identity only counts ASCII letters and digits. */
+private fun isStrongPassword(password: String) =
+    password.length >= 6 && password.any { it in '0'..'9' } && password.any { it in 'A'..'Z' } && password.any { it in 'a'..'z' }
+
 @Composable
 fun RegisterScreen(navigator: Navigator) {
     val vm = appViewModel(key = "register") { AuthViewModel(it) }
@@ -258,13 +266,17 @@ fun RegisterScreen(navigator: Navigator) {
         GoogleSection(vm, navigator)
         AuthField(name, { name = it }, stringResource(R.string.auth_name))
         AuthField(email, { email = it }, stringResource(R.string.auth_email), KeyboardType.Email)
-        AuthField(password, { password = it }, stringResource(R.string.auth_password), password = true)
+        val strong = isStrongPassword(password)
+        AuthField(
+            password, { password = it }, stringResource(R.string.auth_password), password = true,
+            hint = stringResource(R.string.auth_password_rules), hintIsError = password.isNotEmpty() && !strong,
+        )
         vm.failure?.let { AlertBox(it.message(), Modifier.padding(bottom = 12.dp)) }
         PrimaryButton(
             stringResource(R.string.auth_register_submit),
             { vm.register(name, email, password, navigator::confirmEmail) },
             Modifier.fillMaxWidth(),
-            enabled = name.isNotBlank() && email.isNotBlank() && password.isNotEmpty(),
+            enabled = name.isNotBlank() && email.isNotBlank() && strong,
             busy = vm.busy,
         )
         SwitchLink(stringResource(R.string.auth_register_have_account), stringResource(R.string.auth_register_log_in), navigator::login)
